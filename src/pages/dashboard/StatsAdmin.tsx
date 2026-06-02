@@ -76,7 +76,6 @@ export default function StatsAdmin() {
         {/* ALUMNI_HIDDEN: <StatCard icon={GraduationCap} label="Total Alumni" value={stats.totalAlumni} accent="secondary" /> */}
         <StatCard icon={FileText}      label="Total Ujian CBT"   value={stats.totalUjian}      accent="primary"   />
         <StatCard icon={Newspaper}     label="Total Berita"      value={stats.totalBerita}     accent="tertiary"  />
-        <StatCard icon={CalendarCheck} label="Presensi Hari Ini" value={stats.presensiHariIni} accent="secondary" />
       </div>
     </div>
   );

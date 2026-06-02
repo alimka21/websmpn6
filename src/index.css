@@ -19,9 +19,9 @@
   --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
 
   /* — Colors — */
-  --color-primary: #1e40af;
+  --color-primary: #00288e;
   --color-on-primary: #ffffff;
-  --color-primary-container: #1e3a8a;
+  --color-primary-container: #1e40af;
   --color-on-primary-container: #a8b8ff;
   --color-inverse-primary: #b8c4ff;
   --color-primary-fixed: #dde1ff;
