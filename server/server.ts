@@ -55,6 +55,7 @@ import adminRoutes from './routes/admin';
 import guruRoutes from './routes/guru';
 import siswaRoutes from './routes/siswa';
 import publicRoutes from './routes/public';
+import presensiRoutes, { startAutoCheckoutCron } from './routes/presensi';
 
 // ── Bootstrap DB in-process (no child process spawning) ──────────
 // LiteSpeed FastCGI spawn beberapa worker; spawning `prisma db push` lewat
@@ -367,7 +368,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/guru", guruRoutes);
 app.use("/api/siswa", siswaRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/presensi", presensiRoutes);
 app.use("/api", publicRoutes);
+
+startAutoCheckoutCron();
 
 // Global Error Handler
 app.use(errorHandler);
