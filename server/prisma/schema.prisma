@@ -67,7 +67,7 @@ model Guru {
   kelas            Kelas[]
   guruKelas        GuruKelas[]
   ujian            Ujian[]
-  presensi         Presensi[]
+  presensiGuru     PresensiGuru[]
   guruMataPelajaran GuruMataPelajaran[]
 }
 
@@ -92,7 +92,6 @@ model Kelas {
   siswa      Siswa[]
   guruKelas  GuruKelas[]
   kelasUjian UjianKelas[]
-  presensi   Presensi[]
 }
 
 // Guru pengajar per kelas (many-to-many Guru ↔ Kelas).
@@ -119,8 +118,8 @@ model Siswa {
   kelasId String
   kelas   Kelas  @relation(fields: [kelasId], references: [id])
 
-  sesiUjian SesiUjian[]
-  presensi  Presensi[]
+  sesiUjian     SesiUjian[]
+  presensiSiswa PresensiSiswa[]
 
   @@index([kelasId])
 }
@@ -243,24 +242,59 @@ model Pelanggaran {
   @@index([sesiId])
 }
 
-model Presensi {
-  id         String   @id @default(uuid())
-  siswaId    String
-  siswa      Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
-  kelasId    String
-  kelas      Kelas    @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  guruId     String
-  guru       Guru     @relation(fields: [guruId], references: [id])
-  tanggal    DateTime
-  status     String // HADIR, IZIN, SAKIT, ALPHA
-  keterangan String?  @db.Text
+// ─────────────────────────────────────────────────────────────────────────────
+// SISTEM PRESENSI SEKOLAH
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Per-sesi-guru: setiap guru bisa mencatat presensi siswa pada tanggal
-  // yang sama (mis. pelajaran berbeda). Unique key memasukkan guruId
-  // supaya banyak record valid per-siswa-per-hari, satu per guru.
-  @@unique([siswaId, tanggal, guruId])
-  @@index([kelasId, tanggal])
-  @@index([guruId])
+// Clock-in / clock-out harian guru + bukti foto + geofencing.
+model PresensiGuru {
+  id           String    @id @default(uuid())
+  guruId       String
+  guru         Guru      @relation(fields: [guruId], references: [id], onDelete: Cascade)
+
+  tanggal      DateTime  // DATE saja (tanpa jam) — dipakai untuk unique per hari
+  waktuDatang  DateTime? // Timestamp tap "Datang"
+  waktuPulang  DateTime? // Timestamp tap "Pulang" (null = belum pulang)
+  fotoDatang   String?   @db.LongText // Base64 foto saat datang
+  fotoPulang   String?   @db.LongText // Base64 foto saat pulang
+  autoCheckout Boolean   @default(false) // true jika diisi otomatis oleh cron
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([guruId, tanggal])
+  @@index([tanggal])
+  @@index([guruId, tanggal])
+}
+
+// Presensi siswa di gerbang via RFID — hanya catat waktu datang.
+model PresensiSiswa {
+  id          String   @id @default(uuid())
+  siswaId     String
+  siswa       Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  tanggal     DateTime // DATE saja
+  waktuDatang DateTime // Timestamp scan RFID
+
+  createdAt   DateTime @default(now())
+
+  @@unique([siswaId, tanggal])
+  @@index([tanggal])
+  @@index([siswaId])
+}
+
+// Singleton — 1 row. Konfigurasi global presensi dari admin.
+model PengaturanPresensi {
+  id                String   @id @default(uuid())
+
+  latitudeSekolah   Float    @default(0)
+  longitudeSekolah  Float    @default(0)
+  radiusMeter       Int      @default(100)
+
+  jamMasukDefault   String   @default("07:00") // format "HH:mm"
+  jamPulangDefault  String   @default("15:30")
+
+  updatedAt         DateTime @updatedAt
 }
 
 model Alumni {

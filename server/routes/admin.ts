@@ -21,13 +21,7 @@ router.get('/stats', async (req, res, next) => {
         prisma.berita.count()
       ]);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const presensiHariIni = await prisma.presensi.count({
-        where: { tanggal: { gte: today } }
-      });
-
-      return { totalSiswa, totalGuru, totalAlumni, totalUjian, totalBerita, presensiHariIni };
+      return { totalSiswa, totalGuru, totalAlumni, totalUjian, totalBerita };
     });
     res.json(stats);
   } catch (error) {
@@ -211,7 +205,7 @@ router.delete('/users/:id', async (req, res, next) => {
           await tx.pelanggaran.deleteMany({ where: { sesiId: { in: sesiIds } } });
           await tx.sesiUjian.deleteMany({ where: { id: { in: sesiIds } } });
         }
-        await tx.presensi.deleteMany({ where: { siswaId } });
+        await tx.presensiSiswa.deleteMany({ where: { siswaId } });
         await tx.siswa.delete({ where: { id: siswaId } });
         await tx.user.delete({ where: { id: req.params.id } });
       });
@@ -228,10 +222,9 @@ router.delete('/users/:id', async (req, res, next) => {
           throw err;
         }
 
-        // Hapus presensi yang dicatat oleh guru ini
-        await tx.presensi.deleteMany({ where: { guruId } });
+        await tx.presensiGuru.deleteMany({ where: { guruId } });
 
-        // Hapus kelas kosong (tanpa siswa) — cascade DB: presensi kelas, guruKelas, ujianKelas
+        // Hapus kelas kosong (tanpa siswa) — cascade DB: guruKelas, ujianKelas
         await tx.kelas.deleteMany({ where: { guruId } });
 
         // Hapus semua ujian guru — cascade DB (onDelete: Cascade): sesiUjian → jawaban/pelanggaran,
@@ -272,7 +265,7 @@ router.post('/users/bulk-delete', async (req, res, next) => {
           await tx.pelanggaran.deleteMany({ where: { sesiId: { in: sesiIds } } });
           await tx.sesiUjian.deleteMany({ where: { id: { in: sesiIds } } });
         }
-        await tx.presensi.deleteMany({ where: { siswaId: { in: siswaIds } } });
+        await tx.presensiSiswa.deleteMany({ where: { siswaId: { in: siswaIds } } });
         await tx.siswa.deleteMany({ where: { id: { in: siswaIds } } });
       }
       await tx.user.deleteMany({ where: { id: { in: ids } } });
