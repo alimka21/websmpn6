@@ -1,0 +1,359 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  // PRISMA NO-RUST MODE (engineType=client) — bypass Rust query engine
+  // sepenuhnya, pakai driver adapter Node.js native. Library/binary
+  // engine PANIC + EAGAIN di Hostinger CloudLinux shared hosting karena
+  // sandbox block syscall (clock_gettime) dan limit max-processes.
+  //
+  // Mode "client":
+  //  - Provider "prisma-client" (baru di Prisma 6, ESM-friendly, custom output)
+  //  - Output ke server/generated/prisma — bukan node_modules/.prisma
+  //  - Tidak ada binary engine .so yg di-download
+  //  - Query dialirkan via @prisma/adapter-mariadb → mariadb pure JS driver
+  //
+  // Trade-off: tidak ada Rust query engine optimization, tapi tetap dapat
+  // full Prisma client API (typesafe, schema, dst).
+  provider   = "prisma-client"
+  output     = "../generated/prisma"
+  engineType = "client"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique // Digunakan untuk login guru/admin, digabung dengan @siswa.sch.id untuk siswa
+  password  String
+  role      String // SUPER_ADMIN, GURU, SISWA
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // UserProfile
+  admin Admin?
+  guru  Guru?
+  siswa Siswa?
+
+  sessions UserSession[]
+}
+
+model UserSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(512)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Admin {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nama   String
+}
+
+model Guru {
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nip           String  @unique
+  nama          String
+  mataPelajaran String  // legacy — dipertahankan untuk backward compat
+  fotoUrl       String?
+
+  kelas            Kelas[]
+  guruKelas        GuruKelas[]
+  ujian            Ujian[]
+  presensi         Presensi[]
+  guruMataPelajaran GuruMataPelajaran[]
+}
+
+model GuruMataPelajaran {
+  id     String @id @default(uuid())
+  guruId String
+  guru   Guru   @relation(fields: [guruId], references: [id], onDelete: Cascade)
+  nama   String
+
+  @@unique([guruId, nama])
+  @@index([guruId])
+}
+
+model Kelas {
+  id          String @id @default(uuid())
+  nama        String
+  tingkat     String
+  tahunAjaran String
+  guruId      String
+  guru        Guru   @relation(fields: [guruId], references: [id])
+
+  siswa      Siswa[]
+  guruKelas  GuruKelas[]
+  kelasUjian UjianKelas[]
+  presensi   Presensi[]
+}
+
+// Guru pengajar per kelas (many-to-many Guru ↔ Kelas).
+// Wali kelas (Kelas.guruId) otomatis dianggap mengajar di kelasnya —
+// tidak perlu duplikasi data di sini, logika ada di resolveScope backend.
+model GuruKelas {
+  id      String @id @default(uuid())
+  guruId  String
+  guru    Guru   @relation(fields: [guruId], references: [id], onDelete: Cascade)
+  kelasId String
+  kelas   Kelas  @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+
+  @@unique([guruId, kelasId])
+  @@index([kelasId])
+  @@index([guruId])
+}
+
+model Siswa {
+  id      String @id @default(uuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nis     String @unique
+  nama    String
+  kelasId String
+  kelas   Kelas  @relation(fields: [kelasId], references: [id])
+
+  sesiUjian SesiUjian[]
+  presensi  Presensi[]
+
+  @@index([kelasId])
+}
+
+model Ujian {
+  id                  String    @id @default(uuid())
+  judul               String
+  mataPelajaran       String
+  tipeUjian           String?   @default("ULANGAN_HARIAN")
+  // Tipe bebas; UI menyediakan preset (LATIHAN/ULANGAN_HARIAN/UTS/UAS) tapi guru/admin
+  // boleh mengisi string custom lewat opsi "Lainnya".
+  durasi              Int // dalam menit
+  tanggalMulai        DateTime?
+  tanggalSelesai      DateTime?
+  acak                Boolean   @default(false) // Acak urutan soal
+  acakOpsi            Boolean   @default(false) // Acak urutan opsi pilihan jawaban
+  tampilkanPembahasan Boolean   @default(true) // Tampilkan kunci jawaban di halaman hasil
+  tampilkanNilai      Boolean   @default(true) // Tampilkan nilai akhir di halaman hasil
+  createdAt           DateTime  @default(now())
+
+  guruId String
+  guru   Guru   @relation(fields: [guruId], references: [id])
+
+  soal      Soal[]
+  kelas     UjianKelas[]
+  sesiUjian SesiUjian[]
+
+  @@index([guruId])
+  @@index([tanggalMulai, tanggalSelesai])
+}
+
+model UjianKelas {
+  id      String @id @default(uuid())
+  ujianId String
+  ujian   Ujian  @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  kelasId String
+  kelas   Kelas  @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+
+  @@unique([ujianId, kelasId])
+}
+
+model Soal {
+  id       String  @id @default(uuid())
+  ujianId  String
+  ujian    Ujian   @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  nomor    Int
+  teks     String  @db.Text
+  imageUrl String?
+  tipe     String // PILIHAN_GANDA, PG_KOMPLEKS, BENAR_SALAH, URAIAN_SINGKAT, ESAI
+  poin     Float
+
+  opsi    Opsi[]
+  jawaban Jawaban[]
+
+  @@index([ujianId])
+}
+
+model Opsi {
+  id       String  @id @default(uuid())
+  soalId   String
+  soal     Soal    @relation(fields: [soalId], references: [id], onDelete: Cascade)
+  teks     String  @db.Text
+  imageUrl String?
+  urutan   Int
+  benar    Boolean
+
+  jawaban Jawaban[]
+
+  @@index([soalId])
+}
+
+model SesiUjian {
+  id           String    @id @default(uuid())
+  ujianId      String
+  ujian        Ujian     @relation(fields: [ujianId], references: [id], onDelete: Cascade)
+  siswaId      String
+  siswa        Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  status       String // BELUM_MULAI, SEDANG_BERLANGSUNG, SELESAI, AUTO_SUBMIT
+  mulaiAt      DateTime?
+  selesaiAt    DateTime?
+  nilaiRaw     Float?
+  nilaiAkhir   Float?
+  submitReason String?
+
+  jawaban     Jawaban[]
+  pelanggaran Pelanggaran[]
+
+  @@unique([ujianId, siswaId])
+  @@index([siswaId])
+  @@index([status])
+  @@index([ujianId, status])
+}
+
+model Jawaban {
+  id          String    @id @default(uuid())
+  sesiId      String
+  sesi        SesiUjian @relation(fields: [sesiId], references: [id], onDelete: Cascade)
+  soalId      String
+  soal        Soal      @relation(fields: [soalId], references: [id], onDelete: Cascade)
+  opsiId      String?
+  opsi        Opsi?     @relation(fields: [opsiId], references: [id], onDelete: Cascade)
+  isBenar     Boolean   @default(false)
+  jawabanTeks String?   @db.Text   // untuk URAIAN_SINGKAT / ESAI
+  nilaiUraian Float?               // 1-10, diisi guru saat koreksi
+  catatanGuru String?   @db.Text   // catatan opsional dari guru
+
+  // Tidak boleh @@unique — PG_KOMPLEKS butuh multiple row per (sesi, soal),
+  // satu row per opsi yang dipilih siswa. Index biasa cukup untuk query.
+  @@index([sesiId, soalId])
+}
+
+model Pelanggaran {
+  id        String    @id @default(uuid())
+  sesiId    String
+  sesi      SesiUjian @relation(fields: [sesiId], references: [id], onDelete: Cascade)
+  tipe      String // TAB_SWITCH, FULLSCREEN_EXIT, WINDOW_BLUR, DEVTOOLS
+  pesan     String    @db.Text
+  timestamp DateTime  @default(now())
+
+  @@index([sesiId])
+}
+
+model Presensi {
+  id         String   @id @default(uuid())
+  siswaId    String
+  siswa      Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  kelasId    String
+  kelas      Kelas    @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  guruId     String
+  guru       Guru     @relation(fields: [guruId], references: [id])
+  tanggal    DateTime
+  status     String // HADIR, IZIN, SAKIT, ALPHA
+  keterangan String?  @db.Text
+
+  // Per-sesi-guru: setiap guru bisa mencatat presensi siswa pada tanggal
+  // yang sama (mis. pelajaran berbeda). Unique key memasukkan guruId
+  // supaya banyak record valid per-siswa-per-hari, satu per guru.
+  @@unique([siswaId, tanggal, guruId])
+  @@index([kelasId, tanggal])
+  @@index([guruId])
+}
+
+model Alumni {
+  id         String   @id @default(uuid())
+  nama       String
+  nis        String?
+  tahunLulus Int
+  jurusan    String?
+  status     String // BEKERJA, KULIAH, WIRAUSAHA, TIDAK_DIKETAHUI
+  instansi   String?
+  posisi     String?
+  kontak     String?
+  fotoUrl    String?
+  // isVerified false untuk alumni yg daftar via form publik — admin
+  // moderate sebelum tampil di tracer publik. Alumni yg di-create admin
+  // langsung true.
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([tahunLulus])
+  @@index([status])
+}
+
+model Berita {
+  id          String    @id @default(uuid())
+  judul       String
+  slug        String    @unique
+  konten      String    @db.LongText
+  ringkasan   String?   @db.Text
+  imageUrl    String?
+  status      String // DRAFT, PUBLISHED, ARCHIVED
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+// Singleton config untuk landing page (1 row saja).
+// Admin meng-edit via /dashboard/admin/site, dibaca publik via /api/site-config.
+model SiteConfig {
+  id          String  @id @default(uuid())
+  namaSekolah String  @default("Sekolah Hebat")
+  // Jenjang: SD | SMP | SMA | SMK — menentukan tingkat kelas yg valid
+  // (SD 1-6, SMP 7-9, SMA/SMK 10-12) dan jumlah opsi PG (4 utk SD/SMP, 5 utk SMA/SMK).
+  jenjang     String?
+  tagline     String? @db.Text
+  deskripsi   String? @db.Text
+
+  logoUrl        String? @db.LongText
+  faviconUrl     String? @db.LongText
+  heroImageUrl   String? @db.LongText
+  heroBadge      String?
+  heroTitle      String? @db.Text
+  heroSubtitle   String? @db.Text
+  profilImageUrl String? @db.LongText
+  sejarah        String? @db.LongText
+
+  visi   String? @db.Text
+  misi   String? @db.Text
+  tujuan String? @db.Text
+
+  // Statistik landing yg bisa di-edit admin (selain alumni yg auto dari DB)
+  statSiswaValue String?  @default("1,250+")
+  statSiswaLabel String?  @default("Siswa Aktif")
+  statGuruValue  String?  @default("85+")
+  statGuruLabel  String?  @default("Tenaga Pendidik")
+  statTahunValue String?  @default("2005")
+  statTahunLabel String?  @default("Berdiri Sejak")
+  statAlumniLabel String? @default("Alumni Terdata")
+
+  // Sambutan kepala sekolah — ditampilkan di section khusus pada landing
+  kepsekNama     String?
+  kepsekJabatan  String? @default("Kepala Sekolah")
+  kepsekFotoUrl  String? @db.LongText
+  kepsekSambutan String? @db.Text
+
+  // Fitur unggulan — JSON array: [{ icon: string, title: string, desc: string }]
+  // icon = nama lucide-react yg di-whitelist di frontend (FileText, CalendarCheck, dst)
+  fiturUnggulan String? @db.LongText
+
+  alamat       String? @db.Text
+  telepon      String?
+  email        String?
+  whatsapp     String?
+  // Google Maps embed URL (dapat dari "Bagikan" → "Sematkan peta" → src= iframe)
+  mapsEmbedUrl String? @db.Text
+
+  facebook  String?
+  instagram String?
+  twitter   String?
+  youtube   String?
+  tiktok    String?
+
+  updatedAt DateTime @updatedAt
+}

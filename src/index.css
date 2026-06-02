@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   Fallback font dgn metrics disesuaikan Inter — kurangi CLS saat
+   font swap. Browser pakai "Inter Fallback" (Arial dgn size-adjust)
+   sampai Inter selesai di-fetch dari Google Fonts. Metrics match,
+   jadi text reflow minimum saat swap.
+   Values berdasarkan Inter font metrics standard.
+   ============================================================ */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial');
+  size-adjust: 107%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+/* ============================================================
+   DESIGN SYSTEM — Precision Assessment System
+   Tailwind v4 CSS-first config: token ini otomatis jadi util class
+   (bg-primary, text-on-surface, rounded-lg, text-body-question, dst.)
+   ============================================================ */
+@theme {
+  /* — Font — */
+  --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
+
+  /* — Colors (Material 3-ish, ramah ujian) — */
+  --color-primary: #00236f;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1e3a8a;
+  --color-on-primary-container: #90a8ff;
+  --color-inverse-primary: #b6c4ff;
+
+  --color-secondary: #006a61;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #86f2e4;
+  --color-on-secondary-container: #006f66;
+
+  --color-tertiary: #3e2400;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #5c3800;
+  --color-on-tertiary-container: #ef9900;
+  --color-tertiary-fixed: #ffddb8;
+  --color-on-tertiary-fixed: #2a1700;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+
+  --color-surface: #f8f9fa;
+  --color-surface-dim: #d9dadb;
+  --color-surface-bright: #f8f9fa;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f4f5;
+  --color-surface-container: #edeeef;
+  --color-surface-container-high: #e7e8e9;
+  --color-surface-container-highest: #e1e3e4;
+  --color-on-surface: #191c1d;
+  --color-on-surface-variant: #444651;
+
+  --color-outline: #757682;
+  --color-outline-variant: #c5c5d3;
+
+  --color-inverse-surface: #2e3132;
+  --color-inverse-on-surface: #f0f1f2;
+  --color-surface-tint: #4059aa;
+
+  --color-background: #f8f9fa;
+  --color-on-background: #191c1d;
+
+  /* — Border radius — sudut tegas, hanya badge/avatar yg fully round — */
+  --radius: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+
+  /* — Font size tokens (body soal 18px, heading hirarkis) — */
+  --text-body-question: 18px;
+  --text-body-question--line-height: 28px;
+
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.01em;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.05em;
+
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 28px;
+  --text-headline-sm--font-weight: 600;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 600;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 700;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-background text-on-background;
+  }
+}
