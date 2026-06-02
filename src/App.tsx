@@ -25,6 +25,8 @@ const ManageUsers = lazy(() => import('./pages/dashboard/ManageUsers'));
 const SiteSettings = lazy(() => import('./pages/dashboard/SiteSettings'));
 const StatsAdmin = lazy(() => import('./pages/dashboard/StatsAdmin'));
 const PresensiAdmin = lazy(() => import('./pages/dashboard/PresensiAdmin'));
+const DokumenAgendaAdmin = lazy(() => import('./pages/dashboard/DokumenAgendaAdmin'));
+const DokumenPublik = lazy(() => import('./pages/DokumenPublik'));
 
 // Guru
 const GuruDashboard = lazy(() => import('./pages/dashboard/guru/GuruDashboard'));
@@ -83,6 +85,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/berita" element={<BeritaList />} />
           <Route path="/berita/:slug" element={<BeritaDetail />} />
+          <Route path="/dokumen" element={<DokumenPublik />} />
           {/* ALUMNI_HIDDEN: <Route path="/alumni/daftar" element={<AlumniRegister />} /> */}
 
           {/* Public route but redirect if logged in */}
@@ -131,6 +134,11 @@ export default function App() {
               <Route path="presensi" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <PresensiAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="konten" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <DokumenAgendaAdmin />
                 </ProtectedRoute>
               } />
               <Route path="cms" element={

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   LogIn, ArrowRight, Users, GraduationCap, BookOpen, Building2,
   Eye, Target, CheckCircle, CalendarCheck, ShieldCheck,
-  FileText, ClipboardList, MapPin, Clock, Download, Newspaper,
+  FileText, ClipboardList, MapPin, Clock, ExternalLink, Newspaper,
   Briefcase, Menu, X, Quote, Calendar, Compass, Lightbulb,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -19,13 +19,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 interface Berita {
-  id: string;
-  judul: string;
-  slug: string;
-  ringkasan: string | null;
-  imageUrl: string | null;
-  publishedAt: string | null;
+  id: string; judul: string; slug: string;
+  ringkasan: string | null; imageUrl: string | null; publishedAt: string | null;
 }
+interface DokumenItem { id: string; judul: string; linkDrive: string }
+interface AgendaItem  { id: string; judul: string; waktu: string; lokasi: string | null }
 
 interface FiturItem { icon: string; title: string; desc: string }
 
@@ -51,9 +49,11 @@ const formatTanggal = (iso: string | null) => {
 };
 
 export default function LandingPage() {
-  const [beritaList, setBeritaList]   = useState<Berita[]>([]);
+  const [beritaList, setBeritaList]     = useState<Berita[]>([]);
   const [isLoadingBerita, setIsLoadingBerita] = useState(true);
-  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [dokumenList, setDokumenList]   = useState<DokumenItem[]>([]);
+  const [agendaList, setAgendaList]     = useState<AgendaItem[]>([]);
+  const [mobileOpen, setMobileOpen]     = useState(false);
   const navigate = useNavigate();
   const cfg       = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
@@ -63,6 +63,12 @@ export default function LandingPage() {
       .then((r: any) => setBeritaList(r.data || r.items || (Array.isArray(r) ? r : [])))
       .catch(() => {})
       .finally(() => setIsLoadingBerita(false));
+    api.get('/api/dokumen?limit=5')
+      .then((r: any) => setDokumenList(Array.isArray(r) ? r : []))
+      .catch(() => {});
+    api.get('/api/agenda?limit=5')
+      .then((r: any) => setAgendaList(Array.isArray(r) ? r : []))
+      .catch(() => {});
   }, []);
 
   const fiturItems: FiturItem[] = (() => {
@@ -380,74 +386,102 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════
-          DOKUMEN & AGENDA  (static placeholder)
-          TODO: hubungkan ke backend CMS saat data tersedia
+          DOKUMEN & AGENDA
       ══════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24 bg-surface-container-low">
-        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Dokumen Sekolah */}
-            <div className="space-y-6">
-              <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
-                <FileText className="w-7 h-7 text-primary" />
-                Dokumen Sekolah
-              </h2>
-              <div className="space-y-3">
-                {[
-                  { label: 'Kurikulum 2024',     meta: 'PDF • 2.4 MB',  bg: 'bg-red-50',    text: 'text-red-600',    hover: 'group-hover:bg-red-600' },
-                  { label: 'Kalender Pendidikan', meta: 'XLSX • 1.1 MB', bg: 'bg-blue-50',   text: 'text-blue-600',   hover: 'group-hover:bg-blue-600' },
-                  { label: 'Profil Lulusan',      meta: 'PDF • 4.8 MB',  bg: 'bg-green-50',  text: 'text-green-600',  hover: 'group-hover:bg-green-600' },
-                  { label: 'Panduan Akademik',    meta: 'DOCX • 0.9 MB', bg: 'bg-purple-50', text: 'text-purple-600', hover: 'group-hover:bg-purple-600' },
-                ].map(doc => (
-                  <a
-                    key={doc.label}
-                    href="#"
-                    className="group flex items-center gap-4 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl card-hover shadow-sm"
-                  >
-                    <div className={`w-12 h-12 rounded-lg ${doc.bg} ${doc.text} flex items-center justify-center ${doc.hover} group-hover:text-white transition-all shrink-0`}>
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex-grow">
-                      <h4 className="font-bold text-on-surface">{doc.label}</h4>
-                      <p className="text-xs text-on-surface-variant uppercase tracking-wider mt-0.5">{doc.meta}</p>
-                    </div>
-                    <Download className="w-5 h-5 text-on-surface-variant opacity-30 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                ))}
-              </div>
-            </div>
+      {(dokumenList.length > 0 || agendaList.length > 0) && (
+        <section className="py-16 md:py-24 bg-surface-container-low">
+          <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12">
 
-            {/* Agenda Sekolah */}
-            <div className="space-y-6">
-              <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
-                <Calendar className="w-7 h-7 text-primary" />
-                Agenda Sekolah
-              </h2>
-              <div className="space-y-4">
-                {[
-                  { bulan: 'Mei', tgl: '25', judul: 'Rapat Orang Tua Murid',     jam: '09:00 WIB', lokasi: 'Aula Utama' },
-                  { bulan: 'Jun', tgl: '01', judul: 'Pameran Karya Siswa',        jam: '08:00 WIB', lokasi: 'Lab. Kreatif' },
-                  { bulan: 'Jun', tgl: '15', judul: 'Uji Kompetensi Keahlian',    jam: 'Selesai',   lokasi: 'Bengkel Vokasi' },
-                ].map(agenda => (
-                  <div key={agenda.judul} className="flex items-center gap-6 p-5 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl card-hover shadow-sm group">
-                    <div className="flex flex-col items-center justify-center min-w-[60px] h-[60px] bg-primary/5 rounded-xl text-primary font-bold">
-                      <span className="text-xs uppercase leading-none">{agenda.bulan}</span>
-                      <span className="text-xl">{agenda.tgl}</span>
-                    </div>
-                    <div className="flex-grow">
-                      <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors">{agenda.judul}</h4>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-on-surface-variant">
-                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {agenda.jam}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {agenda.lokasi}</span>
-                      </div>
-                    </div>
+              {/* Dokumen Sekolah */}
+              {dokumenList.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
+                      <FileText className="w-7 h-7 text-primary" />
+                      Dokumen Sekolah
+                    </h2>
+                    <Link
+                      to="/dokumen"
+                      className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
+                    >
+                      Lihat Semua <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-3">
+                    {dokumenList.map((doc, idx) => {
+                      const colors = [
+                        { bg: 'bg-blue-50',   text: 'text-blue-600',   hover: 'group-hover:bg-blue-600' },
+                        { bg: 'bg-red-50',    text: 'text-red-600',    hover: 'group-hover:bg-red-600' },
+                        { bg: 'bg-green-50',  text: 'text-green-600',  hover: 'group-hover:bg-green-600' },
+                        { bg: 'bg-purple-50', text: 'text-purple-600', hover: 'group-hover:bg-purple-600' },
+                        { bg: 'bg-amber-50',  text: 'text-amber-600',  hover: 'group-hover:bg-amber-600' },
+                      ];
+                      const c = colors[idx % colors.length];
+                      return (
+                        <a
+                          key={doc.id}
+                          href={doc.linkDrive}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center gap-4 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl card-hover shadow-sm"
+                        >
+                          <div className={`w-12 h-12 rounded-lg ${c.bg} ${c.text} flex items-center justify-center ${c.hover} group-hover:text-white transition-all shrink-0`}>
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <h4 className="font-bold text-on-surface truncate">{doc.judul}</h4>
+                            <p className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
+                              <ExternalLink className="w-3 h-3" /> Google Drive
+                            </p>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-on-surface-variant opacity-30 group-hover:opacity-100 transition-opacity shrink-0" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Agenda Sekolah */}
+              {agendaList.length > 0 && (
+                <div className="space-y-6">
+                  <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
+                    <Calendar className="w-7 h-7 text-primary" />
+                    Agenda Sekolah
+                  </h2>
+                  <div className="space-y-4">
+                    {agendaList.map(item => {
+                      const d = new Date(item.waktu);
+                      const bulan = d.toLocaleDateString('id-ID', { month: 'short' });
+                      const tgl   = d.getDate();
+                      const jam   = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div key={item.id} className="flex items-center gap-6 p-5 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl card-hover shadow-sm group">
+                          <div className="flex flex-col items-center justify-center min-w-[60px] h-[60px] bg-primary/5 rounded-xl text-primary font-bold shrink-0">
+                            <span className="text-xs uppercase leading-none">{bulan}</span>
+                            <span className="text-xl">{tgl}</span>
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate">{item.judul}</h4>
+                            <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-on-surface-variant">
+                              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {jam}</span>
+                              {item.lokasi && (
+                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {item.lokasi}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ══════════════════════════════════════════════════
           BERITA SEKOLAH

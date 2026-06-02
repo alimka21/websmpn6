@@ -391,3 +391,29 @@ model SiteConfig {
 
   updatedAt DateTime @updatedAt
 }
+
+// Dokumen sekolah yang bisa diakses publik via link Google Drive
+model DokumenSekolah {
+  id        String   @id @default(uuid())
+  judul     String
+  linkDrive String   @db.Text
+  urutan    Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, urutan])
+}
+
+// Agenda / kegiatan sekolah yang tampil di landing page
+model AgendaSekolah {
+  id        String   @id @default(uuid())
+  judul     String
+  waktu     DateTime
+  lokasi    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, waktu])
+}
