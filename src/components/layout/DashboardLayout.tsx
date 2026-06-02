@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-do
 import { toast } from 'sonner';
 import {
   LogOut, Menu, X, LayoutDashboard, Users, FileText, Settings, Home,
-  GraduationCap, ClipboardList, PenTool, BarChart3, Newspaper, CalendarCheck,
+  GraduationCap, ClipboardList, PenTool, BarChart3, Newspaper,
 } from 'lucide-react';
 import { useAuthStore, Role } from '../../store/authStore';
 import { Button } from '../ui/button';
@@ -33,7 +33,7 @@ const navConfig: Record<Role, NavItem[]> = {
     { label: 'Ujian Saya',    href: '/dashboard/guru/ujian',     icon: <FileText className="w-5 h-5" /> },
     { label: 'Buat Ujian',    href: '/dashboard/guru/ujian/baru', icon: <PenTool className="w-5 h-5" /> },
     { label: 'Siswa & Kelas', href: '/dashboard/guru/siswa',     icon: <Users className="w-5 h-5" /> },
-    { label: 'Presensi',      href: '/dashboard/guru/presensi',  icon: <CalendarCheck className="w-5 h-5" /> },
+    // Presensi guru dipindah ke halaman dedicated (hidden route /presensi-guru)
     { label: 'Rekap Nilai',   href: '/dashboard/guru/rekap',     icon: <ClipboardList className="w-5 h-5" /> },
   ],
   SISWA: [
@@ -56,7 +56,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/guru/ujian':         'Daftar Ujian',
   '/dashboard/guru/ujian/baru':    'Buat Ujian Baru',
   '/dashboard/guru/siswa':         'Siswa & Kelas',
-  '/dashboard/guru/presensi':      'Presensi Sesi Saya',
   '/dashboard/guru/rekap':         'Rekap Nilai',
   '/dashboard/siswa':              'Dashboard Siswa',
   '/dashboard/siswa/ujian':        'Ujian Aktif',

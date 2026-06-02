@@ -4,7 +4,7 @@ import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import {
   Users, FileText, CheckCircle2, Clock, PlusCircle, AlertTriangle,
-  ListChecks, Activity, ArrowRight, RefreshCw,
+  Activity, ArrowRight, RefreshCw,
 } from 'lucide-react';
 import api from '../../../lib/api';
 import { formatDate } from '../../../lib/utils';
@@ -107,11 +107,6 @@ export default function GuruDashboard() {
             <PlusCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Buat Ujian Baru</span>
             <span className="sm:hidden">Ujian</span>
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/dashboard/guru/presensi')} className="flex-1 sm:flex-none gap-2">
-            <ListChecks className="w-4 h-4" />
-            <span className="hidden sm:inline">Input Presensi</span>
-            <span className="sm:hidden">Presensi</span>
           </Button>
         </div>
       </div>

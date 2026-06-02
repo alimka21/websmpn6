@@ -1,13 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 @import "tailwindcss";
 
-/* ============================================================
-   Fallback font dgn metrics disesuaikan Inter — kurangi CLS saat
-   font swap. Browser pakai "Inter Fallback" (Arial dgn size-adjust)
-   sampai Inter selesai di-fetch dari Google Fonts. Metrics match,
-   jadi text reflow minimum saat swap.
-   Values berdasarkan Inter font metrics standard.
-   ============================================================ */
 @font-face {
   font-family: 'Inter Fallback';
   src: local('Arial');
@@ -18,69 +11,80 @@
 }
 
 /* ============================================================
-   DESIGN SYSTEM — Precision Assessment System
-   Tailwind v4 CSS-first config: token ini otomatis jadi util class
-   (bg-primary, text-on-surface, rounded-lg, text-body-question, dst.)
+   DESIGN SYSTEM — Academic Clarity (DESIGN.md)
+   Tailwind v4 CSS-first config
    ============================================================ */
 @theme {
   /* — Font — */
   --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
 
-  /* — Colors (UI/UX Guide: blue-600 / slate palette) — */
-  --color-primary: #2563EB;
+  /* — Colors — */
+  --color-primary: #1e40af;
   --color-on-primary: #ffffff;
-  --color-primary-container: #1D4ED8;
-  --color-on-primary-container: #EFF6FF;
-  --color-inverse-primary: #93C5FD;
+  --color-primary-container: #1e3a8a;
+  --color-on-primary-container: #a8b8ff;
+  --color-inverse-primary: #b8c4ff;
+  --color-primary-fixed: #dde1ff;
+  --color-primary-fixed-dim: #b8c4ff;
+  --color-on-primary-fixed: #001453;
+  --color-on-primary-fixed-variant: #173bab;
 
-  --color-secondary: #006a61;
+  --color-secondary: #5a5f62;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #86f2e4;
-  --color-on-secondary-container: #006f66;
+  --color-secondary-container: #dce0e4;
+  --color-on-secondary-container: #5e6367;
+  --color-secondary-fixed: #dfe3e7;
+  --color-secondary-fixed-dim: #c3c7cb;
+  --color-on-secondary-fixed: #171c1f;
+  --color-on-secondary-fixed-variant: #43474b;
 
-  --color-tertiary: #3e2400;
+  --color-tertiary: #25354a;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #5c3800;
-  --color-on-tertiary-container: #ef9900;
-  --color-tertiary-fixed: #ffddb8;
-  --color-on-tertiary-fixed: #2a1700;
+  --color-tertiary-container: #3c4c61;
+  --color-on-tertiary-container: #acbcd6;
+  --color-tertiary-fixed: #d3e4fe;
+  --color-tertiary-fixed-dim: #b7c8e1;
+  --color-on-tertiary-fixed: #0b1c30;
+  --color-on-tertiary-fixed-variant: #38485d;
 
   --color-error: #ba1a1a;
   --color-on-error: #ffffff;
   --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
 
-  --color-surface: #F8FAFC;
-  --color-surface-dim: #E2E8F0;
-  --color-surface-bright: #F8FAFC;
+  --color-surface: #faf8ff;
+  --color-surface-dim: #d2d9f4;
+  --color-surface-bright: #faf8ff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #F1F5F9;
-  --color-surface-container: #E2E8F0;
-  --color-surface-container-high: #CBD5E1;
-  --color-surface-container-highest: #94A3B8;
-  --color-on-surface: #0F172A;
-  --color-on-surface-variant: #475569;
+  --color-surface-container-low: #f2f3ff;
+  --color-surface-container: #eaedff;
+  --color-surface-container-high: #e2e7ff;
+  --color-surface-container-highest: #dae2fd;
+  --color-on-surface: #131b2e;
+  --color-on-surface-variant: #444653;
+  --color-surface-variant: #dae2fd;
 
-  --color-outline: #94A3B8;
-  --color-outline-variant: #E2E8F0;
+  --color-outline: #757684;
+  --color-outline-variant: #c4c5d5;
 
-  --color-inverse-surface: #0F172A;
-  --color-inverse-on-surface: #F8FAFC;
-  --color-surface-tint: #2563EB;
+  --color-inverse-surface: #283044;
+  --color-inverse-on-surface: #eef0ff;
+  --color-surface-tint: #3755c3;
 
-  --color-background: #F8FAFC;
-  --color-on-background: #0F172A;
+  --color-background: #faf8ff;
+  --color-on-background: #131b2e;
 
-  /* — Border radius (UI/UX Guide: rounded-xl=12px untuk komponen, rounded-2xl=16px untuk card) — */
-  --radius: 0.25rem;
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
+  /* — Border radius — */
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
   --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
   --radius-full: 9999px;
 
-  /* — Font size tokens (body soal 18px, heading hirarkis) — */
+  /* — Font sizes — exam system tokens, jangan ubah — */
   --text-body-question: 18px;
   --text-body-question--line-height: 28px;
 
@@ -100,12 +104,11 @@
   --text-headline-md--line-height: 32px;
   --text-headline-md--font-weight: 600;
 
-  --text-headline-lg: 32px;
+  --text-headline-lg: 30px;
   --text-headline-lg--line-height: 40px;
-  --text-headline-lg--letter-spacing: -0.02em;
-  --text-headline-lg--font-weight: 700;
+  --text-headline-lg--font-weight: 600;
 
-  /* — Animasi custom (UI/UX Guide) — */
+  /* — Animasi — */
   --animate-fade-in: fadeIn 0.5s ease-out;
   --animate-fade-in-up: fadeInUp 0.5s ease-out;
   --animate-fade-in-down: fadeInDown 0.5s ease-out;
@@ -129,4 +132,25 @@
   body {
     @apply font-sans antialiased bg-background text-on-background;
   }
+}
+
+/* ─── Landing page utilities ─── */
+
+.hero-gradient {
+  background: linear-gradient(135deg, #1e40af 0%, #00288e 100%);
+}
+
+.glass-header {
+  background: rgba(250, 248, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.1),
+              0 8px 10px -6px rgba(30, 64, 175, 0.1);
 }

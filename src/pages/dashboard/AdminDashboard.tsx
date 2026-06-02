@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, GraduationCap, FileText, Newspaper, CalendarCheck, Shield, Settings, ArrowRight } from 'lucide-react';
+import { Users, GraduationCap, FileText, Newspaper, Shield, Settings, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../lib/api';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -103,7 +103,6 @@ export default function AdminDashboard() {
         {/* ALUMNI_HIDDEN: <StatCard icon={Users} label="Total Alumni" value={stats?.totalAlumni || 0} accent="secondary" /> */}
         <StatCard icon={FileText}      label="Bank Ujian"        value={stats?.totalUjian || 0}      accent="primary"   />
         <StatCard icon={Newspaper}     label="Artikel Berita"    value={stats?.totalBerita || 0}     accent="tertiary"  />
-        <StatCard icon={CalendarCheck} label="Presensi Hari Ini" value={stats?.presensiHariIni || 0} accent="secondary" />
       </div>
 
       {/* Manajemen cepat */}

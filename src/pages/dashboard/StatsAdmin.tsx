@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, GraduationCap, FileText, Newspaper, CalendarCheck } from 'lucide-react';
+import { Users, GraduationCap, FileText, Newspaper } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../lib/api';
 
@@ -9,7 +9,6 @@ interface Stats {
   totalAlumni: number;
   totalUjian: number;
   totalBerita: number;
-  presensiHariIni: number;
 }
 
 type Accent = 'primary' | 'secondary' | 'tertiary';
