@@ -1,1 +1,8 @@
-../*
+node_modules/
+dist/
+server/dist/
+server/generated/
+server/.env
+.env
+.env.local
+.DS_Store

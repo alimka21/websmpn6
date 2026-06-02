@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 @import "tailwindcss";
 
 /* ============================================================
@@ -26,12 +26,12 @@
   /* — Font — */
   --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
 
-  /* — Colors (Material 3-ish, ramah ujian) — */
-  --color-primary: #00236f;
+  /* — Colors (UI/UX Guide: blue-600 / slate palette) — */
+  --color-primary: #2563EB;
   --color-on-primary: #ffffff;
-  --color-primary-container: #1e3a8a;
-  --color-on-primary-container: #90a8ff;
-  --color-inverse-primary: #b6c4ff;
+  --color-primary-container: #1D4ED8;
+  --color-on-primary-container: #EFF6FF;
+  --color-inverse-primary: #93C5FD;
 
   --color-secondary: #006a61;
   --color-on-secondary: #ffffff;
@@ -49,32 +49,36 @@
   --color-on-error: #ffffff;
   --color-error-container: #ffdad6;
 
-  --color-surface: #f8f9fa;
-  --color-surface-dim: #d9dadb;
-  --color-surface-bright: #f8f9fa;
+  --color-surface: #F8FAFC;
+  --color-surface-dim: #E2E8F0;
+  --color-surface-bright: #F8FAFC;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f4f5;
-  --color-surface-container: #edeeef;
-  --color-surface-container-high: #e7e8e9;
-  --color-surface-container-highest: #e1e3e4;
-  --color-on-surface: #191c1d;
-  --color-on-surface-variant: #444651;
+  --color-surface-container-low: #F1F5F9;
+  --color-surface-container: #E2E8F0;
+  --color-surface-container-high: #CBD5E1;
+  --color-surface-container-highest: #94A3B8;
+  --color-on-surface: #1E293B;
+  --color-on-surface-variant: #64748B;
 
-  --color-outline: #757682;
-  --color-outline-variant: #c5c5d3;
+  --color-outline: #94A3B8;
+  --color-outline-variant: #E2E8F0;
 
-  --color-inverse-surface: #2e3132;
-  --color-inverse-on-surface: #f0f1f2;
-  --color-surface-tint: #4059aa;
+  --color-inverse-surface: #1E293B;
+  --color-inverse-on-surface: #F8FAFC;
+  --color-surface-tint: #2563EB;
 
-  --color-background: #f8f9fa;
-  --color-on-background: #191c1d;
+  --color-background: #F8FAFC;
+  --color-on-background: #1E293B;
 
-  /* — Border radius — sudut tegas, hanya badge/avatar yg fully round — */
-  --radius: 0.125rem;
-  --radius-lg: 0.25rem;
-  --radius-xl: 0.5rem;
-  --radius-full: 0.75rem;
+  /* — Border radius (UI/UX Guide: rounded-xl=12px untuk komponen, rounded-2xl=16px untuk card) — */
+  --radius: 0.25rem;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
 
   /* — Font size tokens (body soal 18px, heading hirarkis) — */
   --text-body-question: 18px;
@@ -100,6 +104,25 @@
   --text-headline-lg--line-height: 40px;
   --text-headline-lg--letter-spacing: -0.02em;
   --text-headline-lg--font-weight: 700;
+
+  /* — Animasi custom (UI/UX Guide) — */
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-fade-in-up: fadeInUp 0.5s ease-out;
+  --animate-fade-in-down: fadeInDown 0.5s ease-out;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes fadeIn {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes fadeInUp {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDown {
+    0%   { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
 }
 
 @layer base {
