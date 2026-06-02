@@ -74,7 +74,7 @@ export default function StatsAdmin() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard icon={Users}         label="Total Siswa"       value={stats.totalSiswa}      accent="primary"   />
         <StatCard icon={Users}         label="Total Guru"        value={stats.totalGuru}       accent="primary"   />
-        <StatCard icon={GraduationCap} label="Total Alumni"      value={stats.totalAlumni}     accent="secondary" />
+        {/* ALUMNI_HIDDEN: <StatCard icon={GraduationCap} label="Total Alumni" value={stats.totalAlumni} accent="secondary" /> */}
         <StatCard icon={FileText}      label="Total Ujian CBT"   value={stats.totalUjian}      accent="primary"   />
         <StatCard icon={Newspaper}     label="Total Berita"      value={stats.totalBerita}     accent="tertiary"  />
         <StatCard icon={CalendarCheck} label="Presensi Hari Ini" value={stats.presensiHariIni} accent="secondary" />

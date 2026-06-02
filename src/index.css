@@ -57,18 +57,18 @@
   --color-surface-container: #E2E8F0;
   --color-surface-container-high: #CBD5E1;
   --color-surface-container-highest: #94A3B8;
-  --color-on-surface: #1E293B;
-  --color-on-surface-variant: #64748B;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
 
   --color-outline: #94A3B8;
   --color-outline-variant: #E2E8F0;
 
-  --color-inverse-surface: #1E293B;
+  --color-inverse-surface: #0F172A;
   --color-inverse-on-surface: #F8FAFC;
   --color-surface-tint: #2563EB;
 
   --color-background: #F8FAFC;
-  --color-on-background: #1E293B;
+  --color-on-background: #0F172A;
 
   /* — Border radius (UI/UX Guide: rounded-xl=12px untuk komponen, rounded-2xl=16px untuk card) — */
   --radius: 0.25rem;

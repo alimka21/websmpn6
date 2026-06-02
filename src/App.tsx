@@ -13,13 +13,13 @@ import DashboardLayout from './components/layout/DashboardLayout';
 // Page lain di-lazy supaya tidak ikut bundle utama
 const BeritaList = lazy(() => import('./pages/BeritaList'));
 const BeritaDetail = lazy(() => import('./pages/BeritaDetail'));
-const AlumniRegister = lazy(() => import('./pages/AlumniRegister'));
+// ALUMNI_HIDDEN: const AlumniRegister = lazy(() => import('./pages/AlumniRegister'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Admin
 const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard'));
 const AdminUjianList = lazy(() => import('./pages/dashboard/AdminUjianList'));
-const AlumniTracer = lazy(() => import('./pages/dashboard/AlumniTracer'));
+// ALUMNI_HIDDEN: const AlumniTracer = lazy(() => import('./pages/dashboard/AlumniTracer'));
 const CmsManage = lazy(() => import('./pages/dashboard/CmsManage'));
 const ManageUsers = lazy(() => import('./pages/dashboard/ManageUsers'));
 const SiteSettings = lazy(() => import('./pages/dashboard/SiteSettings'));
@@ -82,7 +82,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/berita" element={<BeritaList />} />
           <Route path="/berita/:slug" element={<BeritaDetail />} />
-          <Route path="/alumni/daftar" element={<AlumniRegister />} />
+          {/* ALUMNI_HIDDEN: <Route path="/alumni/daftar" element={<AlumniRegister />} /> */}
 
           {/* Public route but redirect if logged in */}
           <Route path="/login" element={<LoginPage />} />
@@ -120,11 +120,13 @@ export default function App() {
                   <AdminUjianList />
                 </ProtectedRoute>
               } />
+              {/* ALUMNI_HIDDEN:
               <Route path="alumni" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <AlumniTracer />
                 </ProtectedRoute>
               } />
+              */}
               <Route path="cms" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <CmsManage />

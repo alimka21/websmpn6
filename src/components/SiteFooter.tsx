@@ -54,7 +54,7 @@ export default function SiteFooter() {
           <ul className="space-y-2 text-sm">
             <li><Link to="/" className="hover:text-inverse-primary transition-colors">Beranda</Link></li>
             <li><Link to="/berita" className="hover:text-inverse-primary transition-colors">Berita</Link></li>
-            <li><Link to="/alumni/daftar" className="hover:text-inverse-primary transition-colors">Daftar Alumni</Link></li>
+            {/* ALUMNI_HIDDEN: <li><Link to="/alumni/daftar" className="hover:text-inverse-primary transition-colors">Daftar Alumni</Link></li> */}
             <li><Link to="/login" className="hover:text-inverse-primary transition-colors">Login Portal</Link></li>
           </ul>
         </div>

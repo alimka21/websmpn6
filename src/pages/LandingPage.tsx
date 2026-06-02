@@ -206,7 +206,7 @@ export default function LandingPage() {
             </button>
             <button onClick={() => scrollTo('fitur')} className="hover:text-primary transition-colors">Fitur</button>
             <button onClick={() => scrollTo('berita')} className="hover:text-primary transition-colors">Berita</button>
-            <button onClick={() => scrollTo('alumni')} className="hover:text-primary transition-colors">Alumni</button>
+            {/* ALUMNI_HIDDEN: <button onClick={() => scrollTo('alumni')} className="hover:text-primary transition-colors">Alumni</button> */}
             <button onClick={() => scrollTo('kontak')} className="hover:text-primary transition-colors">Kontak</button>
           </div>
 
@@ -416,8 +416,7 @@ export default function LandingPage() {
             {[
               { icon: Users,         label: cfg.statSiswaLabel  || 'Siswa Aktif',     value: isLoadingStats ? '—' : (totalSiswa !== null && totalSiswa > 0 ? `${totalSiswa}+` : (cfg.statSiswaValue || '—')) },
               { icon: GraduationCap, label: cfg.statGuruLabel   || 'Tenaga Pendidik', value: cfg.statGuruValue  || '—' },
-              // Alumni AUTO dari API — real-time count dari DB
-              { icon: BookOpen,      label: cfg.statAlumniLabel || 'Alumni Terdata',  value: isLoadingAlumni ? '—' : (totalAlumni > 0 ? `${totalAlumni}+` : '—') },
+              // ALUMNI_HIDDEN: { icon: BookOpen, label: cfg.statAlumniLabel || 'Alumni Terdata', value: isLoadingAlumni ? '—' : (totalAlumni > 0 ? `${totalAlumni}+` : '—') },
               { icon: Briefcase,     label: cfg.statTahunLabel  || 'Berdiri Sejak',   value: cfg.statTahunValue || '—' },
             ].map(({ icon: Icon, label, value }, i) => (
               <div key={i} className="space-y-2">
@@ -538,64 +537,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═════════════════ 6. TRACER ALUMNI TEASER ═════════════════ */}
-      <section id="alumni" className="relative bg-surface-container-low px-4 sm:px-6 py-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <svg className="w-full h-full fill-primary" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.5" />
-            <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" strokeWidth="0.5" />
-            <path d="M0,50 L100,50 M50,0 L50,100" stroke="currentColor" strokeWidth="0.2" />
-          </svg>
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-5">
-              <p className="text-label-sm text-primary uppercase tracking-wider font-bold">Tracer Alumni</p>
-              <h2 className="text-headline-lg leading-tight text-on-surface">
-                Lulusan Kami Tersebar Di Mana-mana
-              </h2>
-              <p className="text-on-surface-variant leading-relaxed text-lg">
-                Pantau jejak karir & pendidikan ribuan alumni. Sudah lulus? Daftar mandiri dan jadi bagian dari komunitas.
-              </p>
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  onClick={() => navigate('/alumni/daftar')}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary text-on-primary px-6 py-3 font-bold uppercase tracking-wider text-label-md hover:bg-primary/90 active:translate-y-px transition-all shadow-sm"
-                >
-                  Daftar Alumni
-                </button>
-                <button
-                  onClick={() => scrollTo('statistik')}
-                  className="inline-flex items-center gap-2 rounded-full border border-primary text-primary px-6 py-3 font-bold uppercase tracking-wider text-label-md hover:bg-primary/5 transition-all"
-                >
-                  Lihat Statistik
-                </button>
-              </div>
-            </div>
-
-            {/* Stack vertikal — number kiri, icon kanan */}
-            <div className="space-y-4">
-              {[
-                { Icon: BookOpen,      label: 'Bekerja',    value: alumniBekerja },
-                { Icon: GraduationCap, label: 'Kuliah',     value: alumniKuliah },
-                { Icon: Briefcase,     label: 'Wirausaha',  value: alumniWirausaha },
-              ].map(({ Icon, label, value }, i) => (
-                <div
-                  key={i}
-                  className="group bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 flex justify-between items-center hover:border-primary transition-all shadow-sm"
-                >
-                  <div>
-                    {/* "—" saat loading supaya tidak shift dari "0" ke number real */}
-                    <h4 className="text-3xl sm:text-4xl font-bold text-primary tabular-nums">{isLoadingAlumni ? '—' : value}</h4>
-                    <p className="text-label-md text-on-surface-variant uppercase tracking-wider font-bold mt-1">{label}</p>
-                  </div>
-                  <Icon className="w-10 h-10 text-primary/20 group-hover:text-primary transition-colors" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ALUMNI_HIDDEN: section Tracer Alumni — aktifkan kembali saat diperlukan */}
 
       {/* ═════════════════ 7. FOOTER (komponen reusable) ═════════════════ */}
       <SiteFooter />

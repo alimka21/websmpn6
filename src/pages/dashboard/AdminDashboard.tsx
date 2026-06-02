@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard icon={Users}         label="Total Siswa Aktif" value={stats?.totalSiswa || 0}      accent="primary"   />
         <StatCard icon={GraduationCap} label="Total Guru"        value={stats?.totalGuru || 0}       accent="primary"   />
-        <StatCard icon={Users}         label="Total Alumni"      value={stats?.totalAlumni || 0}     accent="secondary" />
+        {/* ALUMNI_HIDDEN: <StatCard icon={Users} label="Total Alumni" value={stats?.totalAlumni || 0} accent="secondary" /> */}
         <StatCard icon={FileText}      label="Bank Ujian"        value={stats?.totalUjian || 0}      accent="primary"   />
         <StatCard icon={Newspaper}     label="Artikel Berita"    value={stats?.totalBerita || 0}     accent="tertiary"  />
         <StatCard icon={CalendarCheck} label="Presensi Hari Ini" value={stats?.presensiHariIni || 0} accent="secondary" />
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
         <p className="text-sm text-on-surface-variant mb-5">Akses cepat ke modul administrasi sistem.</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickLinkCard icon={Users}          title="Kelola Pengguna"   desc="Atur akun Siswa, Guru, dan Admin"      href="/dashboard/admin/users" />
-          <QuickLinkCard icon={GraduationCap}  title="Tracer Alumni"     desc="Data alumni dan pekerjaannya"          href="/dashboard/admin/alumni" />
+          {/* ALUMNI_HIDDEN: <QuickLinkCard icon={GraduationCap} title="Tracer Alumni" desc="Data alumni dan pekerjaannya" href="/dashboard/admin/alumni" /> */}
           <QuickLinkCard icon={Newspaper}      title="Portal Berita"     desc="Tulis pengumuman dan berita"           href="/dashboard/admin/cms" />
           <QuickLinkCard icon={Settings}       title="Pengaturan Situs"  desc="Konfigurasi nama, logo, kontak, dll"   href="/dashboard/admin/site" />
         </div>
