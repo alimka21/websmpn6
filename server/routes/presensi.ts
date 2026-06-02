@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import prisma from '../lib/prisma';
+import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
 
 const router = Router();
@@ -104,7 +104,7 @@ router.get('/guru-list', async (req, res, next) => {
     });
 
     res.json(
-      list.map(g => ({
+      list.map((g: any) => ({
         id: g.id,
         nama: g.nama,
         nip: g.nip,
@@ -235,7 +235,7 @@ router.get('/guru/dashboard', async (req, res, next) => {
     const limit = 15;
     const skip  = (page - 1) * limit;
 
-    let where: Parameters<typeof prisma.presensiGuru.findMany>[0]['where'] = {};
+    let where: any = {};
 
     if (req.query.tanggal) {
       const d = new Date(String(req.query.tanggal));
@@ -260,7 +260,7 @@ router.get('/guru/dashboard', async (req, res, next) => {
       prisma.presensiGuru.count({ where }),
     ]);
 
-    const data = rows.map((p, i) => ({
+    const data = rows.map((p: any, i: number) => ({
       no:           skip + i + 1,
       id:           p.id,
       nama:         p.guru.nama,
