@@ -377,4 +377,108 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
   } catch (err) { next(err); }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN ENDPOINTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 8. GET /api/presensi/siswa/dashboard — SUPER_ADMIN
+// Query: page, tanggal | bulan + tahun, search (nama/nis)
+
+router.get('/siswa/dashboard', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
+  try {
+    const page   = Math.max(1, Number(req.query.page) || 1);
+    const limit  = 15;
+    const skip   = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+
+    let tanggalWhere: any = {};
+    if (req.query.tanggal) {
+      const d = new Date(String(req.query.tanggal));
+      d.setHours(0, 0, 0, 0);
+      tanggalWhere = { tanggal: d };
+    } else if (req.query.bulan && req.query.tahun) {
+      const start = new Date(Number(req.query.tahun), Number(req.query.bulan) - 1, 1);
+      const end   = new Date(Number(req.query.tahun), Number(req.query.bulan), 1);
+      tanggalWhere = { tanggal: { gte: start, lt: end } };
+    } else {
+      tanggalWhere = { tanggal: tanggalHariIni() };
+    }
+
+    const siswaWhere = search
+      ? { OR: [{ nama: { contains: search } }, { nis: { contains: search } }] }
+      : undefined;
+
+    const where: any = {
+      ...tanggalWhere,
+      ...(siswaWhere ? { siswa: siswaWhere } : {}),
+    };
+
+    const [rows, total] = await Promise.all([
+      prisma.presensiSiswa.findMany({
+        where,
+        include: {
+          siswa: { select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } } },
+        },
+        orderBy: [{ tanggal: 'desc' }, { waktuDatang: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      prisma.presensiSiswa.count({ where }),
+    ]);
+
+    const data = rows.map((p: any, i: number) => ({
+      no:          skip + i + 1,
+      id:          p.id,
+      nis:         p.siswa.nis,
+      nama:        p.siswa.nama,
+      kelas:       p.siswa.kelas?.nama ?? '-',
+      tanggal:     p.tanggal,
+      waktuDatang: p.waktuDatang,
+    }));
+
+    res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (err) { next(err); }
+});
+
+// 9. PATCH /api/presensi/guru/:id — SUPER_ADMIN (koreksi manual)
+// Body: { waktuDatang?, waktuPulang? }
+
+router.patch('/guru/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
+  try {
+    const { waktuDatang, waktuPulang } = req.body;
+
+    const existing = await prisma.presensiGuru.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: 'Data presensi tidak ditemukan' });
+
+    const data: any = { autoCheckout: false };
+    if (waktuDatang !== undefined) data.waktuDatang = waktuDatang ? new Date(waktuDatang) : null;
+    if (waktuPulang !== undefined) data.waktuPulang = waktuPulang ? new Date(waktuPulang) : null;
+
+    const updated = await prisma.presensiGuru.update({
+      where: { id: req.params.id },
+      data,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err) { next(err); }
+});
+
+// 10. DELETE /api/presensi/guru/:id — SUPER_ADMIN
+
+router.delete('/guru/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
+  try {
+    await prisma.presensiGuru.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// 11. DELETE /api/presensi/siswa/:id — SUPER_ADMIN
+
+router.delete('/siswa/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
+  try {
+    await prisma.presensiSiswa.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 export default router;

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   LogOut, Menu, X, LayoutDashboard, Users, FileText, Settings,
   GraduationCap, ClipboardList, PenTool, BarChart3, Newspaper,
-  ExternalLink,
+  ExternalLink, CalendarCheck,
 } from 'lucide-react';
 import { useAuthStore, Role } from '../../store/authStore';
 import { Button } from '../ui/button';
@@ -19,9 +19,10 @@ const navConfig: Record<Role, NavItem[]> = {
     { label: 'Dashboard',        href: '/dashboard/admin',       icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'Pengguna',         href: '/dashboard/admin/users', icon: <Users className="w-5 h-5" /> },
     { label: 'Ujian',            href: '/dashboard/admin/ujian', icon: <FileText className="w-5 h-5" /> },
-    { label: 'Berita / CMS',     href: '/dashboard/admin/cms',   icon: <Newspaper className="w-5 h-5" /> },
-    { label: 'Pengaturan Situs', href: '/dashboard/admin/site',  icon: <Settings className="w-5 h-5" /> },
-    { label: 'Statistik',        href: '/dashboard/admin/stats', icon: <BarChart3 className="w-5 h-5" /> },
+    { label: 'Presensi',         href: '/dashboard/admin/presensi', icon: <CalendarCheck className="w-5 h-5" /> },
+    { label: 'Berita / CMS',     href: '/dashboard/admin/cms',      icon: <Newspaper className="w-5 h-5" /> },
+    { label: 'Pengaturan Situs', href: '/dashboard/admin/site',     icon: <Settings className="w-5 h-5" /> },
+    { label: 'Statistik',        href: '/dashboard/admin/stats',    icon: <BarChart3 className="w-5 h-5" /> },
   ],
   GURU: [
     { label: 'Dashboard',     href: '/dashboard/guru',            icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -41,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/admin':           'Dashboard Admin',
   '/dashboard/admin/users':     'Manajemen Pengguna',
   '/dashboard/admin/ujian':     'Kelola Ujian',
+  '/dashboard/admin/presensi':  'Manajemen Presensi',
   '/dashboard/admin/cms':       'Berita / CMS',
   '/dashboard/admin/site':      'Pengaturan Situs',
   '/dashboard/admin/stats':     'Statistik',

@@ -24,6 +24,7 @@ const CmsManage = lazy(() => import('./pages/dashboard/CmsManage'));
 const ManageUsers = lazy(() => import('./pages/dashboard/ManageUsers'));
 const SiteSettings = lazy(() => import('./pages/dashboard/SiteSettings'));
 const StatsAdmin = lazy(() => import('./pages/dashboard/StatsAdmin'));
+const PresensiAdmin = lazy(() => import('./pages/dashboard/PresensiAdmin'));
 
 // Guru
 const GuruDashboard = lazy(() => import('./pages/dashboard/guru/GuruDashboard'));
@@ -127,6 +128,11 @@ export default function App() {
                 </ProtectedRoute>
               } />
               */}
+              <Route path="presensi" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <PresensiAdmin />
+                </ProtectedRoute>
+              } />
               <Route path="cms" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <CmsManage />
