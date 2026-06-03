@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users, GraduationCap, FileText, Newspaper, Shield,
-  Settings, ArrowRight, RefreshCw, Download, Activity,
+  Settings, ArrowRight, RefreshCw, Activity, History,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import api from '../../lib/api';
+import { toast } from 'sonner';
 import { ErrorState } from '../../components/ui/ErrorState';
 
 type Accent = 'primary' | 'secondary' | 'tertiary' | 'error';
@@ -134,18 +134,11 @@ export default function AdminDashboard() {
           </p>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => navigate('/dashboard/admin/stats')}
+              onClick={() => navigate('/dashboard/admin/activity')}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 border border-white/40 text-white font-semibold rounded-xl transition-colors text-sm"
             >
               <Activity className="w-4 h-4" />
               Lihat Aktivitas Terbaru
-            </button>
-            <button
-              onClick={() => toast.info('Fitur unduh laporan segera hadir')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold rounded-xl transition-colors text-sm"
-            >
-              <Download className="w-4 h-4" />
-              Unduh Laporan Hari Ini
             </button>
           </div>
         </div>
@@ -210,12 +203,19 @@ export default function AdminDashboard() {
           <h2 className="text-lg font-bold text-on-surface">Panel Manajemen Cepat</h2>
         </div>
         <p className="text-sm text-on-surface-variant mb-5">Akses cepat ke modul administrasi sistem.</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickLinkCard
             icon={Users}
             title="Kelola Pengguna"
             desc="Atur akun Siswa, Guru, dan Admin"
             href="/dashboard/admin/users"
+            accent="primary"
+          />
+          <QuickLinkCard
+            icon={History}
+            title="Log Aktivitas"
+            desc="Pantau aktivitas terbaru guru dan siswa"
+            href="/dashboard/admin/activity"
             accent="primary"
           />
           <QuickLinkCard

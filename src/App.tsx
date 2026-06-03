@@ -24,7 +24,8 @@ const AdminUjianList = lazy(() => import('./pages/dashboard/AdminUjianList'));
 const CmsManage = lazy(() => import('./pages/dashboard/CmsManage'));
 const ManageUsers = lazy(() => import('./pages/dashboard/ManageUsers'));
 const SiteSettings = lazy(() => import('./pages/dashboard/SiteSettings'));
-const StatsAdmin = lazy(() => import('./pages/dashboard/StatsAdmin'));
+const StatsAdmin    = lazy(() => import('./pages/dashboard/StatsAdmin'));
+const ActivityLog   = lazy(() => import('./pages/dashboard/ActivityLog'));
 const PresensiAdmin = lazy(() => import('./pages/dashboard/PresensiAdmin'));
 const DokumenAgendaAdmin = lazy(() => import('./pages/dashboard/DokumenAgendaAdmin'));
 const DokumenPublik = lazy(() => import('./pages/DokumenPublik'));
@@ -156,6 +157,11 @@ export default function App() {
               <Route path="stats" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <StatsAdmin />
+                </ProtectedRoute>
+              } />
+              <Route path="activity" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <ActivityLog />
                 </ProtectedRoute>
               } />
             </Route>

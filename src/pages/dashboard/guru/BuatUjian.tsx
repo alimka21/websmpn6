@@ -7,7 +7,7 @@ import { Select } from '../../../components/ui/select';
 import {
   ArrowLeft, CheckCircle2, Save, AlertTriangle, X,
   Info, Clock, SlidersHorizontal, Shuffle, List,
-  BarChart3, BookOpen, Plus,
+  BarChart3,
 } from 'lucide-react';
 import api from '../../../lib/api';
 import { useModalA11y } from '../../../hooks/useModalA11y';
@@ -161,8 +161,20 @@ export default function BuatUjian() {
     }
   };
 
-  const selectedKelasData = kelasList.filter(k => selectedKelas.includes(k.id));
-  const unselectedKelasData = kelasList.filter(k => !selectedKelas.includes(k.id));
+  // Urutan jenjang: X → XI → XII, lalu alfabet nama
+  const JENJANG_ORDER: Record<string, number> = { 'X': 1, 'XI': 2, 'XII': 3, '10': 1, '11': 2, '12': 3, '1': 1, '2': 2, '3': 3 };
+  const sortedKelas = [...kelasList].sort((a, b) => {
+    const ja = JENJANG_ORDER[a.tingkat] ?? 99;
+    const jb = JENJANG_ORDER[b.tingkat] ?? 99;
+    if (ja !== jb) return ja - jb;
+    return a.nama.localeCompare(b.nama, 'id');
+  });
+  const kelasGroupedByTingkat = sortedKelas.reduce<Record<string, any[]>>((acc, k) => {
+    const key = k.tingkat ?? 'Lainnya';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(k);
+    return acc;
+  }, {});
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
@@ -262,36 +274,20 @@ export default function BuatUjian() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-on-surface">Tipe Ujian <span className="text-error">*</span></Label>
-                <div className="flex flex-wrap gap-2">
+                <Label htmlFor="tipeUjian" className="text-on-surface">Tipe Ujian <span className="text-error">*</span></Label>
+                <Select
+                  id="tipeUjian"
+                  value={tipeUjian}
+                  onChange={e => setTipeUjian(e.target.value)}
+                  className={errors.tipeUjian ? 'border-error' : ''}
+                >
                   {PRESET_TIPE.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setTipeUjian(type)}
-                      className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
-                        tipeUjian === type
-                          ? 'border-primary bg-primary-fixed text-primary font-bold'
-                          : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
-                      }`}
-                    >
-                      {type.replace('_', ' ')}
-                    </button>
+                    <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => setTipeUjian('__LAINNYA__')}
-                    className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
-                      tipeUjian === '__LAINNYA__'
-                        ? 'border-primary bg-primary-fixed text-primary font-bold'
-                        : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
-                    }`}
-                  >
-                    Lainnya
-                  </button>
-                </div>
+                  <option value="__LAINNYA__">Lainnya (Kustom)</option>
+                </Select>
                 {tipeUjian === '__LAINNYA__' && (
-                  <div className="space-y-1.5 pt-2">
+                  <div className="space-y-1.5 pt-1">
                     <Input
                       placeholder="Contoh: REMEDIAL, TRYOUT, dst"
                       value={tipeKustom}
@@ -361,47 +357,74 @@ export default function BuatUjian() {
           <SectionHeader icon={SlidersHorizontal} title="Peserta & Opsi Lanjutan" />
           <div className="space-y-6">
 
-            {/* Kelas Peserta */}
+            {/* Kelas Peserta — checkbox list dikelompok per jenjang */}
             <div className="space-y-2">
-              <Label className="text-on-surface">
-                Pilih Kelas Peserta <span className="text-error">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-on-surface">
+                  Pilih Kelas Peserta <span className="text-error">*</span>
+                </Label>
+                {selectedKelas.length > 0 && (
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    {selectedKelas.length} dipilih
+                  </span>
+                )}
+              </div>
               {kelasList.length === 0 ? (
                 <div className="p-4 border border-dashed border-outline-variant rounded-xl text-center text-sm text-on-surface-variant">
                   Anda belum memiliki kelas. Silakan buat kelas terlebih dahulu.
                 </div>
               ) : (
-                <div className={`min-h-[56px] p-3 border rounded-xl bg-surface-container-low flex flex-wrap gap-2 items-center ${
-                  errors.kelasIds ? 'border-error' : 'border-outline-variant'
-                }`}>
-                  {/* Selected kelas — blue pills with × */}
-                  {selectedKelasData.map(k => (
-                    <span
-                      key={k.id}
-                      className="inline-flex items-center gap-1.5 bg-primary text-on-primary px-3 py-1.5 rounded-full text-sm font-medium"
-                    >
-                      {k.nama}
-                      <button
-                        type="button"
-                        onClick={() => toggleKelas(k.id)}
-                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
-                        aria-label={`Hapus ${k.nama}`}
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ))}
-                  {/* Unselected kelas — dashed add buttons */}
-                  {unselectedKelasData.map(k => (
-                    <button
-                      key={k.id}
-                      type="button"
-                      onClick={() => toggleKelas(k.id)}
-                      className="inline-flex items-center gap-1 border border-dashed border-primary text-primary px-3 py-1.5 rounded-full text-sm hover:bg-primary/5 transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {k.nama}
-                    </button>
+                <div className={`border rounded-xl overflow-hidden ${errors.kelasIds ? 'border-error' : 'border-outline-variant'}`}>
+                  {Object.entries(kelasGroupedByTingkat).map(([tingkat, items], gi) => (
+                    <div key={tingkat}>
+                      {/* Tingkat header */}
+                      <div className="px-4 py-2 bg-surface-container-low border-b border-outline-variant/40 flex items-center justify-between">
+                        <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                          Kelas {tingkat}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allIds = items.map((k: any) => k.id);
+                            const allSelected = allIds.every((id: string) => selectedKelas.includes(id));
+                            if (allSelected) setSelectedKelas(prev => prev.filter(id => !allIds.includes(id)));
+                            else setSelectedKelas(prev => [...new Set([...prev, ...allIds])]);
+                          }}
+                          className="text-xs text-primary hover:underline font-medium"
+                        >
+                          {items.every((k: any) => selectedKelas.includes(k.id)) ? 'Batalkan semua' : 'Pilih semua'}
+                        </button>
+                      </div>
+                      {/* Kelas items */}
+                      {items.map((kelas: any, ki: number) => {
+                        const isSelected = selectedKelas.includes(kelas.id);
+                        const isLast = ki === items.length - 1 && gi === Object.keys(kelasGroupedByTingkat).length - 1;
+                        return (
+                          <label
+                            key={kelas.id}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                              isLast ? '' : 'border-b border-outline-variant/30'
+                            } ${isSelected ? 'bg-primary/5' : 'hover:bg-surface-container-low'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleKelas(kelas.id)}
+                              className="w-4 h-4 accent-primary rounded cursor-pointer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
+                                {kelas.nama}
+                              </span>
+                            </div>
+                            <span className="text-xs text-on-surface-variant shrink-0">
+                              {kelas._count?.siswa ?? 0} siswa
+                            </span>
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
+                          </label>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
               )}

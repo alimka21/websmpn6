@@ -269,7 +269,7 @@ export default function DokumenAgendaAdmin() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-1 flex">
                           <button onClick={() => toggleDok(d)}
                             className={`p-2 rounded-lg transition-colors ${d.isActive ? 'text-on-surface-variant hover:bg-surface-container' : 'text-primary hover:bg-primary/10'}`}
                             title={d.isActive ? 'Sembunyikan' : 'Aktifkan'}>
@@ -336,7 +336,7 @@ export default function DokumenAgendaAdmin() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-1 flex">
                           <button onClick={() => toggleAgd(a)}
                             className={`p-2 rounded-lg transition-colors ${a.isActive ? 'text-on-surface-variant hover:bg-surface-container' : 'text-primary hover:bg-primary/10'}`}
                             title={a.isActive ? 'Sembunyikan' : 'Aktifkan'}>

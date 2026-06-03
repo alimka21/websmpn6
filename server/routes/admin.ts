@@ -1080,4 +1080,99 @@ router.patch('/site-config', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// ── Activity Log ─────────────────────────────────────────────────────────────
+// Menggabungkan aktivitas guru (buat ujian, input presensi) dan
+// siswa (selesaikan ujian) dari beberapa tabel, diurutkan terbaru.
+router.get('/activity', async (req, res, next) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 30, 100);
+
+    const [sesiSelesai, ujianBaru, presensiGuru] = await Promise.all([
+      // Siswa menyelesaikan ujian
+      prisma.sesiUjian.findMany({
+        where: { status: { in: ['SELESAI', 'AUTO_SUBMIT'] }, selesaiAt: { not: null } },
+        orderBy: { selesaiAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          selesaiAt: true,
+          status: true,
+          nilaiAkhir: true,
+          siswa: { select: { nama: true, nis: true } },
+          ujian: { select: { judul: true, mataPelajaran: true } },
+        },
+      }),
+      // Guru membuat ujian
+      prisma.ujian.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          judul: true,
+          mataPelajaran: true,
+          createdAt: true,
+          guru: { select: { nama: true } },
+        },
+      }),
+      // Guru menginput presensi
+      prisma.presensiGuru.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          createdAt: true,
+          status: true,
+          guru: { select: { nama: true } },
+          kelas: { select: { nama: true } },
+        },
+      }),
+    ]);
+
+    type ActivityItem = {
+      id: string;
+      type: 'ujian_selesai' | 'ujian_baru' | 'presensi_guru';
+      timestamp: string;
+      actor: string;
+      actorRole: 'siswa' | 'guru';
+      description: string;
+      meta?: string;
+    };
+
+    const items: ActivityItem[] = [
+      ...sesiSelesai.map(s => ({
+        id: `sesi-${s.id}`,
+        type: 'ujian_selesai' as const,
+        timestamp: s.selesaiAt!.toISOString(),
+        actor: s.siswa?.nama ?? '—',
+        actorRole: 'siswa' as const,
+        description: `Menyelesaikan ujian "${s.ujian?.judul ?? '—'}"`,
+        meta: s.nilaiAkhir !== null ? `Nilai: ${Math.round(s.nilaiAkhir * 100) / 100}` : (s.status === 'AUTO_SUBMIT' ? 'Auto-submit' : undefined),
+      })),
+      ...ujianBaru.map(u => ({
+        id: `ujian-${u.id}`,
+        type: 'ujian_baru' as const,
+        timestamp: u.createdAt.toISOString(),
+        actor: u.guru?.nama ?? '—',
+        actorRole: 'guru' as const,
+        description: `Membuat ujian baru: "${u.judul}"`,
+        meta: u.mataPelajaran ?? undefined,
+      })),
+      ...presensiGuru.map(p => ({
+        id: `presensi-${p.id}`,
+        type: 'presensi_guru' as const,
+        timestamp: p.createdAt.toISOString(),
+        actor: p.guru?.nama ?? '—',
+        actorRole: 'guru' as const,
+        description: `Menginput presensi kelas ${p.kelas?.nama ?? '—'}`,
+        meta: p.status,
+      })),
+    ];
+
+    // Sort gabungan descending, ambil limit teratas
+    items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    res.json(items.slice(0, limit));
+  } catch (error) { next(error); }
+});
+
 export default router;
