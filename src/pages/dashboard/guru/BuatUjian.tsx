@@ -59,7 +59,7 @@ export default function BuatUjian() {
     const fetchKelas = async () => {
       try {
         const res = await api.get('/api/guru/kelas');
-        setKelasList(res);
+        setKelasList(Array.isArray(res) ? res : res?.data ?? []);
       } catch (err: any) {
         toast.error(err?.message || 'Gagal memuat daftar kelas');
       }
