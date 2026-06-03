@@ -5,6 +5,7 @@ import {
   Eye, Target, CheckCircle, CalendarCheck, ShieldCheck,
   FileText, ClipboardList, MapPin, Clock, ExternalLink, Newspaper,
   Briefcase, Menu, X, Quote, Calendar, Compass, Lightbulb,
+  Home, Layers, Phone,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import SiteFooter from '../components/SiteFooter';
@@ -53,10 +54,29 @@ export default function LandingPage() {
   const [isLoadingBerita, setIsLoadingBerita] = useState(true);
   const [dokumenList, setDokumenList]   = useState<DokumenItem[]>([]);
   const [agendaList, setAgendaList]     = useState<AgendaItem[]>([]);
-  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
+  const [activeSection, setActiveSection] = useState('beranda');
+  const [scrolled, setScrolled]           = useState(false);
   const navigate = useNavigate();
   const cfg       = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
+
+  // Scroll tracking — active section + navbar shadow
+  useEffect(() => {
+    const SECTIONS = ['kontak', 'berita', 'fitur', 'profil', 'beranda'];
+    const onScroll = () => {
+      setScrolled(window.scrollY > 20);
+      for (const id of SECTIONS) {
+        const el = document.getElementById(id);
+        if (el && window.scrollY >= el.offsetTop - 120) {
+          setActiveSection(id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     api.get('/api/berita?limit=3')
@@ -90,7 +110,7 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════
           NAVBAR
       ══════════════════════════════════════════════════ */}
-      <header className="fixed top-0 w-full z-50 border-b border-outline-variant/30 glass-header">
+      <header className={`fixed top-0 w-full z-50 border-b border-outline-variant/30 glass-header transition-shadow duration-300 ${scrolled ? 'shadow-md shadow-black/5' : ''}`}>
         <div className="flex justify-between items-center w-full px-4 md:px-20 py-4 max-w-screen-2xl mx-auto">
           {/* Brand */}
           <div className="flex items-center gap-2.5">
@@ -112,7 +132,11 @@ export default function LandingPage() {
               <button
                 key={n.id}
                 onClick={() => scrollTo(n.id)}
-                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
+                className={`text-sm font-semibold transition-colors relative pb-1 ${
+                  activeSection === n.id
+                    ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:rounded-full'
+                    : 'text-on-surface-variant hover:text-primary'
+                }`}
               >
                 {n.label}
               </button>
@@ -137,20 +161,27 @@ export default function LandingPage() {
         {mobileOpen && (
           <div className="md:hidden bg-surface border-t border-outline-variant/30 px-4 py-4 space-y-1">
             {[
-              { label: 'Beranda', id: 'beranda' },
-              { label: 'Profil',  id: 'profil',  skip: !showProfil },
-              { label: 'Fitur',   id: 'fitur' },
-              { label: 'Berita',  id: 'berita' },
-              { label: 'Kontak',  id: 'kontak' },
-            ].filter(n => !n.skip).map(n => (
-              <button
-                key={n.id}
-                onClick={() => { scrollTo(n.id); setMobileOpen(false); }}
-                className="block w-full text-left text-sm font-semibold text-on-surface-variant hover:text-primary py-2.5 capitalize"
-              >
-                {n.label}
-              </button>
-            ))}
+              { label: 'Beranda', id: 'beranda',  icon: Home },
+              { label: 'Profil',  id: 'profil',   icon: Users,    skip: !showProfil },
+              { label: 'Fitur',   id: 'fitur',    icon: Layers },
+              { label: 'Berita',  id: 'berita',   icon: Newspaper },
+              { label: 'Kontak',  id: 'kontak',   icon: Phone },
+            ].filter(n => !n.skip).map(n => {
+              const NavIcon = n.icon;
+              const isActive = activeSection === n.id;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => { scrollTo(n.id); setMobileOpen(false); }}
+                  className={`flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors ${
+                    isActive ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
+                  }`}
+                >
+                  <NavIcon className="w-4 h-4 shrink-0" />
+                  {n.label}
+                </button>
+              );
+            })}
             <Button onClick={() => navigate('/login')} className="w-full mt-3 gap-2">
               <LogIn className="w-4 h-4" /> Login Portal
             </Button>
