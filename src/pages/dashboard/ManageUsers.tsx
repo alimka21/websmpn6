@@ -532,15 +532,23 @@ export default function ManageUsers() {
         <p className="text-on-surface-variant mt-1">Kelola data siswa, guru, dan kelas sekolah.</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-outline-variant">
+      {/* Tabs — pill style (referensi: PresensiAdmin) */}
+      <div className="flex p-1.5 bg-surface-container rounded-2xl w-fit">
         {tabs.map(({ id, label, Icon, count }) => (
-          <button key={id} onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === id ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === id
+                ? 'bg-surface-container-lowest text-primary shadow-sm'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
           >
             <Icon className="w-4 h-4" />
             {label}
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeTab === id ? 'bg-primary-container/30 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>{count}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+              activeTab === id ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'
+            }`}>{count}</span>
           </button>
         ))}
       </div>
@@ -548,32 +556,26 @@ export default function ManageUsers() {
       {/* ════ TAB SISWA ════ */}
       {activeTab === 'SISWA' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-3">
-            <div className="flex flex-1 gap-3 min-w-0">
-              <div className="relative flex-1 max-w-sm">
+          {/* Filter bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline-variant" />
-                <Input value={siswaSearch} onChange={e => setSiswaSearch(e.target.value)} placeholder="Cari nama atau NIS..." className="pl-9" />
+                <Input value={siswaSearch} onChange={e => setSiswaSearch(e.target.value)} placeholder="Cari nama atau NIS..." className="pl-9 w-56" />
               </div>
-              <Select value={siswaFilterKelas} onChange={e => setSiswaFilterKelas(e.target.value)} className="w-52 shrink-0">
+              <Select value={siswaFilterKelas} onChange={e => setSiswaFilterKelas(e.target.value)} className="w-44 shrink-0">
                 <option value="ALL">Semua Kelas</option>
                 {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
               </Select>
             </div>
-            <div className="flex gap-2 shrink-0 flex-wrap">
-              <Button
-                onClick={() => handleDownloadTemplate('siswa')}
-                variant="outline"
-                className="gap-2"
-                disabled={importing !== null}
-              >
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm text-on-surface-variant hidden sm:inline">
+                {isLoadingSiswa ? 'Memuat...' : `${filteredSiswa.length} data ditemukan`}
+              </span>
+              <Button onClick={() => handleDownloadTemplate('siswa')} variant="outline" className="gap-2" disabled={importing !== null}>
                 <Download className="w-4 h-4" /> Template
               </Button>
-              <Button
-                onClick={() => handleImportClick('siswa')}
-                variant="outline"
-                className="gap-2 border-secondary text-on-secondary-container hover:bg-secondary-container/30"
-                disabled={importing !== null}
-              >
+              <Button onClick={() => handleImportClick('siswa')} variant="outline" className="gap-2 border-secondary text-on-secondary-container hover:bg-secondary-container/30" disabled={importing !== null}>
                 {importing === 'siswa' ? <Spinner /> : <Upload className="w-4 h-4" />}
                 {importing === 'siswa' ? 'Memproses...' : 'Import'}
               </Button>
@@ -599,9 +601,15 @@ export default function ManageUsers() {
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingSiswa ? (
-                <div className="py-12 text-center text-on-surface-variant">Memuat data siswa...</div>
+                <div className="py-16 flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm text-on-surface-variant">Memuat data siswa...</p>
+                </div>
               ) : filteredSiswa.length === 0 ? (
-                <div className="py-12 text-center text-on-surface-variant">Tidak ada siswa ditemukan.</div>
+                <div className="py-16 text-center space-y-2">
+                  <Users className="w-10 h-10 text-outline mx-auto" />
+                  <p className="text-on-surface-variant">Tidak ada siswa ditemukan.</p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
@@ -671,26 +679,20 @@ export default function ManageUsers() {
       {/* ════ TAB GURU ════ */}
       {activeTab === 'GURU' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-3">
-            <div className="relative flex-1 max-w-sm">
+          {/* Filter bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline-variant" />
-              <Input value={guruSearch} onChange={e => setGuruSearch(e.target.value)} placeholder="Cari nama atau email..." className="pl-9" />
+              <Input value={guruSearch} onChange={e => setGuruSearch(e.target.value)} placeholder="Cari nama atau email..." className="pl-9 w-64" />
             </div>
-            <div className="flex gap-2 shrink-0 flex-wrap">
-              <Button
-                onClick={() => handleDownloadTemplate('guru')}
-                variant="outline"
-                className="gap-2"
-                disabled={importing !== null}
-              >
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm text-on-surface-variant hidden sm:inline">
+                {isLoadingGuru ? 'Memuat...' : `${filteredGuru.length} data ditemukan`}
+              </span>
+              <Button onClick={() => handleDownloadTemplate('guru')} variant="outline" className="gap-2" disabled={importing !== null}>
                 <Download className="w-4 h-4" /> Template
               </Button>
-              <Button
-                onClick={() => handleImportClick('guru')}
-                variant="outline"
-                className="gap-2 border-secondary text-on-secondary-container hover:bg-secondary-container/30"
-                disabled={importing !== null}
-              >
+              <Button onClick={() => handleImportClick('guru')} variant="outline" className="gap-2 border-secondary text-on-secondary-container hover:bg-secondary-container/30" disabled={importing !== null}>
                 {importing === 'guru' ? <Spinner /> : <Upload className="w-4 h-4" />}
                 {importing === 'guru' ? 'Memproses...' : 'Import'}
               </Button>
@@ -702,9 +704,15 @@ export default function ManageUsers() {
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingGuru ? (
-                <div className="py-12 text-center text-on-surface-variant">Memuat data guru...</div>
+                <div className="py-16 flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm text-on-surface-variant">Memuat data guru...</p>
+                </div>
               ) : filteredGuru.length === 0 ? (
-                <div className="py-12 text-center text-on-surface-variant">Tidak ada guru ditemukan.</div>
+                <div className="py-16 text-center space-y-2">
+                  <GraduationCap className="w-10 h-10 text-outline mx-auto" />
+                  <p className="text-on-surface-variant">Tidak ada guru ditemukan.</p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
@@ -762,26 +770,38 @@ export default function ManageUsers() {
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row justify-between gap-3">
-            <div className="relative flex-1 max-w-sm">
+          {/* Filter bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline-variant" />
-              <Input value={kelasSearch} onChange={e => setKelasSearch(e.target.value)} placeholder="Cari nama kelas..." className="pl-9" />
+              <Input value={kelasSearch} onChange={e => setKelasSearch(e.target.value)} placeholder="Cari nama kelas..." className="pl-9 w-64" />
             </div>
-            <Button
-              onClick={() => openKelasModal()}
-              disabled={guruList.length === 0}
-              title={guruList.length === 0 ? 'Tambahkan guru terlebih dahulu sebelum membuat kelas' : undefined}
-              className="gap-2 bg-primary hover:bg-primary/90 shrink-0"
-            >
-              <Plus className="w-4 h-4" /> Tambah Kelas
-            </Button>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm text-on-surface-variant hidden sm:inline">
+                {isLoadingKelas ? 'Memuat...' : `${filteredKelas.length} data ditemukan`}
+              </span>
+              <Button
+                onClick={() => openKelasModal()}
+                disabled={guruList.length === 0}
+                title={guruList.length === 0 ? 'Tambahkan guru terlebih dahulu sebelum membuat kelas' : undefined}
+                className="gap-2 bg-primary hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4" /> Tambah Kelas
+              </Button>
+            </div>
           </div>
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingKelas ? (
-                <div className="py-12 text-center text-on-surface-variant">Memuat data kelas...</div>
+                <div className="py-16 flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm text-on-surface-variant">Memuat data kelas...</p>
+                </div>
               ) : filteredKelas.length === 0 ? (
-                <div className="py-12 text-center text-on-surface-variant">Belum ada kelas. Klik "Tambah Kelas" untuk membuat.</div>
+                <div className="py-16 text-center space-y-2">
+                  <BookOpen className="w-10 h-10 text-outline mx-auto" />
+                  <p className="text-on-surface-variant">Belum ada kelas. Klik "Tambah Kelas" untuk membuat.</p>
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">

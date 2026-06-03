@@ -258,9 +258,8 @@ export default function LandingPage() {
       ══════════════════════════════════════════════════ */}
       <section id="profil" className="py-16 md:py-24 bg-surface-container-low">
         <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
-          <div className="text-center mb-16 space-y-3">
-            <span className="text-primary font-extrabold tracking-[0.2em] text-xs uppercase">SAMBUTAN & DATA SEKOLAH</span>
-            <h2 className="text-3xl font-semibold text-on-background">Selayang Pandang {schoolName}</h2>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-semibold text-on-background">Sambutan & Data Sekolah</h2>
           </div>
 
           <div className="grid lg:grid-cols-12 gap-6 items-stretch">
@@ -317,7 +316,7 @@ export default function LandingPage() {
                 { icon: Users,         value: cfg.statSiswaValue  || '—', label: cfg.statSiswaLabel  || 'Siswa Aktif' },
                 { icon: GraduationCap, value: cfg.statGuruValue   || '—', label: cfg.statGuruLabel   || 'Tenaga Pendidik' },
                 { icon: BookOpen,      value: cfg.statTahunValue  || '—', label: cfg.statTahunLabel  || 'Berdiri Sejak' },
-                { icon: Building2,     value: '24',                       label: 'Rombel' },
+                { icon: Building2,     value: cfg.statRombelValue || '24', label: cfg.statRombelLabel || 'Rombel' },
               ].map(({ icon: Icon, value, label }) => (
                 <div key={label} className="bg-primary p-6 rounded-2xl text-white flex flex-col items-center justify-center text-center shadow-lg shadow-primary/20 card-hover border border-white/10">
                   <Icon className="text-primary-fixed mb-3 w-7 h-7" />

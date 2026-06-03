@@ -327,24 +327,41 @@ export default function SiteSettings() {
             maxWidth={128} preview="square"
           />
         </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <TextField
+            label="Badge Label (teks kecil berkedip di atas judul)"
+            value={get('heroBadge')} onChange={v => set('heroBadge', v)}
+            placeholder="Contoh: SMK NEGERI AYAMARU"
+          />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <TextField
+            label="Judul Utama Hero"
+            value={get('heroTitle')} onChange={v => set('heroTitle', v)}
+            placeholder="Portal Akademik"
+          />
+          <TextField
+            label="Subtitle Hero (aksen warna amber)"
+            value={get('heroSubtitle')} onChange={v => set('heroSubtitle', v)}
+            placeholder="Digital Masa Depan"
+          />
+        </div>
         <ImageField
           label="Gambar Hero (Banner Atas Landing)"
-          hint="Tampil besar di kanan judul 'Portal Akademik Digital'. Rasio landscape (4:3 atau 16:9). Kalau kosong, fallback ke Foto Profil di section Profil Sekolah."
+          hint="Tampil besar di kanan judul hero. Rasio landscape (4:3 atau 16:9). Kalau kosong, fallback ke Foto Profil."
           value={get('heroImageUrl')} onChange={v => set('heroImageUrl', v)}
           maxWidth={1200} preview="wide"
         />
       </Section>
 
-<Section icon={BookOpen} title="Profil Sekolah" description="Sejarah, visi, misi, tujuan, dan foto fasilitas.">
-        <TextAreaField label="Sejarah Singkat" value={get('sejarah')} onChange={v => set('sejarah', v)} placeholder="Cerita pendirian dan perkembangan sekolah" rows={5} />
+<Section icon={BookOpen} title="Profil Sekolah" description="Visi, misi, dan foto fasilitas sekolah.">
         <ImageField
-          label="Foto Profil / Fasilitas" hint="Tampil di section Profil & Identitas."
+          label="Foto Profil / Fasilitas" hint="Tampil di section Profil Sekolah pada landing."
           value={get('profilImageUrl')} onChange={v => set('profilImageUrl', v)}
           maxWidth={800} preview="photo"
         />
         <TextAreaField label="Visi" value={get('visi')} onChange={v => set('visi', v)} placeholder="Pandangan jangka panjang sekolah" rows={3} />
         <TextAreaField label="Misi" value={get('misi')} onChange={v => set('misi', v)} placeholder="Pisahkan tiap misi dengan baris baru (Enter)" rows={5} />
-        <TextAreaField label="Tujuan" value={get('tujuan')} onChange={v => set('tujuan', v)} placeholder="Tujuan strategis sekolah" rows={3} />
       </Section>
 
       <Section
@@ -362,6 +379,8 @@ export default function SiteSettings() {
           <TextField label="Guru — Label" value={get('statGuruLabel')} onChange={v => set('statGuruLabel', v)} placeholder="Tenaga Pendidik" />
           <TextField label="Tahun — Nilai" value={get('statTahunValue')} onChange={v => set('statTahunValue', v)} placeholder="2005" />
           <TextField label="Tahun — Label" value={get('statTahunLabel')} onChange={v => set('statTahunLabel', v)} placeholder="Berdiri Sejak" />
+          <TextField label="Rombel — Nilai" value={get('statRombelValue')} onChange={v => set('statRombelValue', v)} placeholder="24" />
+          <TextField label="Rombel — Label" value={get('statRombelLabel')} onChange={v => set('statRombelLabel', v)} placeholder="Rombel" />
         </div>
         <TextField
           label="Alumni — Label (nilai auto dari data alumni)"

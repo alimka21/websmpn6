@@ -236,7 +236,41 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="top-center"
+        expand={false}
+        richColors={false}
+        closeButton={true}
+        duration={3500}
+        gap={8}
+        toastOptions={{
+          classNames: {
+            toast: `
+              bg-surface-container-lowest
+              border border-outline-variant
+              shadow-[0_4px_24px_rgba(0,0,0,0.08)]
+              rounded-xl
+              px-4 py-3
+              font-sans
+              min-w-[320px]
+              max-w-[420px]
+            `,
+            title:       'text-on-surface font-semibold text-sm leading-snug',
+            description: 'text-on-surface-variant text-xs mt-0.5 leading-relaxed',
+            closeButton: `
+              bg-surface-container
+              border border-outline-variant
+              text-on-surface-variant
+              hover:bg-surface-container-high
+              rounded-lg
+            `,
+            success: 'border-l-4 border-secondary',
+            error:   'border-l-4 border-error',
+            warning: 'border-l-4 border-[#BA7517]',
+            info:    'border-l-4 border-primary',
+          },
+        }}
+      />
     </Router>
   );
 }
