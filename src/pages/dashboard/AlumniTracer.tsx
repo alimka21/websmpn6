@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef } from 'react';
 import ExcelJS from 'exceljs';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input, Label } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
@@ -409,11 +408,11 @@ export default function AlumniTracer() {
       {/* Charts */}
       {total > 0 && (
         <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Persentase Status</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="px-5 py-4 border-b border-outline-variant">
+              <h3 className="text-base font-semibold text-on-surface">Persentase Status</h3>
+            </div>
+            <div className="p-4">
               <div className="flex items-center justify-center h-56">
                 <ResponsiveContainer width="60%" height="100%">
                   <PieChart>
@@ -435,13 +434,13 @@ export default function AlumniTracer() {
                   ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Lulusan per Tahun</CardTitle>
-            </CardHeader>
-            <CardContent className="h-56">
+            </div>
+          </div>
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="px-5 py-4 border-b border-outline-variant">
+              <h3 className="text-base font-semibold text-on-surface">Lulusan per Tahun</h3>
+            </div>
+            <div className="p-4 h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="tahun" tick={{ fontSize: 11 }} />
@@ -450,16 +449,16 @@ export default function AlumniTracer() {
                   <Bar dataKey="jumlah" name="Jumlah" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Tabel */}
-      <Card>
-        <CardHeader className="pb-4 border-b border-outline-variant">
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-            <CardTitle>Data Lulusan</CardTitle>
+            <h2 className="text-xl font-semibold text-on-surface">Data Lulusan</h2>
             <div className="flex flex-wrap gap-2 w-full md:w-auto">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline-variant pointer-events-none" />
@@ -522,10 +521,12 @@ export default function AlumniTracer() {
               </div>
             </div>
           )}
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="py-12 text-center text-on-surface-variant">Memuat data alumni...</div>
+        </div>
+        {isLoading ? (
+          <div className="py-16 flex flex-col items-center gap-3">
+            <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm text-on-surface-variant">Memuat data alumni...</p>
+          </div>
           ) : errorMsg ? (
             <ErrorState message={errorMsg} onRetry={fetchAlumni} />
           ) : displayAlumni.length === 0 ? (
@@ -556,7 +557,7 @@ export default function AlumniTracer() {
                     <th className="px-4 py-3 font-semibold text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-outline-variant/40">
                   {paginatedAlumni.map(al => (
                     <React.Fragment key={al.id}>
                       <tr className={`hover:bg-surface-container-low/60 transition-colors ${selectedIds.has(al.id) ? 'bg-primary-container/15/40' : ''}`}>
@@ -638,8 +639,7 @@ export default function AlumniTracer() {
               />
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Modal */}
       {showModal && (
@@ -742,7 +742,7 @@ export default function AlumniTracer() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="alumni-import-result-title"
-            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-lg bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
               <h2 id="alumni-import-result-title" className="text-lg font-bold text-on-surface">Hasil Import Alumni</h2>

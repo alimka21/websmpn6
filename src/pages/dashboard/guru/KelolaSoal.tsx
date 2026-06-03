@@ -2,7 +2,6 @@ import { toast } from 'sonner';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ExcelJS from 'exceljs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
@@ -375,12 +374,12 @@ export default function KelolaSoal() {
       </div>
 
       {isEditing ? (
-        <Card className="border-primary/30 shadow-md shadow-blue-500/5">
-          <CardHeader className="bg-primary-container/15/50 border-b border-primary/20 pb-4">
-            <CardTitle>{editingId ? 'Edit Soal' : 'Soal Baru'}</CardTitle>
-            <CardDescription>Pilih tipe soal dan lengkapi pertanyaan serta opsi jawaban.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+        <div className="bg-surface-container-lowest rounded-2xl border border-primary/30 overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+          <div className="px-6 py-5 bg-primary-container/15 border-b border-primary/20">
+            <h2 className="text-xl font-semibold text-on-surface">{editingId ? 'Edit Soal' : 'Soal Baru'}</h2>
+            <p className="text-sm text-on-surface-variant mt-0.5">Pilih tipe soal dan lengkapi pertanyaan serta opsi jawaban.</p>
+          </div>
+          <div className="p-6 space-y-6">
             <div className="space-y-2">
               <Label>Tipe Pertanyaan</Label>
               <div className="flex flex-wrap gap-2">
@@ -511,8 +510,8 @@ export default function KelolaSoal() {
                 </p>
               </div>
             )}
-          </CardContent>
-          <CardFooter className="bg-surface-container-low p-4 border-t border-outline-variant flex justify-end gap-3 rounded-b-xl">
+          </div>
+          <div className="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex justify-end gap-3">
             <Button variant="outline" onClick={() => { setIsEditing(false); setEditingId(null); }} disabled={isSaving}>
               Batal
             </Button>
@@ -524,16 +523,16 @@ export default function KelolaSoal() {
               )}
               {isSaving ? 'Menyimpan...' : 'Simpan Soal'}
             </Button>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       ) : (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-4 gap-3 flex-wrap">
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+          <div className="px-6 py-5 border-b border-outline-variant flex flex-row items-center justify-between gap-3 flex-wrap">
             <div>
-              <CardTitle>Daftar Soal</CardTitle>
-              <CardDescription>
+              <h2 className="text-xl font-semibold text-on-surface">Daftar Soal</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">
                 Total {soalList.length} soal &bull; {soalList.reduce((a, s) => a + s.poin, 0)} poin
-              </CardDescription>
+              </p>
             </div>
             <div className="flex gap-2 shrink-0 flex-wrap">
               <Button
@@ -566,10 +565,10 @@ export default function KelolaSoal() {
               className="hidden"
               onChange={handleFileSelected}
             />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-6">
             {soalList.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
+              <div className="py-16 text-center space-y-2">
                 <FileText className="w-12 h-12 text-outline-variant mb-3" />
                 <p className="text-lg font-medium text-on-surface">Belum ada soal</p>
                 <p className="text-sm">Klik "Tambah Soal" untuk mulai membuat bank soal.</p>
@@ -577,7 +576,7 @@ export default function KelolaSoal() {
             ) : (
               <div className="space-y-4">
                 {soalList.map((soal) => (
-                  <div key={soal.id} className="p-5 rounded-xl border border-outline-variant bg-white hover:border-outline-variant transition-colors shadow-sm">
+                  <div key={soal.id} className="p-5 rounded-xl border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low transition-colors shadow-sm">
                     <div className="flex justify-between items-start gap-4 mb-3">
                       <div className="flex gap-3 flex-1 min-w-0">
                         <div className="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center font-bold shrink-0 text-sm">
@@ -651,8 +650,8 @@ export default function KelolaSoal() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Modal hasil import */}

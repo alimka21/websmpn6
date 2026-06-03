@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -241,12 +240,12 @@ export default function DaftarUjian() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle>Daftar Ujian</CardTitle>
-              <CardDescription>Menampilkan {filteredList.length} ujian.</CardDescription>
+              <h2 className="text-xl font-semibold text-on-surface">Daftar Ujian</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Menampilkan {filteredList.length} ujian.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <div className="relative">
@@ -269,39 +268,39 @@ export default function DaftarUjian() {
               </div>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6">
           {isLoading ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3">
-              <div className="w-6 h-6 border-4 border-primary/30 border-t-blue-600 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
               <p className="text-sm text-on-surface-variant">Memuat data ujian...</p>
             </div>
           ) : errorMsg ? (
             <ErrorState message={errorMsg} onRetry={fetchData} />
           ) : filteredList.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
-              <FileText className="w-12 h-12 text-outline-variant mb-3" />
-              <p className="text-lg font-medium text-on-surface">Tidak ada ujian</p>
-              <p className="text-sm">Belum ada ujian yang sesuai dengan filter.</p>
+            <div className="py-16 text-center space-y-2">
+              <FileText className="w-10 h-10 text-outline mx-auto" />
+              <p className="text-on-surface font-medium">Tidak ada ujian</p>
+              <p className="text-sm text-on-surface-variant">Belum ada ujian yang sesuai dengan filter.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant uppercase text-xs">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Informasi Ujian</th>
-                    <th className="px-4 py-3 font-semibold">Waktu Pelaksanaan</th>
-                    <th className="px-4 py-3 font-semibold text-center">Soal</th>
-                    <th className="px-4 py-3 font-semibold text-center">Status</th>
-                    <th className="px-4 py-3 font-semibold text-center">Aksi</th>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-outline-variant">
+                    <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Informasi Ujian</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Waktu Pelaksanaan</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Soal</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Status</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-outline-variant/40">
                   {filteredList.map((ujian) => {
                     const status = getStatus(ujian);
                     return (
-                      <tr key={ujian.id} className="hover:bg-surface-container-low/50 transition-colors">
-                        <td className="px-4 py-4">
+                      <tr key={ujian.id} className="hover:bg-surface-container-low/50 transition-colors group">
+                        <td className="px-5 py-4">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-on-surface">{ujian.judul}</span>
                             {ujian.isOwner === false && (
@@ -428,27 +427,27 @@ export default function DaftarUjian() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Modal Edit Info Ujian ─────────────────────────────── */}
       {editModalOpen && editingUjian && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/50 backdrop-blur-sm overflow-y-auto">
-          <Card
-            ref={editModalRef as React.RefObject<HTMLDivElement>}
+          <div
+            ref={editModalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-ujian-title"
-            className="w-full max-w-2xl border-0 shadow-xl my-auto"
+            className="w-full max-w-2xl bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl my-auto overflow-hidden"
           >
-            <CardHeader className="bg-surface-container-low border-b border-outline-variant pb-4">
+            <div className="px-6 py-5 bg-surface-container-low border-b border-outline-variant">
               <div className="flex justify-between items-center">
-                <CardTitle id="edit-ujian-title">Edit Info Ujian</CardTitle>
+                <h2 id="edit-ujian-title" className="text-xl font-semibold text-on-surface">Edit Info Ujian</h2>
                 <Button variant="ghost" size="sm" onClick={() => setEditModalOpen(false)} aria-label="Tutup modal">Tutup</Button>
               </div>
-            </CardHeader>
+            </div>
             <form onSubmit={handleSaveEdit}>
-              <CardContent className="pt-6 space-y-5 max-h-[65vh] overflow-y-auto">
+              <div className="px-6 pt-6 pb-4 space-y-5 max-h-[65vh] overflow-y-auto">
                 <div className="space-y-2">
                   <Label htmlFor="edit-judul">Judul Ujian <span className="text-error">*</span></Label>
                   <Input
@@ -568,8 +567,8 @@ export default function DaftarUjian() {
                   )}
                   <FieldError msg={editErrors.kelasIds} />
                 </div>
-              </CardContent>
-              <div className="bg-surface-container-low p-4 border-t border-outline-variant flex justify-end gap-3">
+              </div>
+              <div className="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)} disabled={isSubmitting}>
                   Batal
                 </Button>
@@ -578,24 +577,24 @@ export default function DaftarUjian() {
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* ── Modal Konfirmasi Hapus ────────────────────────────── */}
       {deleteModalOpen && deletingUjian && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/50 backdrop-blur-sm">
-          <Card
-            ref={deleteModalRef as React.RefObject<HTMLDivElement>}
+          <div
+            ref={deleteModalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-ujian-title"
-            className="w-full max-w-md border-0 shadow-xl"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl overflow-hidden"
           >
-            <CardHeader className="pb-3">
-              <CardTitle id="delete-ujian-title" className="text-xl">Hapus Ujian?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 id="delete-ujian-title" className="text-xl font-semibold text-on-surface">Hapus Ujian?</h2>
+            </div>
+            <div className="px-6 py-5 space-y-4">
               <p className="text-on-surface-variant">Anda akan menghapus ujian:</p>
               <p className="font-semibold text-on-surface bg-surface-container-low p-3 rounded-lg border border-outline-variant">
                 {deletingUjian.judul}
@@ -616,8 +615,8 @@ export default function DaftarUjian() {
                   </span>
                 </div>
               )}
-            </CardContent>
-            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3 rounded-b-xl">
+            </div>
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => { setDeleteModalOpen(false); setDeletingUjian(null); }}
@@ -633,7 +632,7 @@ export default function DaftarUjian() {
                 {isDeleting ? 'Menghapus...' : 'Ya, Hapus Ujian'}
               </Button>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </div>

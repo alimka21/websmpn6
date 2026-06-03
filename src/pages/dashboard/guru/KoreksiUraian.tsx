@@ -2,7 +2,6 @@ import { toast } from 'sonner';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock, AlertTriangle, Save, ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Input, Label } from '../../../components/ui/input';
@@ -162,34 +161,32 @@ export default function KoreksiUraian() {
       </div>
 
       {/* Progress bar */}
-      <Card>
-        <CardContent className="pt-5 pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-on-surface">Progress Penilaian</span>
-            <span className="text-sm text-on-surface-variant">{sudahDinilai} / {totalSesi} siswa dinilai</span>
-          </div>
-          <div className="h-2 bg-surface-container rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: totalSesi > 0 ? `${(sudahDinilai / totalSesi) * 100}%` : '0%' }}
-            />
-          </div>
-          {sudahDinilai === totalSesi && totalSesi > 0 && (
-            <p className="text-sm text-secondary font-medium mt-2 flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4" /> Semua siswa sudah dinilai
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-on-surface">Progress Penilaian</span>
+          <span className="text-sm text-on-surface-variant">{sudahDinilai} / {totalSesi} siswa dinilai</span>
+        </div>
+        <div className="h-2 bg-surface-container rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: totalSesi > 0 ? `${(sudahDinilai / totalSesi) * 100}%` : '0%' }}
+          />
+        </div>
+        {sudahDinilai === totalSesi && totalSesi > 0 && (
+          <p className="text-sm text-secondary font-medium mt-2 flex items-center gap-1">
+            <CheckCircle2 className="w-4 h-4" /> Semua siswa sudah dinilai
+          </p>
+        )}
+      </div>
 
       {sesiList.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 flex flex-col items-center text-center text-on-surface-variant gap-3">
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+          <div className="py-16 flex flex-col items-center text-center text-on-surface-variant gap-3">
             <Clock className="w-12 h-12 text-outline-variant" />
             <p className="font-medium text-on-surface">Belum ada siswa yang submit</p>
             <p className="text-sm">Halaman ini akan tampil setelah siswa menyelesaikan ujian.</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
           {sesiList.map(sesi => {
@@ -198,7 +195,7 @@ export default function KoreksiUraian() {
             const isSaving = savingId === sesi.sesiId;
 
             return (
-              <Card key={sesi.sesiId} className={sesi.sudahDinilai ? 'border-secondary/30' : 'border-outline-variant'}>
+              <div key={sesi.sesiId} className={`bg-surface-container-lowest rounded-2xl border overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)] ${sesi.sudahDinilai ? 'border-secondary/30' : 'border-outline-variant'}`}>
                 {/* Row header — klik untuk expand/collapse */}
                 <button
                   type="button"
@@ -330,7 +327,7 @@ export default function KoreksiUraian() {
                     </div>
                   </div>
                 )}
-              </Card>
+              </div>
             );
           })}
         </div>

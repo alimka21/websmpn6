@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Select } from "../../components/ui/select";
@@ -152,8 +151,8 @@ export default function ExamList() {
             </div>
           ) : (
             ujianAktif.map(ujian => (
-              <Card key={ujian.id} className="hover:border-outline-variant transition-all flex flex-col">
-                <CardContent className="p-6 flex-1 flex flex-col">
+              <div key={ujian.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl hover:shadow-md transition-all flex flex-col shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+                <div className="p-6 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <Badge variant="outline" className="text-[10px] uppercase font-medium">{ujian.tipeUjian.replace('_', ' ')}</Badge>
                     <span className="text-xs font-semibold text-error bg-error-container px-2 py-1 rounded-full">
@@ -182,13 +181,13 @@ export default function ExamList() {
                       Mulai Ujian
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))
           )}
         </div>
       ) : (
-        <Card>
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
           {riwayat.length > 0 && (
             <div className="px-6 py-3 border-b border-outline-variant flex items-center gap-3">
               <span className="text-sm text-on-surface-variant shrink-0">Filter:</span>
@@ -205,7 +204,7 @@ export default function ExamList() {
               )}
             </div>
           )}
-          <CardContent className="p-0">
+          <div>
             {riwayat.length === 0 ? (
               <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant rounded-xl">
                 <History className="w-12 h-12 text-outline-variant mb-3" />
@@ -219,10 +218,10 @@ export default function ExamList() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant text-xs uppercase">
-                    <tr>
+                  <thead>
+                    <tr className="border-b border-outline-variant">
                       <th
-                        className="px-6 py-4 font-semibold cursor-pointer select-none hover:bg-surface-container"
+                        className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider cursor-pointer select-none hover:bg-surface-container-low"
                         onClick={() => handleSortRiwayat('selesaiAt')}
                       >
                         <span className="inline-flex items-center gap-1">
@@ -232,11 +231,11 @@ export default function ExamList() {
                             : <ChevronUp className="w-3.5 h-3.5 opacity-20" />}
                         </span>
                       </th>
-                      <th className="px-6 py-4 font-semibold">Ujian</th>
-                      <th className="px-6 py-4 font-semibold">Mata Pelajaran</th>
-                      <th className="px-6 py-4 font-semibold text-center">Status</th>
+                      <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Ujian</th>
+                      <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mata Pelajaran</th>
+                      <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                       <th
-                        className="px-6 py-4 font-semibold text-center cursor-pointer select-none hover:bg-surface-container"
+                        className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center cursor-pointer select-none hover:bg-surface-container-low"
                         onClick={() => handleSortRiwayat('nilaiAkhir')}
                       >
                         <span className="inline-flex items-center justify-center gap-1">
@@ -248,7 +247,7 @@ export default function ExamList() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-outline-variant/40">
                     {filteredRiwayat.map(sesi => (
                       <tr
                         key={sesi.id}
@@ -292,25 +291,25 @@ export default function ExamList() {
                 </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Modal Konfirmasi Mulai Ujian */}
       {confirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/50 backdrop-blur-sm">
-          <Card
-            ref={confirmModalRef as React.RefObject<HTMLDivElement>}
+          <div
+            ref={confirmModalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="mulai-ujian-title"
-            className="w-full max-w-md shadow-xl border-0 animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
           >
-            <CardHeader className="bg-primary-container/15/50 border-b border-primary/20 pb-4">
-              <CardTitle id="mulai-ujian-title" className="text-xl">Mulai Ujian?</CardTitle>
-              <CardDescription>Perhatikan peraturan sebelum memulai ujian.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <div className="px-6 py-5 bg-primary-container/15 border-b border-primary/20">
+              <h2 id="mulai-ujian-title" className="text-xl font-semibold text-on-surface">Mulai Ujian?</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Perhatikan peraturan sebelum memulai ujian.</p>
+            </div>
+            <div className="px-6 pt-6 pb-4 space-y-4">
               <div className="font-semibold text-on-surface text-lg">{confirmModal.judul}</div>
               <ul className="text-sm text-on-surface-variant space-y-2 list-disc pl-5">
                 <li>Durasi ujian adalah <b>{confirmModal.durasi} menit</b>. Waktu tidak akan berhenti meskipun Anda keluar dari browser.</li>
@@ -322,8 +321,8 @@ export default function ExamList() {
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>Ujian yang sudah dimulai tidak bisa dibatalkan atau diulangi.</span>
               </div>
-            </CardContent>
-            <div className="p-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3 rounded-b-xl">
+            </div>
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setConfirmModal(null)} disabled={startingUjianId !== null}>Batal</Button>
               <Button onClick={() => handleMulaiUjian(confirmModal.id)} disabled={startingUjianId === confirmModal.id} className="gap-2">
                 {startingUjianId === confirmModal.id ? (
@@ -336,7 +335,7 @@ export default function ExamList() {
                 )}
               </Button>
             </div>
-          </Card>
+          </div>
         </div>
       )}
     </div>

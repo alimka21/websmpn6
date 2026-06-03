@@ -1,6 +1,5 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input, Label } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
@@ -153,12 +152,12 @@ export default function Students() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <CardTitle>Daftar Siswa</CardTitle>
-              <CardDescription>Menampilkan {siswaList.length} siswa di kelas terpilih.</CardDescription>
+              <h2 className="text-xl font-semibold text-on-surface">Daftar Siswa</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Menampilkan {siswaList.length} siswa di kelas terpilih.</p>
             </div>
             <div className="w-full sm:w-64">
               <Select value={selectedKelas} onChange={e => setSelectedKelas(e.target.value)} disabled={kelasList.length === 0}>
@@ -169,39 +168,41 @@ export default function Students() {
               </Select>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="py-12 text-center text-on-surface-variant">Memuat data siswa...</div>
-          ) : kelasList.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
-              <Users className="w-12 h-12 text-outline-variant mb-3" />
-              <p className="text-lg font-medium text-on-surface">Tidak ada kelas</p>
-              <p className="text-sm text-center max-w-sm mt-1">Anda belum memiliki kelas. Silakan buat kelas baru terlebih dahulu untuk menambahkan siswa.</p>
-            </div>
-          ) : siswaList.length === 0 ? (
-            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
-              <p className="text-lg font-medium text-on-surface">Belum ada siswa</p>
-              <p className="text-sm">Klik "Tambah Siswa" untuk memasukkan data siswa ke kelas ini.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant uppercase text-xs">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold rounded-tl-lg">NIS</th>
-                    <th className="px-4 py-3 font-semibold">Nama Siswa</th>
-                    <th className="px-4 py-3 font-semibold">Email Pengguna</th>
-                    <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {siswaList.map(siswa => (
-                    <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors">
-                      <td className="px-4 py-4 font-medium text-on-surface">{siswa.nis}</td>
-                      <td className="px-4 py-4 font-medium">{siswa.nama}</td>
-                      <td className="px-4 py-4 text-on-surface-variant">{siswa.user?.email || '-'}</td>
-                      <td className="px-4 py-4">
+        </div>
+        {isLoading ? (
+          <div className="py-16 flex flex-col items-center gap-3">
+            <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm text-on-surface-variant">Memuat data siswa...</p>
+          </div>
+        ) : kelasList.length === 0 ? (
+          <div className="py-16 text-center space-y-2">
+            <Users className="w-10 h-10 text-outline mx-auto" />
+            <p className="text-on-surface font-medium">Tidak ada kelas</p>
+            <p className="text-sm text-on-surface-variant max-w-sm mx-auto">Anda belum memiliki kelas. Silakan buat kelas baru terlebih dahulu untuk menambahkan siswa.</p>
+          </div>
+        ) : siswaList.length === 0 ? (
+          <div className="py-16 text-center space-y-2">
+            <p className="text-on-surface font-medium">Belum ada siswa</p>
+            <p className="text-sm text-on-surface-variant">Klik "Tambah Siswa" untuk memasukkan data siswa ke kelas ini.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-outline-variant">
+                  <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">NIS</th>
+                  <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Siswa</th>
+                  <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Email Pengguna</th>
+                  <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/40">
+                {siswaList.map(siswa => (
+                  <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors group">
+                    <td className="px-5 py-4 text-sm font-medium text-on-surface">{siswa.nis}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-on-surface">{siswa.nama}</td>
+                    <td className="px-5 py-4 text-sm text-on-surface-variant">{siswa.user?.email || '-'}</td>
+                    <td className="px-5 py-4">
                         <div className="flex justify-center gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleOpenSiswaModal(siswa)} className="text-primary hover:text-primary hover:bg-primary-container/15 h-8 px-2" title="Edit">
                             <Pencil className="w-4 h-4" />
@@ -215,23 +216,22 @@ export default function Students() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Modal Tambah/Edit Siswa */}
       {showSiswaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/50 backdrop-blur-sm shadow-2xl">
-          <Card className="w-full max-w-md border-0 animate-in fade-in zoom-in-95 duration-200">
-            <CardHeader className="border-b border-outline-variant pb-4">
-              <CardTitle>{editingSiswa ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</CardTitle>
-            </CardHeader>
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 className="text-xl font-semibold text-on-surface">{editingSiswa ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h2>
+            </div>
             <form onSubmit={handleSaveSiswa}>
-              <CardContent className="pt-6 space-y-4">
+              <div className="px-6 pt-6 pb-4 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="kelasId">Kelas</Label>
                   <Select id="kelasId" value={siswaForm.kelasId} onChange={e => setSiswaForm({ ...siswaForm, kelasId: e.target.value })} disabled={!!editingSiswa}>
@@ -249,27 +249,27 @@ export default function Students() {
                   <Label htmlFor="nama">Nama Lengkap *</Label>
                   <Input id="nama" required value={siswaForm.nama} onChange={e => setSiswaForm({ ...siswaForm, nama: e.target.value })} placeholder="Nama Lengkap Siswa" />
                 </div>
-              </CardContent>
-              <div className="bg-surface-container-low p-4 border-t border-outline-variant flex justify-end gap-3 rounded-b-xl">
+              </div>
+              <div className="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setShowSiswaModal(false)}>Batal</Button>
                 <Button type="submit" disabled={isSubmittingSiswa} className="bg-primary hover:bg-primary/90">
                   {isSubmittingSiswa ? 'Menyimpan...' : 'Simpan Siswa'}
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* Modal Tambah Kelas */}
       {showKelasModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/50 backdrop-blur-sm shadow-2xl">
-          <Card className="w-full max-w-md border-0 animate-in fade-in zoom-in-95 duration-200">
-            <CardHeader className="border-b border-outline-variant pb-4">
-              <CardTitle>Buat Kelas Baru</CardTitle>
-            </CardHeader>
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 className="text-xl font-semibold text-on-surface">Buat Kelas Baru</h2>
+            </div>
             <form onSubmit={handleSaveKelas}>
-              <CardContent className="pt-6 space-y-4">
+              <div className="px-6 pt-6 pb-4 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="namaKelas">Nama Kelas *</Label>
                   <Input id="namaKelas" required value={kelasForm.nama} onChange={e => setKelasForm({ ...kelasForm, nama: e.target.value })} placeholder="Contoh: X IPA 1" />
@@ -288,15 +288,15 @@ export default function Students() {
                     <Input id="tahunAjaran" required value={kelasForm.tahunAjaran} onChange={e => setKelasForm({ ...kelasForm, tahunAjaran: e.target.value })} placeholder="2023/2024" />
                   </div>
                 </div>
-              </CardContent>
-              <div className="bg-surface-container-low p-4 border-t border-outline-variant flex justify-end gap-3 rounded-b-xl">
+              </div>
+              <div className="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setShowKelasModal(false)}>Batal</Button>
                 <Button type="submit" disabled={isSubmittingKelas} className="bg-primary hover:bg-primary/90">
                   {isSubmittingKelas ? 'Menyimpan...' : 'Simpan Kelas'}
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         </div>
       )}
     </div>

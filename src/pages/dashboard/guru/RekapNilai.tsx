@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
@@ -214,7 +213,7 @@ export default function RekapNilai() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="detail-jawaban-title"
-            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
@@ -323,10 +322,10 @@ export default function RekapNilai() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4 border-b border-outline-variant">
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>Filter Ujian</CardTitle>
+            <h2 className="text-xl font-semibold text-on-surface">Filter Ujian</h2>
             <div className="w-full sm:w-96">
               <Select value={selectedUjian} onChange={e => setSelectedUjian(e.target.value)} disabled={ujianList.length === 0}>
                 {ujianList.length === 0 && <option value="">Belum ada ujian terlaksana</option>}
@@ -338,14 +337,17 @@ export default function RekapNilai() {
               </Select>
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="pt-6">
+        <div className="p-6">
           {isLoading ? (
-            <div className="py-12 text-center text-on-surface-variant">Memuat analisis data...</div>
+            <div className="py-16 flex flex-col items-center gap-3">
+              <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <p className="text-sm text-on-surface-variant">Memuat analisis data...</p>
+            </div>
           ) : !Array.isArray(rekapData) ? (
-            <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
-              <p className="text-lg font-medium text-on-surface">Silakan pilih ujian</p>
+            <div className="py-16 text-center space-y-2">
+              <p className="text-on-surface font-medium">Silakan pilih ujian</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -396,7 +398,7 @@ export default function RekapNilai() {
                       <th className="px-4 py-3 font-semibold text-center w-24">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-outline-variant/40">
                     {sortedData.map((sesi: any, index: number) => (
                       <tr key={sesi.sesiId ?? sesi.siswa.id} className="hover:bg-surface-container-low/70 transition-colors">
                         <td className="px-4 py-4 text-center text-outline-variant font-medium">{index + 1}</td>
@@ -481,8 +483,8 @@ export default function RekapNilai() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Modal Konfirmasi Reset Sesi ──────────────────── */}
       {resetTarget && (
@@ -492,7 +494,7 @@ export default function RekapNilai() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="reset-sesi-title"
-            className="w-full max-w-md bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-tertiary-fixed/50 flex items-center justify-center mb-3">

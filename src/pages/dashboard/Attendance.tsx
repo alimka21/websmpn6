@@ -1,10 +1,8 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Select } from '../../components/ui/select';
 import { Input, Label } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
 import { Calendar as CalendarIcon, CheckSquare, Save, Download, BarChart2, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '../../lib/api';
 import { formatDate } from '../../lib/utils';
@@ -202,15 +200,15 @@ export default function Attendance() {
           <p className="text-on-surface-variant mt-1">Catatan kehadiran siswa untuk sesi pelajaran yang Anda ampu. Guru lain punya catatan terpisah.</p>
         </div>
         
-        <div className="flex bg-surface-container p-1 rounded-lg">
+        <div className="flex p-1.5 bg-surface-container rounded-2xl w-fit">
           <button
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'INPUT' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'INPUT' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
             onClick={() => setActiveTab('INPUT')}
           >
             Input Presensi
           </button>
           <button
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'REKAP' ? 'bg-white text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'REKAP' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
             onClick={() => setActiveTab('REKAP')}
           >
             Rekap Bulanan
@@ -218,10 +216,10 @@ export default function Attendance() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-4">
+      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+        <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <CardTitle>{activeTab === 'INPUT' ? 'Input Kehadiran' : 'Rekap Kehadiran'}</CardTitle>
+            <h2 className="text-xl font-semibold text-on-surface">{activeTab === 'INPUT' ? 'Input Kehadiran' : 'Rekap Kehadiran'}</h2>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Select value={selectedKelas} onChange={e => setSelectedKelas(e.target.value)} disabled={kelasList.length === 0} className="w-full sm:w-56">
                 {kelasList.length === 0 && <option value="">Pilih Kelas</option>}
@@ -253,8 +251,8 @@ export default function Attendance() {
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-6">
           {kelasList.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant border-2 border-dashed border-outline-variant rounded-xl">
               <p className="text-lg font-medium text-on-surface">Tidak ada kelas</p>
@@ -275,7 +273,7 @@ export default function Attendance() {
                       <CalendarIcon className="w-4 h-4 text-primary" />
                       <span className="font-medium text-on-surface">{formatDate(tanggalPilih)}</span>
                       {hasExistingPresensi && (
-                         <Badge variant="outline" className="ml-2 bg-secondary-container/30 text-on-secondary-container border-secondary/30">Sudah Disimpan</Badge>
+                        <span className="ml-2 inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary-fixed text-primary">Sudah Disimpan</span>
                       )}
                     </div>
                     <Button
@@ -290,23 +288,23 @@ export default function Attendance() {
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                      <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant uppercase text-xs">
-                        <tr>
-                          <th className="px-4 py-3 font-semibold w-16">No</th>
-                          <th className="px-4 py-3 font-semibold">Nama Siswa</th>
-                          <th className="px-4 py-3 font-semibold min-w-[280px]">Status Kehadiran</th>
-                          <th className="px-4 py-3 font-semibold">Keterangan</th>
+                      <thead>
+                        <tr className="border-b border-outline-variant">
+                          <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider w-16">No</th>
+                          <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Siswa</th>
+                          <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider min-w-[280px]">Status Kehadiran</th>
+                          <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Keterangan</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-outline-variant/40">
                         {presensiSiswa.map((siswa, idx) => (
-                          <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors">
-                            <td className="px-4 py-4 text-on-surface-variant">{idx + 1}</td>
-                            <td className="px-4 py-4 font-medium text-on-surface">
+                          <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors group">
+                            <td className="px-5 py-4 text-sm text-on-surface-variant">{idx + 1}</td>
+                            <td className="px-5 py-4 text-sm font-medium text-on-surface">
                               {siswa.nama}
                               <div className="text-xs text-outline-variant font-normal mt-0.5">{siswa.nis}</div>
                             </td>
-                            <td className="px-4 py-4">
+                            <td className="px-5 py-4">
                               <div className="flex flex-wrap gap-3">
                                 {[
                                   {val: 'HADIR', label: 'Hadir', col: 'text-on-secondary-container bg-secondary-container/30 border-secondary/30'}, 
@@ -331,9 +329,9 @@ export default function Attendance() {
                                 ))}
                               </div>
                             </td>
-                            <td className="px-4 py-4">
-                              <Input 
-                                placeholder="catatan opsional" 
+                            <td className="px-5 py-4">
+                              <Input
+                                placeholder="catatan opsional"
                                 className="h-8 text-xs max-w-[200px]"
                                 value={siswa.keterangan}
                                 onChange={(e) => handleChangeKet(siswa.id, e.target.value)}
@@ -390,19 +388,19 @@ export default function Attendance() {
                     </Button>
                   </div>
 
-                  <div className="overflow-x-auto border rounded-lg">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
-                        <tr>
+                  <div className="overflow-x-auto rounded-xl border border-outline-variant">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-outline-variant">
                           {[
                             { field: 'nama', label: 'Nama Siswa', cls: '' },
-                            { field: 'hadir', label: 'Hadir', cls: 'text-center text-on-secondary-container' },
-                            { field: 'izin', label: 'Izin', cls: 'text-center text-on-tertiary-fixed' },
-                            { field: 'sakit', label: 'Sakit', cls: 'text-center text-on-tertiary-fixed' },
-                            { field: 'alpha', label: 'Alpha', cls: 'text-center text-error' },
+                            { field: 'hadir', label: 'Hadir', cls: 'text-center' },
+                            { field: 'izin', label: 'Izin', cls: 'text-center' },
+                            { field: 'sakit', label: 'Sakit', cls: 'text-center' },
+                            { field: 'alpha', label: 'Alpha', cls: 'text-center' },
                             { field: 'persentase', label: '% Kehadiran', cls: 'text-center' },
                           ].map(col => (
-                            <th key={col.field} className={`px-4 py-3 font-semibold cursor-pointer select-none hover:bg-surface-container ${col.cls}`} onClick={() => handleSort(col.field)}>
+                            <th key={col.field} className={`px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider cursor-pointer select-none hover:bg-surface-container-low ${col.cls}`} onClick={() => handleSort(col.field)}>
                               <span className="inline-flex items-center gap-1">
                                 {col.label}
                                 {sortField === col.field
@@ -414,18 +412,18 @@ export default function Attendance() {
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-outline-variant/40">
                         {sortedRekap.map((siswa, idx) => (
-                          <tr key={idx} className="hover:bg-surface-container-low/50">
-                            <td className="px-4 py-3 font-medium text-on-surface">
+                          <tr key={idx} className="hover:bg-surface-container-low/50 transition-colors group">
+                            <td className="px-5 py-4 text-sm font-medium text-on-surface">
                               {siswa.nama}
                               <div className="text-xs text-outline-variant font-normal">{siswa.nis}</div>
                             </td>
-                            <td className="px-4 py-3 text-center font-medium bg-secondary-container/30/30">{siswa.hadir}</td>
-                            <td className="px-4 py-3 text-center bg-tertiary-fixed/50/30">{siswa.izin}</td>
-                            <td className="px-4 py-3 text-center bg-tertiary-fixed/50/30">{siswa.sakit}</td>
-                            <td className="px-4 py-3 text-center bg-error-container/30 text-error font-medium">{siswa.alpha}</td>
-                            <td className="px-4 py-3 text-center font-bold" style={{ color: getPercentageColor(siswa.persentase) }}>
+                            <td className="px-5 py-4 text-sm text-center font-medium text-on-secondary-container">{siswa.hadir}</td>
+                            <td className="px-5 py-4 text-sm text-center text-on-tertiary-fixed">{siswa.izin}</td>
+                            <td className="px-5 py-4 text-sm text-center text-on-tertiary-fixed">{siswa.sakit}</td>
+                            <td className="px-5 py-4 text-sm text-center text-error font-medium">{siswa.alpha}</td>
+                            <td className="px-5 py-4 text-sm text-center font-bold" style={{ color: getPercentageColor(siswa.persentase) }}>
                               {siswa.persentase}%
                             </td>
                           </tr>
@@ -437,8 +435,8 @@ export default function Attendance() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -144,7 +144,7 @@ export default function HasilUjian() {
       </div>
 
       {/* Skor utama — selalu tampilkan (per kebijakan user) */}
-      <div className={`rounded-2xl border-2 p-8 text-center ${scoreBg}`}>
+      <div className={`rounded-2xl border p-8 text-center ${scoreBg}`}>
         <p className="text-sm font-medium text-on-surface-variant uppercase tracking-widest mb-2">Nilai Anda</p>
         <p className={`text-5xl sm:text-6xl md:text-7xl font-extrabold tabular-nums ${scoreColor}`}>{nilaiDisplay}</p>
         <span className={`inline-block mt-3 text-sm font-semibold px-3 py-1 rounded-full ${
@@ -158,7 +158,7 @@ export default function HasilUjian() {
 
       {/* Statistik */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-outline-variant p-4 flex items-center gap-3">
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 flex items-center gap-3">
           <CheckCircle2 className="w-8 h-8 text-secondary shrink-0" />
           <div>
             <p className="text-xs text-on-surface-variant">Jawaban Benar</p>
@@ -169,7 +169,7 @@ export default function HasilUjian() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-outline-variant p-4 flex items-center gap-3">
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 flex items-center gap-3">
           <Clock className="w-8 h-8 text-primary shrink-0" />
           <div>
             <p className="text-xs text-on-surface-variant">Durasi Pengerjaan</p>
@@ -184,7 +184,7 @@ export default function HasilUjian() {
       </div>
 
       {/* Status Submit */}
-      <div className="bg-white rounded-xl border border-outline-variant p-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs text-on-surface-variant mb-1">Status Ujian</p>
           <Badge variant={submitInfo.variant}>{submitInfo.teks}</Badge>
@@ -205,7 +205,7 @@ export default function HasilUjian() {
 
       {/* Pelanggaran */}
       {data.pelanggaran.length > 0 && (
-        <div className="bg-white rounded-xl border border-tertiary-fixed p-4 space-y-3">
+        <div className="bg-surface-container-lowest rounded-xl border border-tertiary-fixed p-4 space-y-3">
           <div className="flex items-center gap-2 text-on-tertiary-fixed">
             <ShieldAlert className="w-5 h-5" />
             <p className="font-semibold text-sm">
@@ -228,7 +228,7 @@ export default function HasilUjian() {
 
       {/* Review Jawaban (collapsible) — selalu tampilkan (per kebijakan user) */}
       {data.jawaban && data.jawaban.length > 0 && (
-        <div className="bg-white rounded-xl border border-outline-variant overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
           <button
             className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-container-low transition-colors"
             onClick={() => setReviewOpen(o => !o)}
@@ -246,7 +246,7 @@ export default function HasilUjian() {
           </button>
 
           {reviewOpen && (
-            <div className="border-t border-outline-variant divide-y divide-slate-100">
+            <div className="border-t border-outline-variant divide-y divide-outline-variant/40">
               {data.jawaban.map((item) => (
                 <div
                   key={item.nomor}

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Pencil, Trash2, Search, KeyRound, Users, GraduationCap, BookOpen, AlertTriangle, Download, Upload, CheckCircle2, XCircle } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Input, Label } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
@@ -598,8 +597,7 @@ export default function ManageUsers() {
             </div>
           )}
 
-          <Card>
-            <CardContent className="p-0">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingSiswa ? (
                 <div className="py-12 text-center text-on-surface-variant">Memuat data siswa...</div>
               ) : filteredSiswa.length === 0 ? (
@@ -607,9 +605,9 @@ export default function ManageUsers() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-surface-container-low border-b border-outline-variant text-on-surface-variant uppercase text-xs">
-                      <tr>
-                        <th className="px-4 py-3 w-10">
+                    <thead>
+                      <tr className="border-b border-outline-variant">
+                        <th className="px-5 py-4 w-10">
                           <input
                             type="checkbox"
                             className="w-4 h-4 accent-primary cursor-pointer"
@@ -621,13 +619,13 @@ export default function ManageUsers() {
                             aria-label="Pilih semua siswa"
                           />
                         </th>
-                        <th className="px-4 py-3 font-semibold">NIS</th>
-                        <th className="px-4 py-3 font-semibold">Nama Siswa</th>
-                        <th className="px-4 py-3 font-semibold">Kelas</th>
-                        <th className="px-4 py-3 font-semibold text-center">Aksi</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">NIS</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Siswa</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kelas</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-outline-variant/40">
                       {paginatedSiswa.map(u => (
                         <tr key={u.id} className={`hover:bg-surface-container-low/50 transition-colors ${selectedSiswaIds.has(u.id) ? 'bg-primary-container/10' : ''}`}>
                           <td className="px-4 py-3">
@@ -666,8 +664,7 @@ export default function ManageUsers() {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       )}
 
@@ -703,8 +700,7 @@ export default function ManageUsers() {
             </div>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingGuru ? (
                 <div className="py-12 text-center text-on-surface-variant">Memuat data guru...</div>
               ) : filteredGuru.length === 0 ? (
@@ -712,16 +708,16 @@ export default function ManageUsers() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-surface-container-low border-b border-outline-variant text-on-surface-variant uppercase text-xs">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">NIP</th>
-                        <th className="px-4 py-3 font-semibold">Nama Guru</th>
-                        <th className="px-4 py-3 font-semibold">Email</th>
-                        <th className="px-4 py-3 font-semibold">Mata Pelajaran</th>
-                        <th className="px-4 py-3 font-semibold text-center">Aksi</th>
+                    <thead>
+                      <tr className="border-b border-outline-variant">
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">NIP</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Guru</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Email</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mata Pelajaran</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-outline-variant/40">
                       {paginatedGuru.map(u => (
                         <tr key={u.id} className="hover:bg-surface-container-low/50 transition-colors">
                           <td className="px-4 py-3 font-mono text-xs text-on-surface-variant">{u.guru?.nip || '-'}</td>
@@ -752,8 +748,7 @@ export default function ManageUsers() {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       )}
 
@@ -782,8 +777,7 @@ export default function ManageUsers() {
             </Button>
           </div>
 
-          <Card>
-            <CardContent className="p-0">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               {isLoadingKelas ? (
                 <div className="py-12 text-center text-on-surface-variant">Memuat data kelas...</div>
               ) : filteredKelas.length === 0 ? (
@@ -791,18 +785,18 @@ export default function ManageUsers() {
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-surface-container-low border-b border-outline-variant text-on-surface-variant uppercase text-xs">
-                      <tr>
-                        <th className="px-4 py-3 font-semibold">Nama Kelas</th>
-                        <th className="px-4 py-3 font-semibold">Tingkat</th>
-                        <th className="px-4 py-3 font-semibold">Tahun Ajaran</th>
-                        <th className="px-4 py-3 font-semibold">Wali Kelas</th>
-                        <th className="px-4 py-3 font-semibold">Guru Pengajar</th>
-                        <th className="px-4 py-3 font-semibold text-center">Siswa</th>
-                        <th className="px-4 py-3 font-semibold text-center">Aksi</th>
+                    <thead>
+                      <tr className="border-b border-outline-variant">
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Kelas</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Tingkat</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Tahun Ajaran</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Wali Kelas</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Guru Pengajar</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Siswa</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-outline-variant/40">
                       {paginatedKelas.map(k => {
                         const guruPengajar = (k as any).guruKelas ?? [];
                         const totalPengajar = guruPengajar.length + 1; // +1 wali kelas
@@ -844,8 +838,7 @@ export default function ManageUsers() {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       )}
 
@@ -857,7 +850,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="siswa-modal-title"
-            className="w-full max-w-md bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
               <h2 id="siswa-modal-title" className="text-lg font-bold text-on-surface">{editingSiswaId ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h2>
@@ -909,7 +902,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="guru-modal-title"
-            className="w-full max-w-md bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
               <h2 id="guru-modal-title" className="text-lg font-bold text-on-surface">{editingGuruId ? 'Edit Data Guru' : 'Tambah Guru Baru'}</h2>
@@ -989,7 +982,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="kelas-modal-title"
-            className="w-full max-w-md bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
               <h2 id="kelas-modal-title" className="text-lg font-bold text-on-surface">{editingKelasId ? 'Edit Kelas' : 'Tambah Kelas Baru'}</h2>
@@ -1079,7 +1072,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-modal-title"
-            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
+            className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
           >
             <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6 text-error" />
@@ -1136,7 +1129,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="bulk-delete-modal-title"
-            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
+            className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
           >
             <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6 text-error" />
@@ -1165,7 +1158,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="reset-modal-title"
-            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
+            className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200 p-6 text-center space-y-4"
           >
             <div className="w-12 h-12 bg-tertiary-fixed/70 rounded-full flex items-center justify-center mx-auto">
               <KeyRound className="w-6 h-6 text-on-tertiary-fixed" />
@@ -1207,7 +1200,7 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="import-result-title"
-            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-lg bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
               <h2 id="import-result-title" className="text-lg font-bold text-on-surface">

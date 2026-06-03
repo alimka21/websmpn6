@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { BookOpen, ChevronDown, ChevronRight, ArrowLeft, FileText, PenLine } from 'lucide-react';
@@ -90,69 +89,63 @@ export default function RiwayatNilai() {
       ) : errorMsg ? (
         <ErrorState message={errorMsg} onRetry={fetchData} />
       ) : data.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 flex flex-col items-center gap-3 text-on-surface-variant">
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+          <div className="py-16 flex flex-col items-center gap-3 text-on-surface-variant">
             <FileText className="w-12 h-12 text-outline-variant" />
             <p className="text-lg font-medium text-on-surface">Belum ada riwayat nilai</p>
             <p className="text-sm">Selesaikan ujian terlebih dahulu untuk melihat rekap nilai.</p>
             <Button variant="outline" onClick={() => navigate('/dashboard/siswa')} className="mt-2">
               Kembali ke Dashboard
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           {/* Ringkasan statistik */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Card className="bg-primary-container/20 border-primary/20">
-              <CardContent className="pt-4 pb-4">
-                <p className="text-xs text-on-surface-variant mb-1">Mata Pelajaran</p>
-                <p className="text-2xl font-bold text-primary">{data.length}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-secondary-container/20 border-secondary/20">
-              <CardContent className="pt-4 pb-4">
-                <p className="text-xs text-on-surface-variant mb-1">Total Ujian</p>
-                <p className="text-2xl font-bold text-secondary">{data.reduce((a, g) => a + g.jumlahUjian, 0)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-tertiary-fixed/20 border-tertiary-fixed/40 col-span-2 sm:col-span-1">
-              <CardContent className="pt-4 pb-4">
-                <p className="text-xs text-on-surface-variant mb-1">Rata-rata Keseluruhan</p>
-                {(() => {
-                  const valid = data.filter(g => g.rataRata !== null);
-                  const overall = valid.length > 0
-                    ? Math.round(valid.reduce((a, g) => a + (g.rataRata ?? 0), 0) / valid.length)
-                    : null;
-                  return <p className="text-2xl font-bold text-on-surface">{overall !== null ? overall : '—'}</p>;
-                })()}
-              </CardContent>
-            </Card>
+            <div className="bg-surface-container-lowest rounded-xl border border-primary/20 p-4">
+              <p className="text-xs text-on-surface-variant mb-1">Mata Pelajaran</p>
+              <p className="text-2xl font-bold text-primary">{data.length}</p>
+            </div>
+            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4">
+              <p className="text-xs text-on-surface-variant mb-1">Total Ujian</p>
+              <p className="text-2xl font-bold text-on-secondary-container">{data.reduce((a, g) => a + g.jumlahUjian, 0)}</p>
+            </div>
+            <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 col-span-2 sm:col-span-1">
+              <p className="text-xs text-on-surface-variant mb-1">Rata-rata Keseluruhan</p>
+              {(() => {
+                const valid = data.filter(g => g.rataRata !== null);
+                const overall = valid.length > 0
+                  ? Math.round(valid.reduce((a, g) => a + (g.rataRata ?? 0), 0) / valid.length)
+                  : null;
+                return <p className="text-2xl font-bold text-on-surface">{overall !== null ? overall : '—'}</p>;
+              })()}
+            </div>
           </div>
 
           {/* Accordion per mata pelajaran */}
           {data.map(group => (
-            <Card key={group.mataPelajaran} className="overflow-hidden">
+            <div key={group.mataPelajaran} className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
               <button
                 type="button"
                 className="w-full text-left"
                 onClick={() => toggle(group.mataPelajaran)}
                 aria-expanded={!!expanded[group.mataPelajaran]}
               >
-                <CardHeader className="pb-3 pt-4 hover:bg-surface-container-low/50 transition-colors">
+                <div className="px-5 py-4 hover:bg-surface-container-low/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-primary-container/30 flex items-center justify-center shrink-0">
                         <BookOpen className="w-4 h-4 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">{group.mataPelajaran}</CardTitle>
-                        <CardDescription className="text-xs mt-0.5">
+                        <p className="text-base font-semibold text-on-surface">{group.mataPelajaran}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
                           {group.jumlahUjian} ujian
                           {group.rataRata !== null && (
                             <span> &bull; Rata-rata: <span className="font-semibold text-on-surface">{Math.round(group.rataRata)}</span></span>
                           )}
-                        </CardDescription>
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 pr-1">
@@ -162,12 +155,12 @@ export default function RiwayatNilai() {
                         : <ChevronRight className="w-4 h-4 text-on-surface-variant" />}
                     </div>
                   </div>
-                </CardHeader>
+                </div>
               </button>
 
               {expanded[group.mataPelajaran] && (
-                <CardContent className="pt-0 pb-4">
-                  <div className="border-t border-outline-variant mt-1 pt-3 space-y-2">
+                <div className="px-5 pb-4 pt-0">
+                  <div className="border-t border-outline-variant pt-3 space-y-2">
                     {group.ujian.map(u => (
                       <div
                         key={u.sesiId}
@@ -193,9 +186,9 @@ export default function RiwayatNilai() {
                       </div>
                     ))}
                   </div>
-                </CardContent>
+                </div>
               )}
-            </Card>
+            </div>
           ))}
         </div>
       )}

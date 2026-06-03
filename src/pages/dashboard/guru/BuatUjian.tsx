@@ -1,7 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -199,12 +198,12 @@ export default function BuatUjian() {
 
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informasi Dasar</CardTitle>
-              <CardDescription>Berikan judul dan mata pelajaran untuk ujian ini.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 className="text-xl font-semibold text-on-surface">Informasi Dasar</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Berikan judul dan mata pelajaran untuk ujian ini.</p>
+            </div>
+            <div className="p-6 space-y-5">
               {isAdmin && (
                 <div className="space-y-2 p-4 bg-primary-container/15 border border-primary/30 rounded-lg">
                   <Label htmlFor="guruId" className="text-primary">
@@ -304,15 +303,15 @@ export default function BuatUjian() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Pengaturan Waktu</CardTitle>
-              <CardDescription>Batas waktu dan durasi pengerjaan siswa.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 className="text-xl font-semibold text-on-surface">Pengaturan Waktu</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Batas waktu dan durasi pengerjaan siswa.</p>
+            </div>
+            <div className="p-6 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <Label htmlFor="tanggalMulai">Waktu Dibuka <span className="text-error">*</span></Label>
@@ -353,15 +352,15 @@ export default function BuatUjian() {
                 </div>
                 <FieldError msg={errors.durasi} />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Peserta & Opsi Lanjutan</CardTitle>
-              <CardDescription>Pilih kelas yang wajib mengikuti ujian ini.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <div className="px-6 py-5 border-b border-outline-variant">
+              <h2 className="text-xl font-semibold text-on-surface">Peserta & Opsi Lanjutan</h2>
+              <p className="text-sm text-on-surface-variant mt-0.5">Pilih kelas yang wajib mengikuti ujian ini.</p>
+            </div>
+            <div className="p-6 space-y-6">
               <div className="space-y-3">
                 <Label>Pilih Kelas Peserta <span className="text-error">*</span></Label>
                 {kelasList.length === 0 ? (
@@ -413,8 +412,8 @@ export default function BuatUjian() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-            <CardFooter className="bg-surface-container-low border-t border-outline-variant p-6 flex justify-end gap-3 rounded-b-xl">
+            </div>
+            <div className="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={handleCancel}>Batal</Button>
               <Button type="submit" disabled={isLoading} className="gap-2 px-6">
                 {isLoading ? (
@@ -424,8 +423,8 @@ export default function BuatUjian() {
                 )}
                 Simpan & Lanjut Buat Soal
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </div>
       </form>
 
@@ -437,7 +436,7 @@ export default function BuatUjian() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="cancel-modal-title"
-            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="w-12 h-12 bg-tertiary-fixed/70 rounded-full flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6 text-on-tertiary-fixed" />
