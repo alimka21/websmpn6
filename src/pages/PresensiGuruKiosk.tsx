@@ -385,14 +385,14 @@ export default function PresensiGuruKiosk() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto p-6 flex gap-6">
-        {/* Center: Action Card */}
-        <section className="flex-1 flex items-start justify-center pt-12">
+      <main className="max-w-[1400px] mx-auto p-6">
+        {/* Top: Action Card */}
+        <section className="max-w-4xl mx-auto mb-8">
           {/* Step 1: Teacher Selection */}
           <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
             <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
               <span className="bg-primary text-on-primary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">1</span>
-              <h2 className="text-lg md:text-2xl font-semibold">Identifikasi Diri</h2>
+              <h2 className="text-base font-semibold text-[#0f172a]">Identifikasi Diri</h2>
             </div>
 
             {!selectedGuru ? (
@@ -407,7 +407,7 @@ export default function PresensiGuruKiosk() {
                   onChange={(e) => setSearch(e.target.value)}
                   onFocus={() => setShowSearchResults(true)}
                   placeholder="Cari Nama Anda atau NIP..."
-                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-4 md:py-6 bg-surface-bright border-2 border-outline-variant rounded-xl text-lg md:text-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                  className="w-full pl-14 pr-6 py-3 bg-white border-2 border-[#e2e8f0] rounded-lg text-base focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 transition-all outline-none"
                   autoFocus
                 />
 
@@ -429,8 +429,8 @@ export default function PresensiGuruKiosk() {
                             }`}
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-base md:text-lg font-semibold text-on-surface truncate">{guru.nama}</p>
-                              <p className="text-xs md:text-sm text-outline">NIP: {guru.nip}</p>
+                              <p className="text-sm font-semibold text-[#0f172a] truncate">{guru.nama}</p>
+                              <p className="text-xs text-[#64748b]">NIP: {guru.nip}</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                               {status?.sudahDatang && (
@@ -457,31 +457,34 @@ export default function PresensiGuruKiosk() {
                 )}
               </div>
             ) : (
-              <div className="mt-4 md:mt-6 p-4 md:p-6 bg-primary/5 rounded-xl border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                  <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary shrink-0">
-                    <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-primary" />
+              <div className="mt-4 p-4 bg-[#dde1ff] rounded-lg border border-[#1e40af]/20 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="h-12 w-12 rounded-full bg-[#1e40af] flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-6 h-6 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xl md:text-3xl font-bold text-primary truncate">{selectedGuru.nama}</h3>
-                    <p className="text-sm md:text-base text-on-surface-variant tracking-wide md:tracking-widest">NIP: {selectedGuru.nip}</p>
+                    <h3 className="text-base font-semibold text-[#0f172a] truncate">{selectedGuru.nama}</h3>
+                    <p className="text-xs text-[#64748b]">NIP: {selectedGuru.nip}</p>
                   </div>
                 </div>
-                <button onClick={handleReset} className="text-error font-bold flex items-center gap-1 hover:underline text-sm md:text-base shrink-0 self-end sm:self-auto">
-                  <X className="w-4 h-4 md:w-5 md:h-5" /> Batalkan
+                <button onClick={handleReset} className="text-red-600 font-semibold flex items-center gap-1 hover:underline text-sm shrink-0">
+                  <X className="w-4 h-4" /> Batalkan
                 </button>
               </div>
             )}
           </div>
 
+          {/* Spacing */}
+          <div className="h-8"></div>
+
           {/* Permission Status & Camera Preview */}
           {!selectedGuru && (
-            <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
+            <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm">
               <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
                 <span className="bg-secondary text-on-secondary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">
                   <Camera className="w-3 h-3 md:w-4 md:h-4" />
                 </span>
-                <h2 className="text-lg md:text-2xl font-semibold">Status Sistem</h2>
+                <h2 className="text-base font-semibold text-[#0f172a]">Status Sistem</h2>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -672,47 +675,51 @@ export default function PresensiGuruKiosk() {
           )}
         </section>
 
-        {/* Right Sidebar: Activity */}
-        <aside className="w-[360px] bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[calc(100vh-180px)]">
+        {/* Bottom: Activity Table */}
+        <section className="mt-12 bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-5 border-b border-[#f1f5f9]">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-bold text-[#0f172a]">Aktivitas Hari Ini</h3>
-              <span className="bg-[#dde1ff] text-[#1e40af] px-3 py-1 rounded-full text-xs font-semibold">LIVE</span>
+          <div className="px-6 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-[#0f172a]">Aktivitas Hari Ini</h3>
+              <p className="text-xs text-[#64748b] mt-0.5">Rekap kehadiran guru hari ini</p>
             </div>
-            <p className="text-xs text-[#64748b]">Rekap kehadiran guru hari ini</p>
+            <span className="bg-[#dde1ff] text-[#1e40af] px-3 py-1 rounded-full text-xs font-semibold">LIVE</span>
           </div>
 
-          {/* Activity List */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Table */}
+          <div className="overflow-x-auto">
             {recentActivity.length === 0 ? (
               <div className="text-center py-16 text-[#64748b]">
                 <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="text-sm font-medium">Belum ada guru yang hadir</p>
               </div>
             ) : (
-              <div className="divide-y divide-[#f1f5f9]">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                    <div className="flex items-start gap-3 mb-3">
-                      {/* Icon */}
-                      <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
-                        <GraduationCap className="w-5 h-5 text-[#1e40af]" />
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
-                        <div className="text-xs text-[#64748b]">NIP: {activity.nip}</div>
-                      </div>
-                    </div>
-
-                    {/* Time Info */}
-                    <div className="ml-[52px] space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#64748b]">Datang:</span>
+              <table className="w-full">
+                <thead className="bg-[#f8fafc] border-b border-[#f1f5f9]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">Nama Guru</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">NIP</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">Jam Datang</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">Jam Pulang</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">Total Jam</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f1f5f9]">
+                  {recentActivity.map((activity) => (
+                    <tr key={activity.id} className="hover:bg-[#f8fafc] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                            <GraduationCap className="w-4 h-4 text-[#1e40af]" />
+                          </div>
+                          <span className="text-sm font-medium text-[#0f172a]">{activity.nama}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#64748b]">{activity.nip}</td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${activity.waktuDatang ? 'text-green-600' : 'text-[#c4c5d5]'}`}>
+                          <span className={`text-sm font-semibold ${activity.waktuDatang ? 'text-green-600' : 'text-[#c4c5d5]'}`}>
                             {activity.waktuDatang || '--:--'}
                           </span>
                           {activity.keterlambatan > 0 && (
@@ -721,12 +728,10 @@ export default function PresensiGuruKiosk() {
                             </span>
                           )}
                         </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#64748b]">Pulang:</span>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${activity.waktuPulang ? 'text-[#1e40af]' : 'text-[#c4c5d5]'}`}>
+                          <span className={`text-sm font-semibold ${activity.waktuPulang ? 'text-[#1e40af]' : 'text-[#c4c5d5]'}`}>
                             {activity.waktuPulang || '--:--'}
                           </span>
                           {activity.autoCheckout && (
@@ -735,21 +740,32 @@ export default function PresensiGuruKiosk() {
                             </span>
                           )}
                         </div>
-                      </div>
-
-                      {activity.totalJam > 0 && (
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-[#f1f5f9]">
-                          <span className="text-[#64748b]">Total Jam:</span>
-                          <span className="font-semibold text-[#0f172a]">{formatMinutesToHours(activity.totalJam)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-[#0f172a]">
+                        {activity.totalJam > 0 ? formatMinutesToHours(activity.totalJam) : '--'}
+                      </td>
+                      <td className="px-6 py-4">
+                        {activity.waktuDatang && activity.waktuPulang ? (
+                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            Selesai
+                          </span>
+                        ) : activity.waktuDatang ? (
+                          <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            Hadir
+                          </span>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-semibold">
+                            Belum
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
-        </aside>
+        </section>
       </main>
 
       {/* Footer */}
