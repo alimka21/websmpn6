@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { Users, CheckCircle, Home, User, Clock, Calendar, TrendingUp, Filter, GraduationCap } from 'lucide-react';
+import { Users, CheckCircle, Home, User, Clock, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -58,7 +58,6 @@ export default function PresensiSiswaKiosk() {
   useEffect(() => {
     loadRecentActivity();
     loadKelasData();
-    // Auto-focus input
     inputRef.current?.focus();
   }, []);
 
@@ -150,119 +149,116 @@ export default function PresensiSiswaKiosk() {
     : recentActivity.filter(a => a.kelasId === selectedKelasFilter);
 
   return (
-    <div className="bg-surface-container-low text-on-surface font-sans min-h-screen flex flex-col">
+    <div className="min-h-screen bg-[#faf8ff] font-[Inter]">
       {/* Header */}
-      <header className="bg-surface border-b border-outline-variant px-4 md:px-8 py-4 z-50">
-        <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+      <header className="bg-white border-b border-[#e2e8f0] px-8 py-4 shadow-sm">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           {/* Left: Clock */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {cfg.logoUrl ? (
-              <img src={cfg.logoUrl} alt={schoolName} className="h-12 w-12 object-contain rounded-lg" />
+              <img src={cfg.logoUrl} alt={schoolName} className="h-14 w-14 object-contain rounded-lg" />
             ) : (
-              <div className="h-12 w-12 bg-primary rounded-lg flex items-center justify-center text-white">
-                <GraduationCap className="w-7 h-7" />
+              <div className="h-14 w-14 bg-[#1e40af] rounded-lg flex items-center justify-center text-white">
+                <GraduationCap className="w-8 h-8" />
               </div>
             )}
             <div>
-              <div className="text-2xl font-bold text-primary tabular-nums leading-none">
+              <div className="text-3xl font-bold text-[#1e40af] tabular-nums leading-tight">
                 {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
-              <div className="text-xs text-on-surface-variant mt-0.5">
-                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+              <div className="text-sm text-[#64748b] mt-1">
+                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
             </div>
           </div>
 
           {/* Center: Title */}
-          <div className="hidden md:block text-center">
-            <h1 className="text-xl font-bold text-on-surface">{schoolName}</h1>
-            <p className="text-xs text-on-surface-variant uppercase tracking-wider">Kiosk Presensi Siswa</p>
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold text-[#0f172a]">{schoolName}</h1>
+            <p className="text-sm text-[#64748b] uppercase tracking-wider font-medium">Kiosk Presensi Siswa</p>
           </div>
 
           {/* Right: Home Button */}
           <Link
             to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-primary hover:text-white transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white border border-[#e2e8f0] text-[#1e40af] hover:bg-[#f8fafc] transition-all shadow-sm"
           >
             <Home className="w-5 h-5" />
-            <span className="font-medium text-sm">Beranda</span>
+            <span className="font-medium">Beranda</span>
           </Link>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col lg:flex-row max-w-[1800px] mx-auto w-full p-4 md:p-6 gap-6">
-        {/* Left: Input Section */}
-        <section className="flex-1 flex flex-col">
-          <div className="bg-surface rounded-2xl p-6 md:p-8 shadow-sm border border-outline-variant/30">
-            {/* Success Overlay */}
-            {showSuccess && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-surface rounded-2xl p-8 max-w-md w-full text-center shadow-2xl border-2 border-green-500 animate-in zoom-in duration-300">
-                  <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center text-white mb-4 mx-auto">
-                    <CheckCircle className="w-12 h-12" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-on-surface mb-2">Presensi Berhasil!</h2>
-                  <p className="text-on-surface-variant mb-4">
-                    <span className="font-semibold text-lg text-primary">{successData.nama}</span>
-                    <br />
-                    <span className="text-sm">{successData.kelas}</span>
-                  </p>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-fixed rounded-lg">
-                    <Clock className="w-5 h-5 text-primary" />
-                    <span className="font-bold text-lg text-primary">{successData.time}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Input Form */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-on-surface-variant mb-2 uppercase tracking-wide">
-                Masukkan NIS
-              </label>
-              <form onSubmit={handleSearch} className="flex gap-3">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={nis}
-                  onChange={(e) => setNis(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ketik NIS..."
-                  className="flex-1 px-4 py-3 border-2 border-outline-variant bg-surface rounded-xl focus:border-primary focus:ring-4 focus:ring-primary/20 outline-none text-lg transition-all"
-                  disabled={loading || submitting}
-                />
-                <button
-                  type="submit"
-                  onClick={handleSearch}
-                  disabled={loading || submitting || !nis.trim()}
-                  className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-container disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all shadow-sm"
-                >
-                  {loading ? 'Mencari...' : 'Cari'}
-                </button>
-              </form>
+      {/* Success Modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-8">
+          <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6 mx-auto">
+              <CheckCircle className="w-12 h-12" />
             </div>
+            <h2 className="text-3xl font-bold text-[#0f172a] mb-3">Presensi Berhasil!</h2>
+            <p className="text-[#64748b] mb-2">
+              <span className="font-semibold text-xl text-[#1e40af]">{successData.nama}</span>
+            </p>
+            <p className="text-sm text-[#64748b] mb-6">{successData.kelas}</p>
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#dde1ff] rounded-lg">
+              <Clock className="w-5 h-5 text-[#1e40af]" />
+              <span className="font-bold text-xl text-[#1e40af]">{successData.time}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-[1400px] mx-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: Input Section - 2 columns */}
+        <section className="lg:col-span-2 space-y-6">
+          {/* Input Card */}
+          <div className="bg-white rounded-2xl p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#f1f5f9]">
+            <label className="block text-sm font-medium text-[#64748b] uppercase tracking-wider mb-3">
+              Masukkan NIS
+            </label>
+            <form onSubmit={handleSearch} className="flex gap-4 mb-6">
+              <input
+                ref={inputRef}
+                type="text"
+                value={nis}
+                onChange={(e) => setNis(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ketik NIS..."
+                className="flex-1 px-5 py-4 text-lg border border-[#e2e8f0] bg-white rounded-lg focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all"
+                disabled={loading || submitting}
+              />
+              <button
+                type="submit"
+                onClick={handleSearch}
+                disabled={loading || submitting || !nis.trim()}
+                className="px-8 py-4 bg-[#1e40af] text-white rounded-lg hover:bg-[#1e3a8a] disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all shadow-sm"
+              >
+                {loading ? 'Mencari...' : 'Cari'}
+              </button>
+            </form>
 
             {/* Result Card */}
             {siswa && (
-              <div className="bg-primary-fixed border-2 border-primary rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <div className="flex items-start justify-between mb-4">
+              <div className="bg-[#dde1ff] border border-[#1e40af]/20 rounded-xl p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="flex items-start justify-between mb-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white">
-                      <User className="w-7 h-7" />
+                    <div className="w-16 h-16 bg-[#1e40af] rounded-full flex items-center justify-center text-white">
+                      <User className="w-8 h-8" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-on-surface">{siswa.nama}</h3>
-                      <p className="text-sm text-on-surface-variant">NIS: {siswa.nis}</p>
+                      <h3 className="text-xl font-semibold text-[#0f172a]">{siswa.nama}</h3>
+                      <p className="text-sm text-[#64748b]">NIS: {siswa.nis}</p>
                     </div>
                   </div>
-                  <div className="px-3 py-1 bg-primary rounded-full">
-                    <span className="text-sm font-bold text-white">{siswa.kelas}</span>
+                  <div className="px-4 py-2 bg-[#1e40af] rounded-full">
+                    <span className="text-sm font-semibold text-white">{siswa.kelas}</span>
                   </div>
                 </div>
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full py-3 bg-primary text-white rounded-xl hover:bg-primary-container disabled:opacity-50 font-bold text-lg transition-all shadow-md hover:shadow-lg"
+                  className="w-full py-4 bg-[#1e40af] text-white rounded-lg hover:bg-[#1e3a8a] disabled:opacity-50 font-semibold text-lg transition-all shadow-md hover:shadow-lg"
                 >
                   {submitting ? 'Menyimpan...' : 'Konfirmasi Presensi'}
                 </button>
@@ -270,51 +266,50 @@ export default function PresensiSiswaKiosk() {
             )}
 
             {!siswa && !loading && nis && (
-              <div className="text-center py-8 text-on-surface-variant">
-                <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>Siswa tidak ditemukan</p>
+              <div className="text-center py-12 text-[#64748b]">
+                <User className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p className="text-lg">Siswa tidak ditemukan</p>
               </div>
             )}
           </div>
-        </section>
 
-        {/* Right: Activity Panel */}
-        <aside className="lg:w-[480px] flex flex-col gap-4">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-surface rounded-xl p-4 shadow-sm border border-outline-variant/30 text-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-primary-fixed rounded-full mx-auto mb-2">
-                <Users className="w-5 h-5 text-primary" />
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#f1f5f9] text-center">
+              <div className="flex items-center justify-center w-12 h-12 bg-[#dde1ff] rounded-full mx-auto mb-3">
+                <Users className="w-6 h-6 text-[#1e40af]" />
               </div>
-              <div className="text-2xl font-bold text-on-surface">{totalSiswa}</div>
-              <div className="text-xs text-on-surface-variant font-medium">Total Siswa</div>
+              <div className="text-3xl font-bold text-[#0f172a] mb-1">{totalSiswa}</div>
+              <div className="text-sm text-[#64748b] font-medium">Total Siswa</div>
             </div>
-            <div className="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200 text-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-green-500 rounded-full mx-auto mb-2">
-                <CheckCircle className="w-5 h-5 text-white" />
+            <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-green-200 text-center">
+              <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-3">
+                <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
-              <div className="text-2xl font-bold text-green-700">{attendedCount}</div>
-              <div className="text-xs text-green-600 font-medium">Hadir</div>
+              <div className="text-3xl font-bold text-green-700 mb-1">{attendedCount}</div>
+              <div className="text-sm text-green-600 font-medium">Hadir</div>
             </div>
-            <div className="bg-red-50 rounded-xl p-4 shadow-sm border border-red-200 text-center">
-              <div className="flex items-center justify-center w-10 h-10 bg-red-500 rounded-full mx-auto mb-2">
-                <TrendingUp className="w-5 h-5 text-white" />
+            <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-red-200 text-center">
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-3">
+                <Users className="w-6 h-6 text-red-600" />
               </div>
-              <div className="text-2xl font-bold text-red-700">{totalSiswa - attendedCount}</div>
-              <div className="text-xs text-red-600 font-medium">Belum Hadir</div>
+              <div className="text-3xl font-bold text-red-700 mb-1">{totalSiswa - attendedCount}</div>
+              <div className="text-sm text-red-600 font-medium">Belum Hadir</div>
             </div>
           </div>
+        </section>
 
-          {/* Filter Kelas */}
-          <div className="bg-surface rounded-xl p-4 shadow-sm border border-outline-variant/30">
-            <label className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant mb-2 uppercase tracking-wide">
-              <Filter className="w-4 h-4" />
+        {/* Right: Activity Panel - 1 column */}
+        <aside className="space-y-4">
+          {/* Filter Card */}
+          <div className="bg-white rounded-xl p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#f1f5f9]">
+            <label className="block text-sm font-medium text-[#64748b] uppercase tracking-wider mb-3">
               Filter Kelas
             </label>
             <select
               value={selectedKelasFilter}
               onChange={(e) => setSelectedKelasFilter(e.target.value)}
-              className="w-full px-3 py-2 border-2 border-outline-variant bg-surface rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none font-medium transition-all"
+              className="w-full px-4 py-3 border border-[#e2e8f0] bg-white rounded-lg focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none font-medium transition-all"
             >
               <option value="ALL">Semua Kelas ({attendedCount}/{totalSiswa})</option>
               {kelasList.map(k => (
@@ -326,17 +321,14 @@ export default function PresensiSiswaKiosk() {
           </div>
 
           {/* Activity List */}
-          <div className="bg-surface rounded-xl shadow-sm border border-outline-variant/30 flex-1 flex flex-col">
-            <div className="p-4 border-b border-outline-variant">
-              <h2 className="text-sm font-bold text-on-surface uppercase tracking-wide flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Aktivitas Hari Ini
-              </h2>
+          <div className="bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#f1f5f9] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#f1f5f9] bg-[#f8fafc]">
+              <h2 className="text-sm font-semibold text-[#0f172a] uppercase tracking-wide">Aktivitas Hari Ini</h2>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[600px]">
+            <div className="max-h-[600px] overflow-y-auto">
               {filteredActivity.length === 0 ? (
-                <div className="text-center py-12 text-on-surface-variant">
-                  <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <div className="text-center py-16 text-[#64748b]">
+                  <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p className="text-sm font-medium">
                     {selectedKelasFilter === 'ALL'
                       ? 'Belum ada siswa yang hadir hari ini'
@@ -344,37 +336,36 @@ export default function PresensiSiswaKiosk() {
                   </p>
                 </div>
               ) : (
-                filteredActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 hover:border-primary/40 transition-all hover:shadow-md"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-primary-fixed rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-primary" />
+                <div className="divide-y divide-[#f1f5f9]">
+                  {filteredActivity.map((activity) => (
+                    <div key={activity.id} className="p-4 hover:bg-[#f8fafc] transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 text-[#1e40af]" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
+                            <div className="text-xs text-[#64748b]">{activity.kelas}</div>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-on-surface truncate">{activity.nama}</div>
-                          <div className="text-xs text-on-surface-variant">{activity.kelas}</div>
-                        </div>
+                        {activity.tepatWaktu ? (
+                          <div className="px-3 py-1 bg-green-100 rounded-full flex-shrink-0">
+                            <span className="text-xs font-semibold text-green-700">TEPAT</span>
+                          </div>
+                        ) : (
+                          <div className="px-3 py-1 bg-red-100 rounded-full flex-shrink-0">
+                            <span className="text-xs font-semibold text-red-700">+{activity.keterlambatan}m</span>
+                          </div>
+                        )}
                       </div>
-                      {activity.tepatWaktu ? (
-                        <div className="px-3 py-1 bg-green-100 rounded-full flex-shrink-0">
-                          <span className="text-xs font-bold text-green-700">TEPAT</span>
-                        </div>
-                      ) : (
-                        <div className="px-3 py-1 bg-red-100 rounded-full flex-shrink-0">
-                          <span className="text-xs font-bold text-red-700">TELAT {activity.keterlambatan}m</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 text-xs text-[#64748b] bg-[#f8fafc] rounded-lg px-3 py-2 w-fit">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span className="font-medium">{activity.waktu}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-primary font-medium bg-primary-fixed/50 rounded-lg px-3 py-1.5 w-fit">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Hadir: {activity.waktu}</span>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>

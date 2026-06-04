@@ -321,40 +321,40 @@ export default function PresensiGuruKiosk() {
   return (
     <div className="bg-background text-on-background font-sans min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-surface border-b border-outline-variant px-4 md:px-8 py-4 z-50">
-        <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+      <header className="bg-white border-b border-[#e2e8f0] px-8 py-4 shadow-sm">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           {/* Left: Clock */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {cfg.logoUrl ? (
-              <img src={cfg.logoUrl} alt={schoolName} className="h-12 w-12 object-contain rounded-lg" />
+              <img src={cfg.logoUrl} alt={schoolName} className="h-14 w-14 object-contain rounded-lg" />
             ) : (
-              <div className="h-12 w-12 bg-primary rounded-lg flex items-center justify-center text-white">
-                <GraduationCap className="w-7 h-7" />
+              <div className="h-14 w-14 bg-[#1e40af] rounded-lg flex items-center justify-center text-white">
+                <GraduationCap className="w-8 h-8" />
               </div>
             )}
             <div>
-              <div className="text-2xl font-bold text-primary tabular-nums leading-none">
+              <div className="text-3xl font-bold text-[#1e40af] tabular-nums leading-tight">
                 {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
-              <div className="text-xs text-on-surface-variant mt-0.5">
-                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+              <div className="text-sm text-[#64748b] mt-1">
+                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
             </div>
           </div>
 
           {/* Center: Title */}
           <div className="hidden md:block text-center">
-            <h1 className="text-xl font-bold text-on-surface">{schoolName}</h1>
-            <p className="text-xs text-on-surface-variant uppercase tracking-wider">Kiosk Presensi Guru</p>
+            <h1 className="text-2xl font-semibold text-[#0f172a]">{schoolName}</h1>
+            <p className="text-sm text-[#64748b] uppercase tracking-wider font-medium">Kiosk Presensi Guru</p>
           </div>
 
           {/* Right: Home Button */}
           <Link
             to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-primary hover:text-white transition-all"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white border border-[#e2e8f0] text-[#1e40af] hover:bg-[#f8fafc] transition-all shadow-sm"
           >
             <Home className="w-5 h-5" />
-            <span className="font-medium text-sm">Beranda</span>
+            <span className="font-medium">Beranda</span>
           </Link>
         </div>
       </header>
