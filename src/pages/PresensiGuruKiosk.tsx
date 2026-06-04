@@ -58,6 +58,7 @@ export default function PresensiGuruKiosk() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null); // For second video element when guru selected
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -84,12 +85,24 @@ export default function PresensiGuruKiosk() {
     }
   }, [cameraPermission]);
 
-  // Update video element when stream changes
+  // Update video elements when stream changes OR when component re-renders
   useEffect(() => {
+    // Update first video (status section)
     if (videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
+      if (videoRef.current.srcObject !== cameraStream) {
+        videoRef.current.srcObject = cameraStream;
+        videoRef.current.play().catch(err => console.error('Video play error:', err));
+      }
     }
-  }, [cameraStream]);
+
+    // Update second video (verification section)
+    if (videoRef2.current && cameraStream) {
+      if (videoRef2.current.srcObject !== cameraStream) {
+        videoRef2.current.srcObject = cameraStream;
+        videoRef2.current.play().catch(err => console.error('Video2 play error:', err));
+      }
+    }
+  }, [cameraStream, selectedGuru]); // Re-run when selectedGuru changes to ensure video is attached
 
   const loadGuruList = async () => {
     setLoading(true);
@@ -233,7 +246,10 @@ export default function PresensiGuruKiosk() {
   };
 
   const captureFotoFromStream = (): string | null => {
-    if (!videoRef.current || !cameraStream) return null;
+    // Use videoRef2 if guru is selected (verification section), otherwise videoRef
+    const activeVideo = selectedGuru && videoRef2.current ? videoRef2.current : videoRef.current;
+
+    if (!activeVideo || !cameraStream) return null;
 
     try {
       const canvas = document.createElement('canvas');
@@ -241,8 +257,8 @@ export default function PresensiGuruKiosk() {
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
 
-      if (ctx && videoRef.current) {
-        ctx.drawImage(videoRef.current, 0, 0, 640, 480);
+      if (ctx && activeVideo) {
+        ctx.drawImage(activeVideo, 0, 0, 640, 480);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         return dataUrl;
       }
@@ -594,7 +610,7 @@ export default function PresensiGuruKiosk() {
                     {cameraPermission === 'granted' && cameraStream ? (
                       <>
                         <video
-                          ref={videoRef}
+                          ref={videoRef2}
                           autoPlay
                           playsInline
                           muted
