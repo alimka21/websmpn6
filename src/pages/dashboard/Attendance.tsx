@@ -299,12 +299,12 @@ export default function Attendance() {
                       <tbody className="divide-y divide-outline-variant/40">
                         {presensiSiswa.map((siswa, idx) => (
                           <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                            <td className="px-5 py-4 text-sm text-on-surface-variant">{idx + 1}</td>
-                            <td className="px-5 py-4 text-sm font-medium text-on-surface">
+                            <td className="px-4 py-3 text-on-surface-variant">{idx + 1}</td>
+                            <td className="px-4 py-3 font-medium text-on-surface">
                               {siswa.nama}
-                              <div className="text-xs text-outline-variant font-normal mt-0.5">{siswa.nis}</div>
+                              <div className="text-xs text-on-surface-variant font-normal mt-0.5">{siswa.nis}</div>
                             </td>
-                            <td className="px-5 py-4">
+                            <td className="px-4 py-3">
                               <div className="flex flex-wrap gap-3">
                                 {[
                                   {val: 'HADIR', label: 'Hadir', col: 'text-on-secondary-container bg-secondary-container/30 border-secondary/30'}, 
@@ -329,7 +329,7 @@ export default function Attendance() {
                                 ))}
                               </div>
                             </td>
-                            <td className="px-5 py-4">
+                            <td className="px-4 py-3">
                               <Input
                                 placeholder="catatan opsional"
                                 className="h-8 text-xs max-w-[200px]"
@@ -382,8 +382,8 @@ export default function Attendance() {
                   </div>
 
                   <div className="flex justify-end mb-3">
-                    <Button variant="outline" size="sm" className="gap-2 bg-secondary-container/30 text-on-secondary-container border-secondary/30 hover:bg-secondary-container/60" onClick={handleExport} disabled={isExporting}>
-                      {isExporting ? <div className="w-4 h-4 border-2 border-secondary/40 border-t-green-700 rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+                    <Button variant="outline" size="sm" className="gap-2 bg-green-600 text-white border-green-600 hover:bg-green-700" onClick={handleExport} disabled={isExporting}>
+                      {isExporting ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
                       Export Excel
                     </Button>
                   </div>
@@ -415,15 +415,15 @@ export default function Attendance() {
                       <tbody className="divide-y divide-outline-variant/40">
                         {sortedRekap.map((siswa, idx) => (
                           <tr key={idx} className="hover:bg-surface-container-low/50 transition-colors group">
-                            <td className="px-5 py-4 text-sm font-medium text-on-surface">
+                            <td className="px-4 py-3 font-medium text-on-surface">
                               {siswa.nama}
-                              <div className="text-xs text-outline-variant font-normal">{siswa.nis}</div>
+                              <div className="text-xs text-on-surface-variant font-normal">{siswa.nis}</div>
                             </td>
-                            <td className="px-5 py-4 text-sm text-center font-medium text-on-secondary-container">{siswa.hadir}</td>
-                            <td className="px-5 py-4 text-sm text-center text-on-tertiary-fixed">{siswa.izin}</td>
-                            <td className="px-5 py-4 text-sm text-center text-on-tertiary-fixed">{siswa.sakit}</td>
-                            <td className="px-5 py-4 text-sm text-center text-error font-medium">{siswa.alpha}</td>
-                            <td className="px-5 py-4 text-sm text-center font-bold" style={{ color: getPercentageColor(siswa.persentase) }}>
+                            <td className="px-4 py-3 text-center font-medium text-on-secondary-container">{siswa.hadir}</td>
+                            <td className="px-4 py-3 text-center text-on-tertiary-fixed">{siswa.izin}</td>
+                            <td className="px-4 py-3 text-center text-on-tertiary-fixed">{siswa.sakit}</td>
+                            <td className="px-4 py-3 text-center text-error font-medium">{siswa.alpha}</td>
+                            <td className="px-4 py-3 text-center font-bold" style={{ color: getPercentageColor(siswa.persentase) }}>
                               {siswa.persentase}%
                             </td>
                           </tr>

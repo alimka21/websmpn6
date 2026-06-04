@@ -566,10 +566,10 @@ export default function PresensiAdmin() {
                 <button
                   onClick={exportGuruExcel}
                   disabled={exportingGuru}
-                  className="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container rounded-xl text-sm font-semibold hover:bg-secondary-container/80 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   {exportingGuru ? (
-                    <div className="w-4 h-4 border-2 border-on-secondary-container/40 border-t-on-secondary-container rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
@@ -595,20 +595,20 @@ export default function PresensiAdmin() {
                   <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
                 ) : guruRows.map(row => (
                   <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">{row.no}</td>
-                    <td className="px-5 py-4 font-semibold text-primary">{row.nama}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtDate(row.tanggal)}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtTime(row.waktuDatang)}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtTime(row.waktuPulang)}</td>
-                    <td className="px-5 py-4 text-sm">
+                    <td className="px-4 py-3 text-on-surface-variant">{row.no}</td>
+                    <td className="px-4 py-3 font-medium text-on-surface">{row.nama}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuPulang)}</td>
+                    <td className="px-4 py-3">
                       {row.keterlambatan > 0 ? (
-                        <span className="text-error font-bold">{row.keterlambatan} menit</span>
+                        <span className="text-error font-medium">{row.keterlambatan} menit</span>
                       ) : (
-                        <span className="text-green-600 font-bold">Tepat Waktu</span>
+                        <span className="text-green-600 font-medium">Tepat Waktu</span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-sm text-on-surface font-bold">{fmtDurasi(row.totalJam)}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3 text-on-surface font-medium">{fmtDurasi(row.totalJam)}</td>
+                    <td className="px-4 py-3">
                       {row.autoCheckout
                         ? <span className="text-[11px] font-bold px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed rounded-full">Auto</span>
                         : row.waktuPulang
@@ -616,7 +616,7 @@ export default function PresensiAdmin() {
                           : <span className="text-[11px] font-bold px-2 py-1 bg-error-container text-error rounded-full">Belum Pulang</span>
                       }
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         <FotoThumb src={row.fotoDatang} label="Foto Datang" />
                         <FotoThumb src={row.fotoPulang} label="Foto Pulang" />
@@ -675,10 +675,10 @@ export default function PresensiAdmin() {
                 <button
                   onClick={exportSiswaExcel}
                   disabled={exportingSiswa}
-                  className="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container rounded-xl text-sm font-semibold hover:bg-secondary-container/80 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   {exportingSiswa ? (
-                    <div className="w-4 h-4 border-2 border-on-secondary-container/40 border-t-on-secondary-container rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   ) : (
                     <Download className="w-4 h-4" />
                   )}
@@ -704,13 +704,13 @@ export default function PresensiAdmin() {
                   <tr><td colSpan={7} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
                 ) : siswaRows.map(row => (
                   <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">{row.no}</td>
-                    <td className="px-5 py-4 text-sm font-medium text-on-surface">{row.nis}</td>
-                    <td className="px-5 py-4 font-semibold text-primary">{row.nama}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">{row.kelas}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtTime(row.waktuDatang)}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtDate(row.tanggal)}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3 text-on-surface-variant">{row.no}</td>
+                    <td className="px-4 py-3 font-mono font-medium text-on-surface">{row.nis}</td>
+                    <td className="px-4 py-3 font-medium text-on-surface">{row.nama}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{row.kelas}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
+                    <td className="px-4 py-3">
                       <button onClick={() => setDelSiswaId(row.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Hapus">
                         <Trash2 className="w-4 h-4" />
                       </button>

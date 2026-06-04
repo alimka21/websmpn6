@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { GraduationCap, LogIn, LogOut, Settings, Camera, MapPin, CheckCircle, X, Clock, Users, AlertTriangle } from 'lucide-react';
+import { GraduationCap, LogIn, LogOut, Home, Camera, MapPin, CheckCircle, X, Clock, Users, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -318,15 +319,23 @@ export default function PresensiGuruKiosk() {
   const permissionsReady = cameraPermission === 'granted' && locationPermission === 'granted';
 
   return (
-    <div className="bg-background text-on-background font-sans overflow-hidden min-h-screen flex flex-col">
+    <div className="bg-background text-on-background font-sans min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-surface border-b border-outline-variant px-4 md:px-20 py-3 md:py-6 z-30">
         <div className="flex justify-between items-center gap-2">
           {/* Left: Logo + Name */}
           <div className="flex items-center gap-2 md:gap-4">
-            <div className="h-10 w-10 md:h-14 md:w-14 bg-primary rounded-lg md:rounded-xl flex items-center justify-center text-on-primary">
-              <GraduationCap className="w-6 h-6 md:w-9 md:h-9" />
-            </div>
+            {cfg.logoUrl ? (
+              <img
+                src={cfg.logoUrl}
+                alt={schoolName}
+                className="h-10 w-10 md:h-14 md:w-14 object-contain rounded-lg"
+              />
+            ) : (
+              <div className="h-10 w-10 md:h-14 md:w-14 bg-primary rounded-lg md:rounded-xl flex items-center justify-center text-on-primary">
+                <GraduationCap className="w-6 h-6 md:w-9 md:h-9" />
+              </div>
+            )}
             <div className="hidden sm:block">
               <h1 className="text-base md:text-2xl font-bold text-primary">{schoolName}</h1>
               <p className="text-[10px] md:text-xs text-on-surface-variant uppercase tracking-widest">Kiosk Presensi Guru</p>
@@ -346,15 +355,15 @@ export default function PresensiGuruKiosk() {
             </div>
           </div>
 
-          {/* Right: Terminal + Settings */}
+          {/* Right: Home Button */}
           <div className="flex items-center gap-2 md:gap-4">
-            <div className="text-right hidden lg:block">
-              <p className="text-xs uppercase tracking-wider text-outline">Terminal ID</p>
-              <p className="text-xl md:text-2xl font-bold text-primary">#01</p>
-            </div>
-            <button className="h-8 w-8 md:h-12 md:w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all">
-              <Settings className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
+            <Link
+              to="/"
+              className="h-8 w-8 md:h-12 md:w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all"
+              title="Kembali ke Beranda"
+            >
+              <Home className="w-4 h-4 md:w-5 md:h-5" />
+            </Link>
           </div>
         </div>
       </header>
@@ -394,7 +403,7 @@ export default function PresensiGuruKiosk() {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 px-4 md:px-20 py-4 md:py-8 overflow-y-auto lg:overflow-hidden">
+      <main className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 px-4 md:px-20 py-4 md:py-8">
         {/* Left: Action Area */}
         <section className="lg:col-span-8 flex flex-col gap-4 md:gap-8 h-full">
           {/* Step 1: Teacher Selection */}
@@ -682,12 +691,12 @@ export default function PresensiGuruKiosk() {
         </section>
 
         {/* Right: Recent Activity */}
-        <aside className="lg:col-span-4 flex flex-col h-auto lg:h-full overflow-hidden bg-surface-container-low rounded-xl border border-outline-variant">
+        <aside className="lg:col-span-4 flex flex-col bg-surface-container-low rounded-xl border border-outline-variant">
           <div className="p-4 md:p-6 border-b border-outline-variant bg-surface flex justify-between items-center">
             <h3 className="text-lg md:text-2xl font-semibold">Recap Hari Ini</h3>
             <span className="bg-primary-container text-on-primary-container px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold">Terbaru</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3 md:gap-4 max-h-[400px] lg:max-h-none">
+          <div className="overflow-y-auto p-4 md:p-6 flex flex-col gap-3 md:gap-4 max-h-[400px] lg:max-h-[600px]">
             {recentActivity.length === 0 ? (
               <div className="text-center py-12 text-on-surface-variant">
                 <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -745,17 +754,17 @@ export default function PresensiGuruKiosk() {
       {/* Success Overlay */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 bg-on-background/60 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="bg-surface rounded-2xl md:rounded-3xl p-6 md:p-12 max-w-2xl w-full text-center shadow-2xl scale-100 transition-transform duration-300">
-            <div className="mb-6 md:mb-8 flex justify-center">
-              <div className="h-16 w-16 md:h-24 md:w-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-10 h-10 md:w-16 md:h-16" />
+          <div className="bg-surface rounded-2xl md:rounded-3xl p-6 md:p-8 max-w-xl w-full text-center shadow-2xl scale-100 transition-transform duration-300">
+            <div className="mb-4 md:mb-6 flex justify-center">
+              <div className="h-12 w-12 md:h-16 md:w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />
               </div>
             </div>
-            <h2 className="text-2xl md:text-5xl font-bold text-primary mb-3 md:mb-4 leading-tight">
+            <h2 className="text-xl md:text-3xl font-bold text-primary mb-2 md:mb-3 leading-tight">
               {successData.type === 'datang' ? 'Selamat datang,' : 'Sampai jumpa,'} <br />
               <span className="text-on-surface">{successData.nama}!</span>
             </h2>
-            <p className="text-base md:text-2xl font-semibold text-on-surface-variant mb-3 md:mb-4">
+            <p className="text-sm md:text-lg font-semibold text-on-surface-variant mb-2 md:mb-3">
               Presensi {successData.type} tercatat pada pukul <span className="font-bold text-on-surface">{successData.time}</span>
             </p>
             {successData.jarak !== undefined && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { Users, CheckCircle, Settings, User, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle, Home, User, ArrowRight, GraduationCap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
 
@@ -121,19 +122,27 @@ export default function PresensiSiswaKiosk() {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-sans min-h-screen flex flex-col overflow-hidden">
+    <div className="bg-surface text-on-surface font-sans min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-surface-container-lowest h-16 md:h-24 px-4 md:px-20 flex items-center justify-between shadow-sm z-50">
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="w-10 h-10 md:w-14 md:h-14 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
-            <Users className="w-6 h-6 md:w-8 md:h-8" />
-          </div>
+          {cfg.logoUrl ? (
+            <img
+              src={cfg.logoUrl}
+              alt={schoolName}
+              className="h-10 w-10 md:h-14 md:w-14 object-contain rounded-lg"
+            />
+          ) : (
+            <div className="w-10 h-10 md:w-14 md:h-14 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
+              <GraduationCap className="w-6 h-6 md:w-8 md:h-8" />
+            </div>
+          )}
           <div className="hidden sm:block">
             <h1 className="text-base md:text-2xl font-bold text-primary">{schoolName}</h1>
             <p className="text-[10px] md:text-xs text-secondary uppercase tracking-widest">Sistem Presensi Digital</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-center flex-1">
           <div className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
             {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
@@ -144,43 +153,32 @@ export default function PresensiSiswaKiosk() {
             {currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
           </div>
         </div>
+        <div className="flex items-center">
+          <Link
+            to="/"
+            className="h-8 w-8 md:h-12 md:w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all"
+            title="Kembali ke Beranda"
+          >
+            <Home className="w-4 h-4 md:w-5 md:h-5" />
+          </Link>
+        </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar (Hidden on mobile, shown on large screens) */}
-        <aside className="hidden lg:flex fixed left-0 top-24 h-[calc(100vh-96px)] w-64 bg-surface-container-low flex-col py-8 border-r border-outline-variant/30 z-10">
-          <div className="px-6 mb-8">
-            <h3 className="text-xs text-secondary uppercase font-bold mb-4 tracking-wider">Navigasi Kiosk</h3>
-            <nav className="space-y-2">
-              <button className="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-primary font-bold bg-primary-container/10 border-r-4 border-primary">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm">Check-in</span>
-              </button>
-            </nav>
-          </div>
-          <div className="mt-auto px-6 pb-8">
-            <div className="p-4 bg-primary-container rounded-xl text-on-primary shadow-lg">
-              <Settings className="w-5 h-5 mb-2" />
-              <h4 className="text-sm font-bold">Kiosk Mode Active</h4>
-              <p className="text-[10px] opacity-80 mt-1">Terminal ID: AMU-001</p>
-            </div>
-          </div>
-        </aside>
-
+      <main className="flex-1 flex">
         {/* Center: Input Area */}
-        <section className="flex-1 flex flex-col items-center justify-center bg-background px-4 md:px-8 py-8 lg:ml-64 lg:mr-[380px]">
+        <section className="flex-1 flex flex-col items-center justify-center bg-background px-4 md:px-8 py-8 lg:mr-[380px]">
           <div className="w-full max-w-2xl bg-surface-container-lowest rounded-2xl md:rounded-[2rem] p-6 md:p-12 shadow-xl border border-outline-variant/20 text-center relative overflow-hidden">
             {/* Success Overlay */}
             {showSuccess && (
               <div className="absolute inset-0 bg-green-50/95 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-in fade-in zoom-in duration-300 p-4">
-                <div className="w-16 h-16 md:w-24 md:h-24 bg-green-500 rounded-full flex items-center justify-center text-white mb-4 md:mb-6">
-                  <CheckCircle className="w-10 h-10 md:w-16 md:h-16" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-500 rounded-full flex items-center justify-center text-white mb-3 md:mb-4">
+                  <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">Absensi Berhasil!</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-green-800 mb-2">Absensi Berhasil!</h2>
                 <div className="text-center">
-                  <p className="text-xl md:text-2xl font-bold text-green-900">{successData.nama}</p>
-                  <p className="text-green-700 text-base md:text-lg">{successData.kelas}</p>
-                  <p className="mt-3 md:mt-4 text-xs md:text-sm text-green-800 bg-white/50 px-3 md:px-4 py-1.5 md:py-2 rounded-full inline-block">
+                  <p className="text-lg md:text-xl font-bold text-green-900">{successData.nama}</p>
+                  <p className="text-green-700 text-sm md:text-base">{successData.kelas}</p>
+                  <p className="mt-2 md:mt-3 text-xs md:text-sm text-green-800 bg-white/50 px-3 md:px-4 py-1.5 md:py-2 rounded-full inline-block">
                     Hadir pukul {successData.time}
                   </p>
                 </div>
@@ -354,13 +352,8 @@ export default function PresensiSiswaKiosk() {
       </main>
 
       {/* Footer */}
-      <footer className="h-12 bg-surface-container-lowest px-20 flex items-center justify-between border-t border-outline-variant/30 text-secondary z-50">
+      <footer className="h-12 bg-surface-container-lowest px-4 md:px-20 flex items-center justify-center border-t border-outline-variant/30 text-secondary z-50">
         <span className="text-xs uppercase tracking-tighter">© 2026 {schoolName}</span>
-        <div className="flex gap-6 text-xs">
-          <a className="hover:text-primary transition-colors" href="#">Bantuan</a>
-          <span className="text-outline-variant">|</span>
-          <span className="text-primary font-bold">Versi 1.0.0</span>
-        </div>
       </footer>
 
       <style>{`

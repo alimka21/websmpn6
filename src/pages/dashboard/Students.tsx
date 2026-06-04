@@ -199,10 +199,10 @@ export default function Students() {
               <tbody className="divide-y divide-outline-variant/40">
                 {siswaList.map(siswa => (
                   <tr key={siswa.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                    <td className="px-5 py-4 text-sm font-medium text-on-surface">{siswa.nis}</td>
-                    <td className="px-5 py-4 text-sm font-medium text-on-surface">{siswa.nama}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">{siswa.user?.email || '-'}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3 font-mono font-medium text-on-surface">{siswa.nis}</td>
+                    <td className="px-4 py-3 font-medium text-on-surface">{siswa.nama}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{siswa.user?.email || '-'}</td>
+                    <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleOpenSiswaModal(siswa)} className="text-primary hover:text-primary hover:bg-primary-container/15 h-8 px-2" title="Edit">
                             <Pencil className="w-4 h-4" />

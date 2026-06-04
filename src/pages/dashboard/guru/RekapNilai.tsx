@@ -305,9 +305,9 @@ export default function RekapNilai() {
             variant="outline"
             onClick={() => handleExport('xlsx')}
             disabled={isExporting !== null || !selectedUjian}
-            className="gap-2 bg-secondary-container/30 text-on-secondary-container border-secondary/30 hover:bg-secondary-container/60 hover:text-on-secondary-container"
+            className="gap-2 bg-green-600 text-white border-green-600 hover:bg-green-700"
           >
-            {isExporting === 'xlsx' ? <div className="w-4 h-4 border-2 border-secondary/40 border-t-green-700 rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+            {isExporting === 'xlsx' ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
             Export Excel
           </Button>
           <Button
@@ -401,13 +401,13 @@ export default function RekapNilai() {
                   <tbody className="divide-y divide-outline-variant/40">
                     {sortedData.map((sesi: any, index: number) => (
                       <tr key={sesi.sesiId ?? sesi.siswa.id} className="hover:bg-surface-container-low/70 transition-colors">
-                        <td className="px-4 py-4 text-center text-outline-variant font-medium">{index + 1}</td>
-                        <td className="px-4 py-4">
-                          <p className="font-semibold text-on-surface">{sesi.siswa.nama}</p>
+                        <td className="px-4 py-3 text-center text-on-surface-variant">{index + 1}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-on-surface">{sesi.siswa.nama}</p>
                           <p className="text-xs text-on-surface-variant mt-0.5">NIS: {sesi.siswa.nis}</p>
                         </td>
-                        <td className="px-4 py-4 text-on-surface-variant">{sesi.siswa.kelas?.nama || '-'}</td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-3 text-on-surface-variant">{sesi.siswa.kelas?.nama || '-'}</td>
+                        <td className="px-4 py-3">
                           <div className="flex flex-col items-center gap-1.5">
                             <span className={`inline-flex items-center justify-center min-w-[2.5rem] px-2 py-1 rounded-md font-bold text-sm ${getScoreColor(sesi.nilaiAkhir)}`}>
                               {sesi.nilaiAkhir !== null ? sesi.nilaiAkhir : '—'}

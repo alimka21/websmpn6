@@ -253,22 +253,22 @@ export default function DokumenAgendaAdmin() {
                           </button>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-semibold text-on-surface max-w-[200px] truncate">
+                      <td className="px-4 py-3 font-medium text-on-surface max-w-[200px] truncate">
                         {d.judul}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <a href={d.linkDrive} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline max-w-[200px] truncate">
                           <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                           <span className="truncate">Buka Dokumen</span>
                         </a>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${d.isActive ? 'bg-primary-fixed text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
                           {d.isActive ? 'Aktif' : 'Disembunyikan'}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex justify-end gap-1 flex">
                           <button onClick={() => toggleDok(d)}
                             className={`p-2 rounded-lg transition-colors ${d.isActive ? 'text-on-surface-variant hover:bg-surface-container' : 'text-primary hover:bg-primary/10'}`}
@@ -327,15 +327,15 @@ export default function DokumenAgendaAdmin() {
                 <tbody className="divide-y divide-outline-variant/40">
                   {agenda.map(a => (
                     <tr key={a.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                      <td className="px-5 py-4 font-semibold text-on-surface">{a.judul}</td>
-                      <td className="px-5 py-4 text-sm text-on-surface-variant whitespace-nowrap">{fmtWaktu(a.waktu)}</td>
-                      <td className="px-5 py-4 text-sm text-on-surface-variant">{a.lokasi || '—'}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3 font-medium text-on-surface">{a.judul}</td>
+                      <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{fmtWaktu(a.waktu)}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{a.lokasi || '—'}</td>
+                      <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${a.isActive ? 'bg-primary-fixed text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
                           {a.isActive ? 'Aktif' : 'Disembunyikan'}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex justify-end gap-1 flex">
                           <button onClick={() => toggleAgd(a)}
                             className={`p-2 rounded-lg transition-colors ${a.isActive ? 'text-on-surface-variant hover:bg-surface-container' : 'text-primary hover:bg-primary/10'}`}

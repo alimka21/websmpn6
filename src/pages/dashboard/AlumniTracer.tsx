@@ -380,8 +380,8 @@ export default function AlumniTracer() {
             {importing ? <div className="w-4 h-4 border-2 border-secondary/60/40 border-t-green-700 rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
             {importing ? 'Memproses...' : 'Import'}
           </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExport} disabled={isExporting}>
-            {isExporting ? <div className="w-4 h-4 border-2 border-outline/40 border-t-slate-600 rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+          <Button variant="outline" className="gap-2 bg-green-600 text-white border-green-600 hover:bg-green-700" onClick={handleExport} disabled={isExporting}>
+            {isExporting ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
             Export Excel
           </Button>
           <Button onClick={() => handleOpenModal()} className="gap-2 bg-primary hover:bg-primary/90">

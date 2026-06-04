@@ -255,16 +255,16 @@ export default function ExamList() {
                         onClick={() => navigate(`/dashboard/siswa/hasil/${sesi.id}`)}
                         title="Klik untuk lihat detail"
                       >
-                        <td className="px-6 py-4 text-on-surface-variant whitespace-nowrap">
+                        <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">
                           {formatDate(sesi.selesaiAt || sesi.mulaiAt)}
                         </td>
-                        <td className="px-6 py-4 font-medium text-on-surface">
+                        <td className="px-4 py-3 font-medium text-on-surface">
                           {sesi.ujian.judul}
                         </td>
-                        <td className="px-6 py-4 text-on-surface-variant">
+                        <td className="px-4 py-3 text-on-surface-variant">
                           {sesi.ujian.mataPelajaran}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-3 text-center">
                           <Badge
                             variant="outline"
                             className={
