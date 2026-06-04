@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { GraduationCap, LogIn, LogOut, Settings, Camera, MapPin, CheckCircle, X, Clock, Users } from 'lucide-react';
+import { GraduationCap, LogIn, LogOut, Settings, Camera, MapPin, CheckCircle, X, Clock, Users, AlertTriangle } from 'lucide-react';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -20,9 +20,12 @@ interface Guru {
 interface RecentActivity {
   id: string;
   nama: string;
-  waktuDatang?: string;
-  waktuPulang?: string;
-  status: 'datang' | 'pulang' | 'lengkap';
+  nip: string;
+  waktuDatang: string | null;
+  waktuPulang: string | null;
+  keterlambatan: number;
+  totalJam: number;
+  autoCheckout: boolean;
 }
 
 export default function PresensiGuruKiosk() {
@@ -33,20 +36,25 @@ export default function PresensiGuruKiosk() {
   const [guruList, setGuruList] = useState<Guru[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [selectedGuru, setSelectedGuru] = useState<Guru | null>(null);
+  const [mode, setMode] = useState<'datang' | 'pulang'>('datang');
   const [search, setSearch] = useState('');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successData, setSuccessData] = useState<{ nama: string; type: 'datang' | 'pulang'; time: string }>({ nama: '', type: 'datang', time: '' });
+  const [successData, setSuccessData] = useState<{ nama: string; type: 'datang' | 'pulang'; time: string; jarak?: number }>({
+    nama: '',
+    type: 'datang',
+    time: '',
+  });
 
   const [attendedCount, setAttendedCount] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Update clock every second
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -62,7 +70,6 @@ export default function PresensiGuruKiosk() {
     try {
       const data = await api.get('/api/presensi/guru-list');
       setGuruList(data);
-      // Count attended
       const count = data.filter((g: Guru) => g.statusHariIni?.sudahDatang).length;
       setAttendedCount(count);
     } catch (err: any) {
@@ -74,15 +81,20 @@ export default function PresensiGuruKiosk() {
 
   const loadRecentActivity = async () => {
     try {
-      // Mock data - replace with real API
-      setRecentActivity([
-        { id: '1', nama: 'Hj. Ratna Sari, M.Pd', waktuDatang: '06:42', status: 'datang' },
-        { id: '2', nama: 'Drs. Bambang Wijaya', waktuDatang: '06:55', status: 'datang' },
-        { id: '3', nama: 'Siti Aminah, S.Si.', waktuDatang: '06:45', waktuPulang: '15:32', status: 'lengkap' },
-      ]);
+      const data = await api.get('/api/presensi/guru/recent?limit=10');
+      setRecentActivity(data);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const formatMinutesToHours = (minutes: number): string => {
+    if (minutes === 0) return '0 menit';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins} menit`;
+    if (mins === 0) return `${hours} jam`;
+    return `${hours} jam ${mins} menit`;
   };
 
   const filteredGuru = guruList.filter(g =>
@@ -94,38 +106,142 @@ export default function PresensiGuruKiosk() {
     setSelectedGuru(guru);
     setSearch('');
     setShowSearchResults(false);
+    setCapturedPhoto(null);
+    setLocation(null);
+    setPermissionError(null);
+
+    // Determine mode
+    if (!guru.statusHariIni?.sudahDatang) {
+      setMode('datang');
+    } else if (!guru.statusHariIni?.sudahPulang) {
+      setMode('pulang');
+    } else {
+      toast.info('Anda sudah melakukan presensi datang dan pulang hari ini');
+      setSelectedGuru(null);
+    }
   };
 
   const handleReset = () => {
     setSelectedGuru(null);
     setSearch('');
+    setCapturedPhoto(null);
+    setLocation(null);
+    setPermissionError(null);
     setTimeout(() => searchInputRef.current?.focus(), 100);
   };
 
-  const canTapDatang = selectedGuru && !selectedGuru.statusHariIni?.sudahDatang;
-  const canTapPulang = selectedGuru && selectedGuru.statusHariIni?.sudahDatang && !selectedGuru.statusHariIni?.sudahPulang;
-
-  const handleTapDatang = async () => {
-    if (!selectedGuru) return;
-    setSubmitting(true);
+  const requestCameraPermission = async (): Promise<string | null> => {
     try {
-      // Get location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
+      // Trigger camera permission by creating video element
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 },
       });
 
-      await api.post('/api/presensi/guru/datang', {
+      // Capture photo immediately
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for video ready
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, 640, 480);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+
+        return dataUrl;
+      }
+
+      stream.getTracks().forEach(track => track.stop());
+      return null;
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        throw new Error('Izin kamera ditolak. Silakan aktifkan izin kamera di pengaturan browser.');
+      } else if (err.name === 'NotFoundError') {
+        throw new Error('Kamera tidak ditemukan pada perangkat ini.');
+      } else {
+        throw new Error('Gagal mengakses kamera: ' + err.message);
+      }
+    }
+  };
+
+  const requestLocationPermission = async (): Promise<{ lat: number; lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation tidak didukung oleh browser ini.'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error('Location error:', error);
+          if (error.code === error.PERMISSION_DENIED) {
+            reject(new Error('Izin lokasi ditolak. Silakan aktifkan izin lokasi di pengaturan browser.'));
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            reject(new Error('Lokasi tidak tersedia. Pastikan GPS aktif.'));
+          } else if (error.code === error.TIMEOUT) {
+            reject(new Error('Waktu habis saat mendapatkan lokasi. Coba lagi.'));
+          } else {
+            reject(new Error('Gagal mendapatkan lokasi: ' + error.message));
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedGuru) return;
+
+    setSubmitting(true);
+    setPermissionError(null);
+
+    try {
+      // 1. Request Camera Permission & Capture Photo
+      toast.info('Mengakses kamera...');
+      const photo = await requestCameraPermission();
+      if (!photo) {
+        throw new Error('Gagal mengambil foto');
+      }
+      setCapturedPhoto(photo);
+
+      // 2. Request Location Permission
+      toast.info('Mengakses lokasi...');
+      const loc = await requestLocationPermission();
+      setLocation(loc);
+
+      // 3. Submit to API
+      const endpoint = mode === 'datang' ? '/api/presensi/guru/datang' : '/api/presensi/guru/pulang';
+      const response: any = await api.post(endpoint, {
         guruId: selectedGuru.id,
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        fotoBase64: null, // Optional
+        latitude: loc.lat,
+        longitude: loc.lng,
+        fotoBase64: photo,
       });
 
       const now = new Date();
       setSuccessData({
         nama: selectedGuru.nama,
-        type: 'datang',
+        type: mode,
         time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        jarak: response.jarak,
       });
       setShowSuccess(true);
 
@@ -136,47 +252,16 @@ export default function PresensiGuruKiosk() {
         loadRecentActivity();
       }, 3000);
     } catch (err: any) {
-      toast.error(err?.message || 'Gagal mencatat presensi datang');
+      console.error('Submit error:', err);
+      const errorMsg = err?.message || err?.error || 'Gagal mencatat presensi';
+      setPermissionError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleTapPulang = async () => {
-    if (!selectedGuru) return;
-    setSubmitting(true);
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true });
-      });
-
-      await api.post('/api/presensi/guru/pulang', {
-        guruId: selectedGuru.id,
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        fotoBase64: null,
-      });
-
-      const now = new Date();
-      setSuccessData({
-        nama: selectedGuru.nama,
-        type: 'pulang',
-        time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      });
-      setShowSuccess(true);
-
-      setTimeout(() => {
-        setShowSuccess(false);
-        handleReset();
-        loadGuruList();
-        loadRecentActivity();
-      }, 3000);
-    } catch (err: any) {
-      toast.error(err?.message || 'Gagal mencatat presensi pulang');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const canSubmit = selectedGuru && !submitting;
 
   return (
     <div className="bg-background text-on-background font-sans overflow-hidden h-screen flex flex-col">
@@ -260,7 +345,6 @@ export default function PresensiGuruKiosk() {
                   autoFocus
                 />
 
-                {/* Search Results Dropdown */}
                 {showSearchResults && search && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl z-20 max-h-[300px] overflow-y-auto">
                     {filteredGuru.length === 0 ? (
@@ -285,12 +369,12 @@ export default function PresensiGuruKiosk() {
                             <div className="flex items-center gap-2">
                               {status?.sudahDatang && (
                                 <span className="bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">
-                                  Sudah Datang · {status.waktuDatang}
+                                  Datang · {status.waktuDatang}
                                 </span>
                               )}
                               {status?.sudahPulang && (
                                 <span className="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">
-                                  Lengkap · {status.waktuPulang}
+                                  Pulang · {status.waktuPulang}
                                 </span>
                               )}
                               {!status?.sudahDatang && (
@@ -324,84 +408,116 @@ export default function PresensiGuruKiosk() {
             )}
           </div>
 
-          {/* Step 2: Action Buttons */}
-          <div className="flex-1 grid grid-cols-2 gap-6 items-stretch">
-            {/* Tap Datang */}
-            <button
-              onClick={handleTapDatang}
-              disabled={!canTapDatang || submitting}
-              className={`group relative flex flex-col items-center justify-center gap-4 rounded-2xl border-4 border-transparent transition-all overflow-hidden disabled:opacity-50 ${
-                canTapDatang ? 'bg-surface-container-high hover:bg-green-50 hover:border-green-500' : 'bg-surface-container-high'
-              }`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-green-600/20 opacity-0 group-enabled:group-hover:opacity-100 transition-opacity"></div>
-              <LogIn className={`w-16 h-16 mb-2 transition-transform group-active:scale-90 ${canTapDatang ? 'text-green-600' : 'text-outline-variant'}`} />
-              <span className={`text-3xl font-bold ${canTapDatang ? 'text-on-background' : 'text-outline-variant'}`}>TAP DATANG</span>
-              <p className={`text-sm font-medium ${canTapDatang ? 'text-green-700' : 'text-outline-variant'}`}>Presensi kehadiran masuk</p>
-            </button>
+          {/* Step 2: Submit Button */}
+          {selectedGuru && (
+            <div className="flex-1 flex flex-col gap-6">
+              <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="bg-primary text-on-primary h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                  <h2 className="text-2xl font-semibold">Ambil Foto & Lokasi</h2>
+                </div>
 
-            {/* Tap Pulang */}
-            <button
-              onClick={handleTapPulang}
-              disabled={!canTapPulang || submitting}
-              className={`group relative flex flex-col items-center justify-center gap-4 rounded-2xl border-4 border-transparent transition-all overflow-hidden disabled:opacity-50 ${
-                canTapPulang ? 'bg-surface-container-high hover:bg-blue-50 hover:border-primary' : 'bg-surface-container-high'
-              }`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/20 opacity-0 group-enabled:group-hover:opacity-100 transition-opacity"></div>
-              <LogOut className={`w-16 h-16 mb-2 transition-transform group-active:scale-90 ${canTapPulang ? 'text-primary' : 'text-outline-variant'}`} />
-              <span className={`text-3xl font-bold ${canTapPulang ? 'text-on-background' : 'text-outline-variant'}`}>TAP PULANG</span>
-              <p className={`text-sm font-medium ${canTapPulang ? 'text-primary' : 'text-outline-variant'}`}>Presensi kehadiran keluar</p>
-            </button>
-          </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-surface-container rounded-lg">
+                    <Camera className="w-5 h-5 text-primary" />
+                    <span className="text-sm">Kamera akan diaktifkan otomatis saat presensi</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-surface-container rounded-lg">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    <span className="text-sm">Lokasi akan divalidasi untuk memastikan Anda di sekolah</span>
+                  </div>
 
-          {/* Geofence Status */}
-          <div className="flex gap-4">
-            <div className="flex-1 flex items-center gap-3 p-4 bg-surface-container rounded-lg border border-outline-variant/30">
-              <MapPin className="w-5 h-5 text-green-600" />
-              <span className="text-sm text-on-surface-variant">Radius: <span className="text-green-600 font-bold">12m</span> (Aman - Dalam Jangkauan)</span>
+                  {permissionError && (
+                    <div className="flex items-start gap-3 p-4 bg-error-container rounded-lg border-2 border-error">
+                      <AlertTriangle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+                      <div className="text-sm text-error whitespace-pre-line">{permissionError}</div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    className={`w-full py-8 rounded-2xl text-3xl font-bold transition-all flex items-center justify-center gap-4 ${
+                      mode === 'datang'
+                        ? 'bg-green-600 text-white hover:bg-green-700 disabled:bg-surface-container-high disabled:text-outline-variant'
+                        : 'bg-primary text-white hover:bg-primary/90 disabled:bg-surface-container-high disabled:text-outline-variant'
+                    }`}
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="w-8 h-8 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        {mode === 'datang' ? <LogIn className="w-10 h-10" /> : <LogOut className="w-10 h-10" />}
+                        TAP {mode.toUpperCase()}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex-1 flex items-center gap-3 p-4 bg-surface-container rounded-lg border border-outline-variant/30">
-              <Camera className="w-5 h-5 text-primary" />
-              <span className="text-sm text-on-surface-variant">Kamera: <span className="font-bold text-on-surface">Aktif (Verifikasi Wajah)</span></span>
-            </div>
-          </div>
+          )}
         </section>
 
-        {/* Right: Recent Activity Sidebar */}
+        {/* Right: Recent Activity */}
         <aside className="col-span-4 flex flex-col h-full overflow-hidden bg-surface-container-low rounded-xl border border-outline-variant">
           <div className="p-6 border-b border-outline-variant bg-surface flex justify-between items-center">
             <h3 className="text-2xl font-semibold">Recap Hari Ini</h3>
             <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-bold">Terbaru</span>
           </div>
           <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-            {recentActivity.map((activity, idx) => (
-              <div key={activity.id} className={`flex items-center gap-4 bg-surface p-4 rounded-xl border border-outline-variant/50 shadow-sm`} style={{ opacity: 1 - idx * 0.1 }}>
-                <div className="h-12 w-12 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
-                  <GraduationCap className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-base text-on-surface truncate">{activity.nama}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {activity.waktuDatang && (
-                      <span className="text-xs text-green-600 font-bold">Datang {activity.waktuDatang}</span>
-                    )}
-                    {activity.waktuPulang && (
-                      <>
-                        <span className="text-outline-variant text-[10px]">•</span>
-                        <span className="text-xs text-primary font-bold">Pulang {activity.waktuPulang}</span>
-                      </>
-                    )}
-                    {!activity.waktuPulang && (
-                      <>
-                        <span className="text-outline-variant text-[10px]">•</span>
-                        <span className="text-xs text-outline">Pulang --:--</span>
-                      </>
-                    )}
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-12 text-on-surface-variant">
+                <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Belum ada guru yang hadir hari ini</p>
+              </div>
+            ) : (
+              recentActivity.map((activity, idx) => (
+                <div key={activity.id} className={`bg-surface p-4 rounded-xl border border-outline-variant/50 shadow-sm`} style={{ opacity: 1 - idx * 0.08 }}>
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-on-surface truncate">{activity.nama}</p>
+                      <p className="text-xs text-outline mb-2">{activity.nip}</p>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`font-bold ${activity.waktuDatang ? 'text-green-600' : 'text-outline'}`}>
+                            Datang {activity.waktuDatang || '--:--'}
+                          </span>
+                          {activity.keterlambatan > 0 && (
+                            <span className="bg-error-container text-error px-2 py-0.5 rounded-full text-[10px] font-bold">
+                              Telat {activity.keterlambatan}m
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`font-bold ${activity.waktuPulang ? 'text-primary' : 'text-outline'}`}>
+                            Pulang {activity.waktuPulang || '--:--'}
+                          </span>
+                          {activity.autoCheckout && (
+                            <span className="bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded-full text-[10px] font-bold">
+                              Auto
+                            </span>
+                          )}
+                        </div>
+
+                        {activity.totalJam > 0 && (
+                          <div className="text-xs text-on-surface-variant pt-1 border-t border-outline-variant/30 mt-2">
+                            <span className="font-semibold">Total: {formatMinutesToHours(activity.totalJam)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </aside>
       </main>
@@ -419,9 +535,14 @@ export default function PresensiGuruKiosk() {
               {successData.type === 'datang' ? 'Selamat datang,' : 'Sampai jumpa,'} <br />
               <span className="text-on-surface">{successData.nama}!</span>
             </h2>
-            <p className="text-2xl font-semibold text-on-surface-variant mb-12">
-              Kehadiran {successData.type} Anda telah tercatat pada pukul <span className="font-bold text-on-surface">{successData.time}</span>
+            <p className="text-2xl font-semibold text-on-surface-variant mb-4">
+              Presensi {successData.type} tercatat pada pukul <span className="font-bold text-on-surface">{successData.time}</span>
             </p>
+            {successData.jarak !== undefined && (
+              <p className="text-sm text-green-600 font-medium">
+                ✓ Lokasi terverifikasi ({successData.jarak} meter dari sekolah)
+              </p>
+            )}
           </div>
         </div>
       )}

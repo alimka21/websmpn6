@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   Settings, Users, GraduationCap, Save, Trash2, Edit2, X,
   ChevronLeft, ChevronRight, Search, RefreshCw, MapPin, Clock,
-  Image as ImageIcon,
+  Image as ImageIcon, Download,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import api from '../../lib/api';
@@ -19,11 +19,19 @@ interface Pengaturan {
   jamPulangDefault: string;
 }
 
+interface PengaturanForm {
+  koordinatSekolah: string; // Combined "lat, lng" format
+  radiusMeter: number;
+  jamMasukDefault: string;
+  jamPulangDefault: string;
+}
+
 interface PresensiGuruRow {
   no: number; id: string; nama: string; nip: string;
   tanggal: string; waktuDatang: string | null; waktuPulang: string | null;
   durasi: number | null; autoCheckout: boolean;
   fotoDatang: string | null; fotoPulang: string | null;
+  keterlambatan: number; totalJam: number;
 }
 
 interface PresensiSiswaRow {
@@ -88,6 +96,12 @@ export default function PresensiAdmin() {
     latitudeSekolah: 0, longitudeSekolah: 0, radiusMeter: 100,
     jamMasukDefault: '07:00', jamPulangDefault: '15:30',
   });
+  const [cfgForm, setCfgForm] = useState<PengaturanForm>({
+    koordinatSekolah: '',
+    radiusMeter: 100,
+    jamMasukDefault: '07:00',
+    jamPulangDefault: '15:30',
+  });
   const [savingCfg, setSavingCfg] = useState(false);
 
   // ── Guru presensi state ──────────────────────────────────────────────────
@@ -120,11 +134,25 @@ export default function PresensiAdmin() {
   const [siswaSearch, setSiswaSearch] = useState('');
   const [delSiswaId, setDelSiswaId] = useState<string | null>(null);
   const [deletingSiswa, setDeletingSiswa] = useState(false);
+  const [exportingGuru, setExportingGuru] = useState(false);
+  const [exportingSiswa, setExportingSiswa] = useState(false);
 
   // ── Load pengaturan ──────────────────────────────────────────────────────
   useEffect(() => {
     api.get('/api/presensi/pengaturan')
-      .then((d: any) => setCfg(d))
+      .then((d: any) => {
+        setCfg(d);
+        // Convert to form format
+        const koordinat = d.latitudeSekolah && d.longitudeSekolah
+          ? `${d.latitudeSekolah}, ${d.longitudeSekolah}`
+          : '';
+        setCfgForm({
+          koordinatSekolah: koordinat,
+          radiusMeter: d.radiusMeter || 100,
+          jamMasukDefault: d.jamMasukDefault || '07:00',
+          jamPulangDefault: d.jamPulangDefault || '15:30',
+        });
+      })
       .catch(() => {});
   }, []);
 
@@ -171,12 +199,31 @@ export default function PresensiAdmin() {
   // ── Save pengaturan ──────────────────────────────────────────────────────
   const savePengaturan = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validasi koordinat
+    if (!cfgForm.koordinatSekolah.trim()) {
+      toast.error('Koordinat sekolah wajib diisi');
+      return;
+    }
+
+    const parts = cfgForm.koordinatSekolah.split(',').map(s => s.trim());
+    if (parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))) {
+      toast.error('Format koordinat tidak valid. Contoh: -5.148011, 119.549435');
+      return;
+    }
+
     setSavingCfg(true);
     try {
-      await api.put('/api/presensi/pengaturan', cfg);
+      await api.put('/api/presensi/pengaturan', cfgForm);
       toast.success('Pengaturan berhasil disimpan');
-    } catch { toast.error('Gagal menyimpan pengaturan'); }
-    finally { setSavingCfg(false); }
+      // Reload untuk update
+      const d: any = await api.get('/api/presensi/pengaturan');
+      setCfg(d);
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan pengaturan');
+    } finally {
+      setSavingCfg(false);
+    }
   };
 
   // ── Edit guru presensi ───────────────────────────────────────────────────
@@ -225,6 +272,84 @@ export default function PresensiAdmin() {
       loadSiswa(siswaPage);
     } catch { toast.error('Gagal menghapus data'); }
     finally { setDeletingSiswa(false); }
+  };
+
+  // ── Export Guru ───────────────────────────────────────────────────────────
+  const exportGuruExcel = async () => {
+    if (guruMode !== 'bulan') {
+      toast.error('Export hanya tersedia untuk mode Per Bulan');
+      return;
+    }
+    setExportingGuru(true);
+    try {
+      let token = localStorage.getItem('token');
+      if (!token) {
+        try {
+          const raw = localStorage.getItem('auth-storage');
+          if (raw) token = JSON.parse(raw)?.state?.token;
+        } catch { /* ignore */ }
+      }
+
+      const url = `/api/admin/presensi/guru/export?bulan=${guruBulan}&tahun=${guruTahun}`;
+      const resp = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (!resp.ok) throw new Error('Gagal mengunduh file');
+
+      const blob = await resp.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = `Presensi-Guru-${guruBulan}-${guruTahun}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(href);
+
+      toast.success('File Excel berhasil diunduh');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengunduh file');
+    } finally {
+      setExportingGuru(false);
+    }
+  };
+
+  // ── Export Siswa ──────────────────────────────────────────────────────────
+  const exportSiswaExcel = async () => {
+    if (siswaMode !== 'bulan') {
+      toast.error('Export hanya tersedia untuk mode Per Bulan');
+      return;
+    }
+    setExportingSiswa(true);
+    try {
+      let token = localStorage.getItem('token');
+      if (!token) {
+        try {
+          const raw = localStorage.getItem('auth-storage');
+          if (raw) token = JSON.parse(raw)?.state?.token;
+        } catch { /* ignore */ }
+      }
+
+      const url = `/api/admin/presensi/siswa/export?bulan=${siswaBulan}&tahun=${siswaTahun}`;
+      const resp = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (!resp.ok) throw new Error('Gagal mengunduh file');
+
+      const blob = await resp.blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = `Presensi-Siswa-${siswaBulan}-${siswaTahun}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(href);
+
+      toast.success('File Excel berhasil diunduh');
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengunduh file');
+    } finally {
+      setExportingSiswa(false);
+    }
   };
 
   // ── Shared Pagination ────────────────────────────────────────────────────
@@ -303,7 +428,7 @@ export default function PresensiAdmin() {
 
       {/* ── TAB: Pengaturan ── */}
       {tab === 'pengaturan' && (
-        <form onSubmit={savePengaturan} className="space-y-6 max-w-2xl">
+        <form onSubmit={savePengaturan} className="space-y-6 max-w-3xl">
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -315,31 +440,66 @@ export default function PresensiAdmin() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-on-surface-variant">Latitude</label>
-                <input type="number" step="any" value={cfg.latitudeSekolah}
-                  onChange={e => setCfg(p => ({ ...p, latitudeSekolah: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
-                  placeholder="Contoh: -3.7928" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-on-surface-variant">Longitude</label>
-                <input type="number" step="any" value={cfg.longitudeSekolah}
-                  onChange={e => setCfg(p => ({ ...p, longitudeSekolah: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
-                  placeholder="Contoh: 132.2613" />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-on-surface-variant">
+                Koordinat Sekolah <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                value={cfgForm.koordinatSekolah}
+                onChange={e => setCfgForm(p => ({ ...p, koordinatSekolah: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none font-mono"
+                placeholder="-5.148011655370297, 119.54943519565128"
+                required
+              />
+              <div className="flex items-start gap-2 mt-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="text-xs text-on-surface-variant space-y-1">
+                  <p className="font-semibold text-primary">Cara mendapatkan koordinat:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Buka <a href="https://maps.google.com" target="_blank" rel="noopener" className="text-primary underline">Google Maps</a></li>
+                    <li>Klik kanan pada lokasi sekolah</li>
+                    <li>Klik koordinat yang muncul di bagian atas (contoh: -5.148011, 119.549435)</li>
+                    <li>Koordinat akan otomatis tersalin, paste di sini</li>
+                  </ol>
+                </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-on-surface-variant">Radius Maksimal (meter)</label>
-              <input type="number" min="10" max="2000" value={cfg.radiusMeter}
-                onChange={e => setCfg(p => ({ ...p, radiusMeter: Number(e.target.value) }))}
+              <label className="text-sm font-medium text-on-surface-variant">
+                Radius Maksimal (meter) <span className="text-error">*</span>
+              </label>
+              <input
+                type="number"
+                min="10"
+                max="5000"
+                value={cfgForm.radiusMeter}
+                onChange={e => setCfgForm(p => ({ ...p, radiusMeter: Number(e.target.value) }))}
                 className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
-                placeholder="100" />
-              <p className="text-xs text-on-surface-variant">Guru ditolak jika jarak lebih dari nilai ini</p>
+                placeholder="100"
+                required
+              />
+              <p className="text-xs text-error font-medium">
+                ⚠️ Guru hanya bisa presensi jika berada dalam radius {cfgForm.radiusMeter} meter dari sekolah
+              </p>
             </div>
+
+            {/* Preview Map Link */}
+            {cfgForm.koordinatSekolah && cfgForm.koordinatSekolah.includes(',') && (
+              <div className="p-4 bg-surface-container rounded-lg border border-outline-variant/50">
+                <p className="text-xs font-semibold text-on-surface-variant mb-2">Preview Lokasi:</p>
+                <a
+                  href={`https://www.google.com/maps?q=${cfgForm.koordinatSekolah.trim()}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline flex items-center gap-2"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Lihat di Google Maps
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 space-y-6">
@@ -356,15 +516,25 @@ export default function PresensiAdmin() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant">Jam Masuk Default</label>
-                <input type="time" value={cfg.jamMasukDefault}
-                  onChange={e => setCfg(p => ({ ...p, jamMasukDefault: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none" />
+                <input
+                  type="time"
+                  value={cfgForm.jamMasukDefault}
+                  onChange={e => setCfgForm(p => ({ ...p, jamMasukDefault: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                  required
+                />
+                <p className="text-xs text-on-surface-variant">Untuk hitung keterlambatan</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant">Jam Pulang Default (Auto-checkout)</label>
-                <input type="time" value={cfg.jamPulangDefault}
-                  onChange={e => setCfg(p => ({ ...p, jamPulangDefault: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none" />
+                <input
+                  type="time"
+                  value={cfgForm.jamPulangDefault}
+                  onChange={e => setCfgForm(p => ({ ...p, jamPulangDefault: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
+                  required
+                />
+                <p className="text-xs text-on-surface-variant">Auto-checkout guru yang belum pulang</p>
               </div>
             </div>
           </div>
@@ -388,25 +558,41 @@ export default function PresensiAdmin() {
               tahun={guruTahun} onTahun={setGuruTahun}
               onApply={() => loadGuru(1)}
             />
-            <p className="text-sm text-on-surface-variant self-center">
-              {guruTotal} data ditemukan
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-on-surface-variant">
+                {guruTotal} data ditemukan
+              </p>
+              {guruMode === 'bulan' && (
+                <button
+                  onClick={exportGuruExcel}
+                  disabled={exportingGuru}
+                  className="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container rounded-xl text-sm font-semibold hover:bg-secondary-container/80 transition-colors disabled:opacity-50"
+                >
+                  {exportingGuru ? (
+                    <div className="w-4 h-4 border-2 border-on-secondary-container/40 border-t-on-secondary-container rounded-full animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  Export Excel
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-outline-variant">
-                  {['No','Nama Guru','Tanggal','Jam Datang','Jam Pulang','Durasi','Status','Foto','Aksi'].map(h => (
+                  {['No','Nama Guru','Tanggal','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Status','Foto','Aksi'].map(h => (
                     <th key={h} className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/40">
                 {loadingGuru ? (
-                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
+                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
                 ) : guruRows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
+                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
                 ) : guruRows.map(row => (
                   <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
                     <td className="px-5 py-4 text-sm text-on-surface-variant">{row.no}</td>
@@ -414,7 +600,14 @@ export default function PresensiAdmin() {
                     <td className="px-5 py-4 text-sm text-on-surface">{fmtDate(row.tanggal)}</td>
                     <td className="px-5 py-4 text-sm text-on-surface">{fmtTime(row.waktuDatang)}</td>
                     <td className="px-5 py-4 text-sm text-on-surface">{fmtTime(row.waktuPulang)}</td>
-                    <td className="px-5 py-4 text-sm text-on-surface">{fmtDurasi(row.durasi)}</td>
+                    <td className="px-5 py-4 text-sm">
+                      {row.keterlambatan > 0 ? (
+                        <span className="text-error font-bold">{row.keterlambatan} menit</span>
+                      ) : (
+                        <span className="text-green-600 font-bold">Tepat Waktu</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-on-surface font-bold">{fmtDurasi(row.totalJam)}</td>
                     <td className="px-5 py-4">
                       {row.autoCheckout
                         ? <span className="text-[11px] font-bold px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed rounded-full">Auto</span>
@@ -476,7 +669,23 @@ export default function PresensiAdmin() {
                 />
               </div>
             </div>
-            <p className="text-sm text-on-surface-variant self-center">{siswaTotal} data ditemukan</p>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-on-surface-variant">{siswaTotal} data ditemukan</p>
+              {siswaMode === 'bulan' && (
+                <button
+                  onClick={exportSiswaExcel}
+                  disabled={exportingSiswa}
+                  className="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container rounded-xl text-sm font-semibold hover:bg-secondary-container/80 transition-colors disabled:opacity-50"
+                >
+                  {exportingSiswa ? (
+                    <div className="w-4 h-4 border-2 border-on-secondary-container/40 border-t-on-secondary-container rounded-full animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  Export Excel
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">

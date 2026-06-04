@@ -140,21 +140,30 @@ router.post('/guru/datang', async (req, res, next) => {
     const guru = await prisma.guru.findUnique({ where: { id: guruId } });
     if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
 
-    // Geofencing — hanya divalidasi jika koordinat dikirim
-    if (latitude != null && longitude != null) {
-      const cfg = await prisma.pengaturanPresensi.findFirst();
-      if (cfg && (cfg.latitudeSekolah !== 0 || cfg.longitudeSekolah !== 0)) {
-        const jarak = Math.round(
-          hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
-        );
-        if (jarak > cfg.radiusMeter) {
-          return res.status(400).json({
-            error: `Anda berada ${jarak} m dari sekolah. Batas radius: ${cfg.radiusMeter} m.`,
-            jarak,
-            radiusMeter: cfg.radiusMeter,
-          });
-        }
-      }
+    // WAJIB: Foto & Lokasi
+    if (!fotoBase64) {
+      return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
+    }
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
+    }
+
+    // Geofencing — VALIDASI KETAT
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
+      return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
+    }
+
+    const jarak = Math.round(
+      hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
+    );
+
+    if (jarak > cfg.radiusMeter) {
+      return res.status(403).json({
+        error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter\n\nSilakan datang ke sekolah untuk melakukan presensi.`,
+        jarak,
+        radiusMeter: cfg.radiusMeter,
+      });
     }
 
     const today = tanggalHariIni();
@@ -193,21 +202,30 @@ router.post('/guru/pulang', async (req, res, next) => {
     const guru = await prisma.guru.findUnique({ where: { id: guruId } });
     if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
 
-    // Geofencing
-    if (latitude != null && longitude != null) {
-      const cfg = await prisma.pengaturanPresensi.findFirst();
-      if (cfg && (cfg.latitudeSekolah !== 0 || cfg.longitudeSekolah !== 0)) {
-        const jarak = Math.round(
-          hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
-        );
-        if (jarak > cfg.radiusMeter) {
-          return res.status(400).json({
-            error: `Anda berada ${jarak} m dari sekolah. Batas radius: ${cfg.radiusMeter} m.`,
-            jarak,
-            radiusMeter: cfg.radiusMeter,
-          });
-        }
-      }
+    // WAJIB: Foto & Lokasi
+    if (!fotoBase64) {
+      return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
+    }
+    if (latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
+    }
+
+    // Geofencing — VALIDASI KETAT
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
+      return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
+    }
+
+    const jarak = Math.round(
+      hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
+    );
+
+    if (jarak > cfg.radiusMeter) {
+      return res.status(403).json({
+        error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter\n\nSilakan datang ke sekolah untuk melakukan presensi.`,
+        jarak,
+        radiusMeter: cfg.radiusMeter,
+      });
     }
 
     const today = tanggalHariIni();
@@ -235,10 +253,124 @@ router.post('/guru/pulang', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3c. GET /api/presensi/guru/recent - Recent activity hari ini untuk kiosk
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/guru/recent', async (req, res, next) => {
+  try {
+    const today = tanggalHariIni();
+    const limit = Number(req.query.limit) || 10;
+
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+
+    const data = await prisma.presensiGuru.findMany({
+      where: { tanggal: today },
+      orderBy: { waktuDatang: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        waktuDatang: true,
+        waktuPulang: true,
+        autoCheckout: true,
+        guru: { select: { nama: true, nip: true } },
+      },
+    });
+
+    const result = data.map(p => {
+      let keterlambatan = 0;
+      let totalJam = 0;
+
+      if (p.waktuDatang) {
+        // Hitung keterlambatan
+        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
+        const targetMasuk = new Date(p.waktuDatang);
+        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
+
+        if (p.waktuDatang > targetMasuk) {
+          keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
+        }
+
+        // Hitung total jam
+        if (p.waktuPulang) {
+          totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
+        }
+      }
+
+      return {
+        id: p.id,
+        nama: p.guru.nama,
+        nip: p.guru.nip,
+        waktuDatang: p.waktuDatang ? p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null,
+        waktuPulang: p.waktuPulang ? p.waktuPulang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null,
+        keterlambatan, // dalam menit
+        totalJam, // dalam menit
+        autoCheckout: p.autoCheckout,
+      };
+    });
+
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3d. GET /api/presensi/siswa/recent - Recent activity hari ini untuk kiosk
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/siswa/recent', async (req, res, next) => {
+  try {
+    const today = tanggalHariIni();
+    const limit = Number(req.query.limit) || 10;
+
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+
+    const data = await prisma.presensiSiswa.findMany({
+      where: { tanggal: today },
+      orderBy: { waktuDatang: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        waktuDatang: true,
+        siswa: {
+          select: {
+            nama: true,
+            nis: true,
+            kelas: { select: { nama: true } },
+          },
+        },
+      },
+    });
+
+    const result = data.map(p => {
+      let tepatWaktu = true;
+      const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
+      const targetMasuk = new Date(p.waktuDatang);
+      targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
+
+      if (p.waktuDatang > targetMasuk) {
+        tepatWaktu = false;
+      }
+
+      return {
+        id: p.id,
+        nama: p.siswa.nama,
+        nis: p.siswa.nis,
+        kelas: p.siswa.kelas?.nama || '-',
+        waktu: p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        tepatWaktu,
+      };
+    });
+
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 4. GET /api/presensi/guru/dashboard
 // Query: page, tanggal (YYYY-MM-DD) | bulan + tahun
 // Respons: { data, total, page, totalPages }
-// Kolom: no, nama, nip, waktuDatang, waktuPulang, durasi(menit), foto, autoCheckout
+// Kolom: no, nama, nip, waktuDatang, waktuPulang, durasi(menit), foto, autoCheckout, keterlambatan, totalJam
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.get('/guru/dashboard', async (req, res, next) => {
@@ -272,21 +404,46 @@ router.get('/guru/dashboard', async (req, res, next) => {
       prisma.presensiGuru.count({ where }),
     ]);
 
-    const data = rows.map((p: any, i: number) => ({
-      no:           skip + i + 1,
-      id:           p.id,
-      nama:         p.guru.nama,
-      nip:          p.guru.nip,
-      tanggal:      p.tanggal,
-      waktuDatang:  p.waktuDatang,
-      waktuPulang:  p.waktuPulang,
-      autoCheckout: p.autoCheckout,
-      fotoDatang:   p.fotoDatang,   // Base64 — dirender di frontend
-      fotoPulang:   p.fotoPulang,
-      durasi:       p.waktuDatang && p.waktuPulang
-        ? Math.round((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000)
-        : null,
-    }));
+    // Ambil jam masuk default untuk hitung keterlambatan
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+
+    const data = rows.map((p: any, i: number) => {
+      let keterlambatan = 0;
+      let totalJam = 0;
+
+      if (p.waktuDatang) {
+        // Hitung keterlambatan
+        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
+        const targetMasuk = new Date(p.waktuDatang);
+        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
+
+        if (p.waktuDatang > targetMasuk) {
+          keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
+        }
+
+        // Hitung total jam
+        if (p.waktuPulang) {
+          totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
+        }
+      }
+
+      return {
+        no:           skip + i + 1,
+        id:           p.id,
+        nama:         p.guru.nama,
+        nip:          p.guru.nip,
+        tanggal:      p.tanggal,
+        waktuDatang:  p.waktuDatang,
+        waktuPulang:  p.waktuPulang,
+        autoCheckout: p.autoCheckout,
+        fotoDatang:   p.fotoDatang,
+        fotoPulang:   p.fotoPulang,
+        durasi:       totalJam || null,
+        keterlambatan, // dalam menit
+        totalJam,      // dalam menit (sama dengan durasi)
+      };
+    });
 
     res.json({ data, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) { next(err); }
@@ -402,16 +559,43 @@ router.get('/pengaturan', async (req, res, next) => {
 router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
   try {
     const {
-      latitudeSekolah, longitudeSekolah, radiusMeter,
-      jamMasukDefault, jamPulangDefault,
+      koordinatSekolah, // Format: "-5.148011655370297, 119.54943519565128" (Google Maps)
+      radiusMeter,
+      jamMasukDefault,
+      jamPulangDefault,
     } = req.body;
 
+    // Parse koordinat dari format Google Maps
+    let latitudeSekolah = 0;
+    let longitudeSekolah = 0;
+
+    if (koordinatSekolah && typeof koordinatSekolah === 'string') {
+      const parts = koordinatSekolah.split(',').map(s => s.trim());
+      if (parts.length === 2) {
+        latitudeSekolah = Number(parts[0]);
+        longitudeSekolah = Number(parts[1]);
+
+        // Validasi range
+        if (isNaN(latitudeSekolah) || isNaN(longitudeSekolah)) {
+          return res.status(400).json({ error: 'Format koordinat tidak valid. Contoh: -5.148011, 119.549435' });
+        }
+        if (latitudeSekolah < -90 || latitudeSekolah > 90) {
+          return res.status(400).json({ error: 'Latitude harus antara -90 dan 90' });
+        }
+        if (longitudeSekolah < -180 || longitudeSekolah > 180) {
+          return res.status(400).json({ error: 'Longitude harus antara -180 dan 180' });
+        }
+      } else {
+        return res.status(400).json({ error: 'Format koordinat tidak valid. Gunakan format: latitude, longitude' });
+      }
+    }
+
     const payload = {
-      latitudeSekolah:  Number(latitudeSekolah),
-      longitudeSekolah: Number(longitudeSekolah),
-      radiusMeter:      Number(radiusMeter),
-      jamMasukDefault:  String(jamMasukDefault).trim(),
-      jamPulangDefault: String(jamPulangDefault).trim(),
+      latitudeSekolah,
+      longitudeSekolah,
+      radiusMeter: Number(radiusMeter) || 100,
+      jamMasukDefault: String(jamMasukDefault || '07:00').trim(),
+      jamPulangDefault: String(jamPulangDefault || '15:30').trim(),
     };
 
     const existing = await prisma.pengaturanPresensi.findFirst();

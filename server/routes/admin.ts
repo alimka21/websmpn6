@@ -1176,4 +1176,178 @@ router.get('/activity', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Export Presensi Guru to Excel
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/presensi/guru/export', async (req, res, next) => {
+  try {
+    const bulan = Number(req.query.bulan);
+    const tahun = Number(req.query.tahun);
+
+    if (!bulan || !tahun) {
+      return res.status(400).json({ error: 'Parameter bulan dan tahun wajib diisi' });
+    }
+
+    const start = new Date(tahun, bulan - 1, 1);
+    const end = new Date(tahun, bulan, 1);
+
+    const data = await prisma.presensiGuru.findMany({
+      where: { tanggal: { gte: start, lt: end } },
+      include: { guru: { select: { nama: true, nip: true } } },
+      orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
+    });
+
+    // Get jam masuk default
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Presensi Guru');
+
+    // Header
+    ws.columns = [
+      { header: 'No', key: 'no', width: 5 },
+      { header: 'Tanggal', key: 'tanggal', width: 12 },
+      { header: 'Nama Guru', key: 'nama', width: 30 },
+      { header: 'NIP', key: 'nip', width: 20 },
+      { header: 'Jam Datang', key: 'jamDatang', width: 12 },
+      { header: 'Jam Pulang', key: 'jamPulang', width: 12 },
+      { header: 'Keterlambatan (menit)', key: 'keterlambatan', width: 20 },
+      { header: 'Total Jam (menit)', key: 'totalJam', width: 20 },
+      { header: 'Status', key: 'status', width: 15 },
+    ];
+
+    // Style header
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
+
+    // Data
+    data.forEach((p, idx) => {
+      let keterlambatan = 0;
+      let totalJam = 0;
+
+      if (p.waktuDatang) {
+        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
+        const targetMasuk = new Date(p.waktuDatang);
+        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
+
+        if (p.waktuDatang > targetMasuk) {
+          keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
+        }
+
+        if (p.waktuPulang) {
+          totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
+        }
+      }
+
+      ws.addRow({
+        no: idx + 1,
+        tanggal: p.tanggal.toLocaleDateString('id-ID'),
+        nama: p.guru.nama,
+        nip: p.guru.nip,
+        jamDatang: p.waktuDatang ? p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
+        jamPulang: p.waktuPulang ? p.waktuPulang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
+        keterlambatan: keterlambatan || 0,
+        totalJam: totalJam || 0,
+        status: p.autoCheckout ? 'Auto Checkout' : (p.waktuPulang ? 'Manual' : 'Belum Pulang'),
+      });
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const filename = `Presensi-Guru-${bulan}-${tahun}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(Buffer.from(buf));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export Presensi Siswa to Excel
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/presensi/siswa/export', async (req, res, next) => {
+  try {
+    const bulan = Number(req.query.bulan);
+    const tahun = Number(req.query.tahun);
+
+    if (!bulan || !tahun) {
+      return res.status(400).json({ error: 'Parameter bulan dan tahun wajib diisi' });
+    }
+
+    const start = new Date(tahun, bulan - 1, 1);
+    const end = new Date(tahun, bulan, 1);
+
+    const data = await prisma.presensiSiswa.findMany({
+      where: { tanggal: { gte: start, lt: end } },
+      include: {
+        siswa: {
+          select: {
+            nama: true,
+            nis: true,
+            kelas: { select: { nama: true } },
+          },
+        },
+      },
+      orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
+    });
+
+    // Get jam masuk default
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Presensi Siswa');
+
+    // Header
+    ws.columns = [
+      { header: 'No', key: 'no', width: 5 },
+      { header: 'Tanggal', key: 'tanggal', width: 12 },
+      { header: 'NIS', key: 'nis', width: 15 },
+      { header: 'Nama Siswa', key: 'nama', width: 30 },
+      { header: 'Kelas', key: 'kelas', width: 15 },
+      { header: 'Jam Datang', key: 'jamDatang', width: 12 },
+      { header: 'Status', key: 'status', width: 15 },
+    ];
+
+    // Style header
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E5F5' } };
+
+    // Data
+    data.forEach((p, idx) => {
+      let tepatWaktu = true;
+      const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
+      const targetMasuk = new Date(p.waktuDatang);
+      targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
+
+      if (p.waktuDatang > targetMasuk) {
+        tepatWaktu = false;
+      }
+
+      ws.addRow({
+        no: idx + 1,
+        tanggal: p.tanggal.toLocaleDateString('id-ID'),
+        nis: p.siswa.nis,
+        nama: p.siswa.nama,
+        kelas: p.siswa.kelas?.nama || '—',
+        jamDatang: p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        status: tepatWaktu ? 'Tepat Waktu' : 'Terlambat',
+      });
+    });
+
+    const buf = await wb.xlsx.writeBuffer();
+    const filename = `Presensi-Siswa-${bulan}-${tahun}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(Buffer.from(buf));
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

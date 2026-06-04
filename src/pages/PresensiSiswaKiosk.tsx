@@ -14,9 +14,10 @@ interface Siswa {
 interface RecentActivity {
   id: string;
   nama: string;
+  nis: string;
   kelas: string;
   waktu: string;
-  tepat: boolean;
+  tepatWaktu: boolean;
 }
 
 export default function PresensiSiswaKiosk() {
@@ -31,7 +32,7 @@ export default function PresensiSiswaKiosk() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successData, setSuccessData] = useState<{ nama: string; kelas: string; time: string }>({ nama: '', kelas: '', time: '' });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [attendedCount, setAttendedCount] = useState(47);
+  const [attendedCount, setAttendedCount] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,16 +48,14 @@ export default function PresensiSiswaKiosk() {
     inputRef.current?.focus();
   }, []);
 
-  const loadRecentActivity = () => {
-    // Mock data - replace with real API
-    setRecentActivity([
-      { id: '1', nama: 'Ahmad Fauzi', kelas: 'X TKJ', waktu: '06:58', tepat: true },
-      { id: '2', nama: 'Siti Aminah', kelas: 'XI AKL', waktu: '06:55', tepat: true },
-      { id: '3', nama: 'Budi Hartono', kelas: 'XII TBSM', waktu: '06:52', tepat: true },
-      { id: '4', nama: 'Eka Saputra', kelas: 'X TKJ', waktu: '06:48', tepat: true },
-      { id: '5', nama: 'Laila Sari', kelas: 'XI RPL', waktu: '06:45', tepat: true },
-      { id: '6', nama: 'Hendra Wijaya', kelas: 'X MM', waktu: '06:40', tepat: true },
-    ]);
+  const loadRecentActivity = async () => {
+    try {
+      const data = await api.get('/api/presensi/siswa/recent?limit=10');
+      setRecentActivity(data);
+      setAttendedCount(data.length); // Update count
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -310,27 +309,36 @@ export default function PresensiSiswaKiosk() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-3">
-            {recentActivity.map((activity, idx) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20 hover:border-primary/30 transition-colors shadow-sm"
-                style={{ opacity: 1 - idx * 0.1 }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm">{activity.nama}</div>
-                    <div className="text-xs text-secondary">{activity.kelas}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-bold text-primary">{activity.waktu}</div>
-                  <div className="text-[10px] text-green-600 font-bold">TEPAT WAKTU</div>
-                </div>
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-12 text-on-surface-variant">
+                <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Belum ada siswa yang hadir hari ini</p>
               </div>
-            ))}
+            ) : (
+              recentActivity.map((activity, idx) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/20 hover:border-primary/30 transition-colors shadow-sm"
+                  style={{ opacity: 1 - idx * 0.08 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm">{activity.nama}</div>
+                      <div className="text-xs text-secondary">{activity.kelas}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-primary">{activity.waktu}</div>
+                    <div className={`text-[10px] font-bold ${activity.tepatWaktu ? 'text-green-600' : 'text-error'}`}>
+                      {activity.tepatWaktu ? 'TEPAT WAKTU' : 'TERLAMBAT'}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="p-6 bg-surface-container-high/50 text-center">
