@@ -321,50 +321,41 @@ export default function PresensiGuruKiosk() {
   return (
     <div className="bg-background text-on-background font-sans min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-surface border-b border-outline-variant px-4 md:px-20 py-3 md:py-6 z-30">
-        <div className="flex justify-between items-center gap-2">
-          {/* Left: Logo + Name */}
-          <div className="flex items-center gap-2 md:gap-4">
+      <header className="bg-surface border-b border-outline-variant px-4 md:px-8 py-4 z-50">
+        <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+          {/* Left: Clock */}
+          <div className="flex items-center gap-3">
             {cfg.logoUrl ? (
-              <img
-                src={cfg.logoUrl}
-                alt={schoolName}
-                className="h-10 w-10 md:h-14 md:w-14 object-contain rounded-lg"
-              />
+              <img src={cfg.logoUrl} alt={schoolName} className="h-12 w-12 object-contain rounded-lg" />
             ) : (
-              <div className="h-10 w-10 md:h-14 md:w-14 bg-primary rounded-lg md:rounded-xl flex items-center justify-center text-on-primary">
-                <GraduationCap className="w-6 h-6 md:w-9 md:h-9" />
+              <div className="h-12 w-12 bg-primary rounded-lg flex items-center justify-center text-white">
+                <GraduationCap className="w-7 h-7" />
               </div>
             )}
-            <div className="hidden sm:block">
-              <h1 className="text-base md:text-2xl font-bold text-primary">{schoolName}</h1>
-              <p className="text-[10px] md:text-xs text-on-surface-variant uppercase tracking-widest">Kiosk Presensi Guru</p>
+            <div>
+              <div className="text-2xl font-bold text-primary tabular-nums leading-none">
+                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+              <div className="text-xs text-on-surface-variant mt-0.5">
+                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </div>
             </div>
           </div>
 
-          {/* Center: Clock */}
-          <div className="text-center">
-            <div className="text-2xl md:text-5xl font-bold text-on-surface tracking-tighter leading-none tabular-nums">
-              {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </div>
-            <div className="text-xs md:text-2xl font-semibold text-on-surface-variant mt-0.5 md:mt-1 hidden sm:block">
-              {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-            <div className="text-[10px] text-on-surface-variant mt-0.5 sm:hidden">
-              {currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-            </div>
+          {/* Center: Title */}
+          <div className="hidden md:block text-center">
+            <h1 className="text-xl font-bold text-on-surface">{schoolName}</h1>
+            <p className="text-xs text-on-surface-variant uppercase tracking-wider">Kiosk Presensi Guru</p>
           </div>
 
           {/* Right: Home Button */}
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link
-              to="/"
-              className="h-8 w-8 md:h-12 md:w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all"
-              title="Kembali ke Beranda"
-            >
-              <Home className="w-4 h-4 md:w-5 md:h-5" />
-            </Link>
-          </div>
+          <Link
+            to="/"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-high text-on-surface hover:bg-primary hover:text-white transition-all"
+          >
+            <Home className="w-5 h-5" />
+            <span className="font-medium text-sm">Beranda</span>
+          </Link>
         </div>
       </header>
 
