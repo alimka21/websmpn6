@@ -144,33 +144,38 @@ export default function LandingPage() {
             ))}
 
             {/* Dropdown Presensi */}
-            <div className="relative" onMouseLeave={() => setPresensiDropdown(false)}>
+            <div
+              className="relative group"
+              onMouseEnter={() => setPresensiDropdown(true)}
+              onMouseLeave={() => setPresensiDropdown(false)}
+            >
               <button
-                onMouseEnter={() => setPresensiDropdown(true)}
                 onClick={() => setPresensiDropdown(!presensiDropdown)}
-                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
+                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2"
               >
                 Presensi
                 <ChevronDown className={`w-4 h-4 transition-transform ${presensiDropdown ? 'rotate-180' : ''}`} />
               </button>
               {presensiDropdown && (
-                <div className="absolute top-full left-0 mt-2 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[180px] z-50">
-                  <Link
-                    to="/presensi/guru"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors"
-                    onClick={() => setPresensiDropdown(false)}
-                  >
-                    <GraduationCap className="w-4 h-4" />
-                    Presensi Guru
-                  </Link>
-                  <Link
-                    to="/presensi/siswa"
-                    className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
-                    onClick={() => setPresensiDropdown(false)}
-                  >
-                    <Users className="w-4 h-4" />
-                    Presensi Siswa
-                  </Link>
+                <div className="absolute top-full left-0 pt-2">
+                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[180px]">
+                    <Link
+                      to="/presensi/guru"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors"
+                      onClick={() => setPresensiDropdown(false)}
+                    >
+                      <GraduationCap className="w-4 h-4" />
+                      Presensi Guru
+                    </Link>
+                    <Link
+                      to="/presensi/siswa"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
+                      onClick={() => setPresensiDropdown(false)}
+                    >
+                      <Users className="w-4 h-4" />
+                      Presensi Siswa
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
