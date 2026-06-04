@@ -42,7 +42,7 @@ interface GuruUser {
     nip: string;
     mataPelajaran: string;
     guruMataPelajaran?: { id: string; nama: string }[];
-    kelasWali?: { id: string; nama: string }[];
+    kelas?: { id: string; nama: string }[];
     guruKelas?: { kelas: { id: string; nama: string } }[];
   };
 }
@@ -763,9 +763,9 @@ export default function ManageUsers() {
                           </td>
                           <td className="px-4 py-3 text-on-surface-variant">
                             <div className="space-y-1">
-                              {u.guru?.kelasWali && u.guru.kelasWali.length > 0 && (
+                              {u.guru?.kelas && u.guru.kelas.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
-                                  {u.guru.kelasWali.map(k => (
+                                  {u.guru.kelas.map(k => (
                                     <span key={k.id} className="text-xs px-2 py-0.5 bg-primary-container text-on-primary-container rounded-full">
                                       {k.nama} (Wali)
                                     </span>
@@ -781,7 +781,7 @@ export default function ManageUsers() {
                                   ))}
                                 </div>
                               )}
-                              {(!u.guru?.kelasWali || u.guru.kelasWali.length === 0) && (!u.guru?.guruKelas || u.guru.guruKelas.length === 0) && (
+                              {(!u.guru?.kelas || u.guru.kelas.length === 0) && (!u.guru?.guruKelas || u.guru.guruKelas.length === 0) && (
                                 <span className="text-xs text-outline">—</span>
                               )}
                             </div>

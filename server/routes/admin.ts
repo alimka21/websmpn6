@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { withCache, invalidateByPrefix } from '../lib/cache';
+import { toTitleCase } from '../lib/format';
 
 const router = Router();
 router.use(requireAuth, requireRole(['SUPER_ADMIN']));
@@ -55,7 +56,7 @@ router.get('/users', async (req, res, next) => {
             mataPelajaran: true,
             fotoUrl: true,
             guruMataPelajaran: { select: { id: true, nama: true }, orderBy: { nama: 'asc' } },
-            kelasWali: { select: { id: true, nama: true }, orderBy: { nama: 'asc' } },
+            kelas: { select: { id: true, nama: true }, orderBy: { nama: 'asc' } },
             guruKelas: { select: { kelas: { select: { id: true, nama: true } } }, orderBy: { kelas: { nama: 'asc' } } }
           } },
           siswa: { select: { id: true, nama: true, nis: true, kelasId: true, kelas: { select: { id: true, nama: true, tingkat: true, guru: { select: { id: true, nama: true } } } } } },
@@ -101,8 +102,8 @@ router.post('/users', async (req, res, next) => {
 
     // Normalisasi daftar mapel — gabung mataPelajaran (legacy) + mataPelajaranList
     const mapelList: string[] = Array.isArray(mataPelajaranList)
-      ? mataPelajaranList.map((m: string) => m.trim()).filter(Boolean)
-      : mataPelajaran ? [String(mataPelajaran).trim()] : [];
+      ? mataPelajaranList.map((m: string) => toTitleCase(m))
+      : mataPelajaran ? [toTitleCase(mataPelajaran)] : [];
     const mapelLegacy = mapelList[0] || mataPelajaran || '';
 
     const user = await prisma.user.create({
@@ -110,18 +111,20 @@ router.post('/users', async (req, res, next) => {
         email,
         password: hashedPassword,
         role,
-        ...(role === 'SUPER_ADMIN' ? { admin: { create: { nama } } } : {}),
+        ...(role === 'SUPER_ADMIN' ? { admin: { create: { nama: toTitleCase(nama) } } } : {}),
         ...(role === 'GURU' ? {
           guru: {
             create: {
-              nama, nip, mataPelajaran: mapelLegacy,
+              nama: toTitleCase(nama),
+              nip,
+              mataPelajaran: mapelLegacy,
               guruMataPelajaran: mapelList.length > 0
                 ? { create: mapelList.map(n => ({ nama: n })) }
                 : undefined,
             },
           },
         } : {}),
-        ...(role === 'SISWA' ? { siswa: { create: { nama, nis, kelasId } } } : {})
+        ...(role === 'SISWA' ? { siswa: { create: { nama: toTitleCase(nama), nis, kelasId } } } : {})
       }
     });
 
@@ -153,7 +156,7 @@ router.patch('/users/:id', async (req, res, next) => {
       if (user.role === 'GURU') {
         // Sync GuruMataPelajaran jika dikirim
         if (Array.isArray(mataPelajaranList)) {
-          const mapelList = mataPelajaranList.map((m: string) => m.trim()).filter(Boolean);
+          const mapelList = mataPelajaranList.map((m: string) => toTitleCase(m));
           const guru = await tx.guru.findUnique({ where: { userId: req.params.id }, select: { id: true } });
           if (guru) {
             await tx.guruMataPelajaran.deleteMany({ where: { guruId: guru.id } });
@@ -171,16 +174,16 @@ router.patch('/users/:id', async (req, res, next) => {
         await tx.guru.update({
           where: { userId: req.params.id },
           data: {
-            ...(nama && { nama }),
+            ...(nama && { nama: toTitleCase(nama) }),
             ...(nip && { nip }),
-            ...(mapelLegacy && { mataPelajaran: mapelLegacy }),
+            ...(mapelLegacy && { mataPelajaran: toTitleCase(mapelLegacy) }),
           }
         });
       } else if (user.role === 'SISWA') {
         await tx.siswa.update({
           where: { userId: req.params.id },
           data: {
-            ...(nama && { nama }),
+            ...(nama && { nama: toTitleCase(nama) }),
             ...(nis && { nis }),
             ...(kelasId && { kelasId })
           }
@@ -627,7 +630,7 @@ router.post('/kelas', async (req, res, next) => {
     if (!nama || !tingkat || !tahunAjaran || !guruId) {
       return res.status(400).json({ error: 'Semua field wajib diisi' });
     }
-    const kelas = await prisma.kelas.create({ data: { nama, tingkat, tahunAjaran, guruId } });
+    const kelas = await prisma.kelas.create({ data: { nama: toTitleCase(nama), tingkat, tahunAjaran, guruId } });
     invalidateByPrefix(`guru:kelas:${guruId}`);
     invalidateByPrefix(`guru:stats:${guruId}`);
     res.status(201).json(kelas);
@@ -640,7 +643,7 @@ router.patch('/kelas/:id', async (req, res, next) => {
     const kelas = await prisma.kelas.update({
       where: { id: req.params.id },
       data: {
-        ...(nama && { nama }),
+        ...(nama && { nama: toTitleCase(nama) }),
         ...(tingkat && { tingkat }),
         ...(tahunAjaran && { tahunAjaran }),
         ...(guruId && { guruId })
@@ -685,7 +688,8 @@ router.get('/berita', async (req, res, next) => {
 
 router.post('/berita', async (req, res, next) => {
   try {
-    const result = await prisma.berita.create({ data: req.body });
+    const { judul, ...rest } = req.body;
+    const result = await prisma.berita.create({ data: { judul: toTitleCase(judul), ...rest } });
     invalidateByPrefix('pub:berita');
     invalidateByPrefix('admin:stats');
     res.status(201).json(result);
@@ -696,9 +700,10 @@ router.post('/berita', async (req, res, next) => {
 
 router.patch('/berita/:id', async (req, res, next) => {
   try {
+    const { judul, ...rest } = req.body;
     const result = await prisma.berita.update({
       where: { id: req.params.id },
-      data: req.body
+      data: { ...(judul && { judul: toTitleCase(judul) }), ...rest }
     });
     invalidateByPrefix('pub:berita');
     res.json(result);

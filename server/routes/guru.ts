@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { withCache, invalidateByPrefix } from '../lib/cache';
+import { toTitleCase } from '../lib/format';
 
 const router = Router();
 // SUPER_ADMIN dibolehkan agar bisa mengelola ujian/soal/hasil milik
@@ -373,7 +374,9 @@ router.post('/ujian', async (req, res, next) => {
 
     const ujian = await prisma.ujian.create({
       data: {
-        judul, mataPelajaran, tipeUjian,
+        judul: toTitleCase(judul),
+        mataPelajaran: toTitleCase(mataPelajaran),
+        tipeUjian,
         durasi: Number(durasi),
         tanggalMulai: tMulai,
         tanggalSelesai: tSelesai,
@@ -434,8 +437,8 @@ router.patch('/ujian/:id', async (req, res, next) => {
     const updated = await prisma.ujian.update({
       where: { id: req.params.id },
       data: {
-        ...(judul && {judul}),
-        ...(mataPelajaran && {mataPelajaran}),
+        ...(judul && {judul: toTitleCase(judul)}),
+        ...(mataPelajaran && {mataPelajaran: toTitleCase(mataPelajaran)}),
         ...(tipeUjian && {tipeUjian}),
         ...(durasi && {durasi: Number(durasi)}),
         ...(tanggalMulai && {tanggalMulai: new Date(tanggalMulai)}),

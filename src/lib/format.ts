@@ -1,3 +1,16 @@
+/**
+ * Convert string to Title Case (capitalize first letter of each word)
+ * Contoh: "budi santoso" → "Budi Santoso"
+ */
+export const toTitleCase = (str: string | null | undefined): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export const formatDate = (d: Date | string | number | null | undefined): string => {
   if (!d) return '-';
   const date = new Date(d);

@@ -583,16 +583,16 @@ export default function PresensiAdmin() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-outline-variant">
-                  {['No','Nama Guru','Tanggal','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Status','Foto','Aksi'].map(h => (
+                  {['No','Nama Guru','Tanggal','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Foto','Aksi'].map(h => (
                     <th key={h} className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/40">
                 {loadingGuru ? (
-                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
                 ) : guruRows.length === 0 ? (
-                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
                 ) : guruRows.map(row => (
                   <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
                     <td className="px-4 py-3 text-on-surface-variant">{row.no}</td>
@@ -600,30 +600,22 @@ export default function PresensiAdmin() {
                     <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
                     <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
                     <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuPulang)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-on-surface-variant">
                       {row.keterlambatan > 0 ? (
                         <span className="text-error font-medium">{row.keterlambatan} menit</span>
                       ) : (
                         <span className="text-green-600 font-medium">Tepat Waktu</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-on-surface font-medium">{fmtDurasi(row.totalJam)}</td>
-                    <td className="px-4 py-3">
-                      {row.autoCheckout
-                        ? <span className="text-[11px] font-bold px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed rounded-full">Auto</span>
-                        : row.waktuPulang
-                          ? <span className="text-[11px] font-bold px-2 py-1 bg-primary-fixed text-primary rounded-full">Manual</span>
-                          : <span className="text-[11px] font-bold px-2 py-1 bg-error-container text-error rounded-full">Belum Pulang</span>
-                      }
-                    </td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtDurasi(row.totalJam)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         <FotoThumb src={row.fotoDatang} label="Foto Datang" />
                         <FotoThumb src={row.fotoPulang} label="Foto Pulang" />
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
                         <button onClick={() => openEdit(row)} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -711,7 +703,7 @@ export default function PresensiAdmin() {
                     <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
                     <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => setDelSiswaId(row.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="Hapus">
+                      <button onClick={() => setDelSiswaId(row.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors" title="Hapus">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>

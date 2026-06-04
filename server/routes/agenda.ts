@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
+import { toTitleCase } from '../lib/format';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.post('/', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, nex
     if (!judul?.trim()) return res.status(400).json({ error: 'Judul agenda wajib diisi' });
     if (!waktu)         return res.status(400).json({ error: 'Waktu agenda wajib diisi' });
     const data = await prisma.agendaSekolah.create({
-      data: { judul: judul.trim(), waktu: new Date(waktu), lokasi: lokasi?.trim() || null },
+      data: { judul: toTitleCase(judul), waktu: new Date(waktu), lokasi: toTitleCase(lokasi) || null },
     });
     res.json(data);
   } catch (err) { next(err); }
@@ -50,9 +51,9 @@ router.patch('/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res,
   try {
     const { judul, waktu, lokasi, isActive } = req.body;
     const payload: any = {};
-    if (judul    !== undefined) payload.judul    = String(judul).trim();
+    if (judul    !== undefined) payload.judul    = toTitleCase(judul);
     if (waktu    !== undefined) payload.waktu    = new Date(waktu);
-    if (lokasi   !== undefined) payload.lokasi   = lokasi?.trim() || null;
+    if (lokasi   !== undefined) payload.lokasi   = toTitleCase(lokasi) || null;
     if (isActive !== undefined) payload.isActive = Boolean(isActive);
     const data = await prisma.agendaSekolah.update({ where: { id: req.params.id }, data: payload });
     res.json(data);

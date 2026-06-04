@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
+import { toTitleCase } from '../lib/format';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.post('/', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, nex
     if (!judul?.trim()) return res.status(400).json({ error: 'Judul wajib diisi' });
     if (!linkDrive?.trim()) return res.status(400).json({ error: 'Link Google Drive wajib diisi' });
     const data = await prisma.dokumenSekolah.create({
-      data: { judul: judul.trim(), linkDrive: linkDrive.trim(), urutan: Number(urutan) || 0 },
+      data: { judul: toTitleCase(judul), linkDrive: linkDrive.trim(), urutan: Number(urutan) || 0 },
     });
     res.json(data);
   } catch (err) { next(err); }
@@ -50,7 +51,7 @@ router.patch('/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res,
   try {
     const { judul, linkDrive, urutan, isActive } = req.body;
     const payload: any = {};
-    if (judul     !== undefined) payload.judul     = String(judul).trim();
+    if (judul     !== undefined) payload.judul     = toTitleCase(judul);
     if (linkDrive !== undefined) payload.linkDrive = String(linkDrive).trim();
     if (urutan    !== undefined) payload.urutan    = Number(urutan);
     if (isActive  !== undefined) payload.isActive  = Boolean(isActive);

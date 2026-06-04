@@ -336,7 +336,8 @@ router.get('/siswa/recent', async (req, res, next) => {
           select: {
             nama: true,
             nis: true,
-            kelas: { select: { nama: true } },
+            kelasId: true,
+            kelas: { select: { id: true, nama: true } },
           },
         },
       },
@@ -344,12 +345,15 @@ router.get('/siswa/recent', async (req, res, next) => {
 
     const result = data.map(p => {
       let tepatWaktu = true;
+      let keterlambatan = 0;
+
       const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
       const targetMasuk = new Date(p.waktuDatang);
       targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
 
       if (p.waktuDatang > targetMasuk) {
         tepatWaktu = false;
+        keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
       }
 
       return {
@@ -357,8 +361,10 @@ router.get('/siswa/recent', async (req, res, next) => {
         nama: p.siswa.nama,
         nis: p.siswa.nis,
         kelas: p.siswa.kelas?.nama || '-',
+        kelasId: p.siswa.kelasId || '',
         waktu: p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
         tepatWaktu,
+        keterlambatan,
       };
     });
 
@@ -708,6 +714,49 @@ router.delete('/siswa/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (re
   try {
     await prisma.presensiSiswa.delete({ where: { id: req.params.id } });
     res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// GET /api/presensi/siswa/stats — statistik hari ini untuk kiosk
+router.get('/siswa/stats', async (req, res, next) => {
+  try {
+    const today = tanggalHariIni();
+
+    // Total siswa
+    const totalSiswa = await prisma.siswa.count();
+
+    // Hadir hari ini
+    const hadirCount = await prisma.presensiSiswa.count({
+      where: { tanggal: today }
+    });
+
+    // Per kelas summary
+    const kelasList = await prisma.kelas.findMany({
+      select: {
+        id: true,
+        nama: true,
+        _count: { select: { siswa: true } },
+        siswa: {
+          select: {
+            id: true,
+            presensiSiswa: {
+              where: { tanggal: today },
+              select: { id: true }
+            }
+          }
+        }
+      },
+      orderBy: { nama: 'asc' }
+    });
+
+    const kelasSummary = kelasList.map(k => ({
+      id: k.id,
+      nama: k.nama,
+      totalSiswa: k._count.siswa,
+      hadirCount: k.siswa.filter(s => s.presensiSiswa.length > 0).length
+    }));
+
+    res.json({ totalSiswa, hadirCount, kelasSummary });
   } catch (err) { next(err); }
 });
 
