@@ -104,12 +104,24 @@ router.get('/guru-list', async (req, res, next) => {
     });
 
     res.json(
-      list.map((g: any) => ({
-        id: g.id,
-        nama: g.nama,
-        nip: g.nip,
-        presensiHariIni: g.presensiGuru[0] ?? null,
-      }))
+      list.map((g: any) => {
+        const presensi = g.presensiGuru[0];
+        return {
+          id: g.id,
+          nama: g.nama,
+          nip: g.nip,
+          statusHariIni: presensi ? {
+            sudahDatang: !!presensi.waktuDatang,
+            sudahPulang: !!presensi.waktuPulang,
+            waktuDatang: presensi.waktuDatang
+              ? new Date(presensi.waktuDatang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              : undefined,
+            waktuPulang: presensi.waktuPulang
+              ? new Date(presensi.waktuPulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              : undefined,
+          } : undefined,
+        };
+      })
     );
   } catch (err) { next(err); }
 });
@@ -281,24 +293,58 @@ router.get('/guru/dashboard', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 5. POST /api/presensi/siswa
-// Body: { nis }
-// Lookup siswa by NIS (RFID scan), catat waktuDatang
+// 5a. GET /api/presensi/siswa/cari?nis=xxx
+// Lookup siswa by NIS (untuk kiosk) tanpa submit presensi
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/siswa/cari', async (req, res, next) => {
+  try {
+    const nis = req.query.nis ? String(req.query.nis).trim() : '';
+    if (!nis) return res.status(400).json({ error: 'NIS wajib diisi' });
+
+    const siswa = await prisma.siswa.findUnique({
+      where: { nis },
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+    });
+
+    if (!siswa) {
+      return res.status(404).json({ error: `Siswa dengan NIS "${nis}" tidak ditemukan.` });
+    }
+
+    res.json({
+      id: siswa.id,
+      nama: siswa.nama,
+      nis: siswa.nis,
+      kelas: siswa.kelas?.nama ?? '-',
+    });
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5b. POST /api/presensi/siswa
+// Body: { siswaId } atau { nis }
+// Catat waktuDatang siswa
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.post('/siswa', async (req, res, next) => {
   try {
-    const { nis } = req.body;
-    if (!nis) return res.status(400).json({ error: 'NIS wajib diisi' });
+    const { siswaId, nis } = req.body;
+    if (!siswaId && !nis) {
+      return res.status(400).json({ error: 'siswaId atau nis wajib diisi' });
+    }
 
+    // Lookup siswa by ID atau NIS
+    const where = siswaId ? { id: siswaId } : { nis: String(nis).trim() };
     const siswa = await prisma.siswa.findUnique({
-      where: { nis: String(nis).trim() },
+      where,
       select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
     });
 
     if (!siswa) {
       return res.status(404).json({
-        error: `Siswa dengan NIS "${nis}" tidak ditemukan.`,
+        error: siswaId
+          ? 'Siswa tidak ditemukan.'
+          : `Siswa dengan NIS "${nis}" tidak ditemukan.`,
       });
     }
 
