@@ -18,14 +18,33 @@ interface SiswaUser {
   id: string;
   email: string;
   isActive: boolean;
-  siswa: { id: string; nama: string; nis: string; kelasId: string; kelas: { id: string; nama: string; tingkat: string } };
+  siswa: {
+    id: string;
+    nama: string;
+    nis: string;
+    kelasId: string;
+    kelas: {
+      id: string;
+      nama: string;
+      tingkat: string;
+      guru: { id: string; nama: string } | null;
+    }
+  };
 }
 
 interface GuruUser {
   id: string;
   email: string;
   isActive: boolean;
-  guru: { id: string; nama: string; nip: string; mataPelajaran: string; guruMataPelajaran?: { id: string; nama: string }[] };
+  guru: {
+    id: string;
+    nama: string;
+    nip: string;
+    mataPelajaran: string;
+    guruMataPelajaran?: { id: string; nama: string }[];
+    kelasWali?: { id: string; nama: string }[];
+    guruKelas?: { kelas: { id: string; nama: string } }[];
+  };
 }
 
 interface KelasItem {
@@ -196,7 +215,10 @@ export default function ManageUsers() {
   const filteredSiswa = siswaList.filter(u => {
     const q = siswaSearch.toLowerCase();
     const match = u.siswa?.nama?.toLowerCase().includes(q) || u.siswa?.nis?.toLowerCase().includes(q);
+
+    // Filter kelas: ALL = tampilkan semua, atau cocokkan dengan kelasId
     const matchKelas = siswaFilterKelas === 'ALL' || u.siswa?.kelasId === siswaFilterKelas;
+
     return match && matchKelas;
   });
 
@@ -630,6 +652,7 @@ export default function ManageUsers() {
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">NIS</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Siswa</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kelas</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Wali Kelas</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -652,6 +675,7 @@ export default function ManageUsers() {
                           <td className="px-4 py-3 font-mono font-medium text-on-surface">{u.siswa?.nis}</td>
                           <td className="px-4 py-3 font-medium text-on-surface">{u.siswa?.nama}</td>
                           <td className="px-4 py-3 text-on-surface-variant">{u.siswa?.kelas?.nama || '-'}</td>
+                          <td className="px-4 py-3 text-on-surface-variant">{u.siswa?.kelas?.guru?.nama || '-'}</td>
                           <td className="px-4 py-3">
                             <div className="flex justify-center gap-1">
                               <Button variant="ghost" size="sm" onClick={() => openSiswaModal(u)} className="h-8 px-2 text-primary hover:bg-primary-container/15" aria-label={`Edit ${u.siswa?.nama}`}><Pencil className="w-4 h-4" /></Button>
@@ -722,6 +746,7 @@ export default function ManageUsers() {
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Guru</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Email</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mata Pelajaran</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kelas</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -735,6 +760,31 @@ export default function ManageUsers() {
                             {(u.guru?.guruMataPelajaran && u.guru.guruMataPelajaran.length > 0)
                               ? u.guru.guruMataPelajaran.map(m => m.nama).join(', ')
                               : u.guru?.mataPelajaran || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-on-surface-variant">
+                            <div className="space-y-1">
+                              {u.guru?.kelasWali && u.guru.kelasWali.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {u.guru.kelasWali.map(k => (
+                                    <span key={k.id} className="text-xs px-2 py-0.5 bg-primary-container text-on-primary-container rounded-full">
+                                      {k.nama} (Wali)
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {u.guru?.guruKelas && u.guru.guruKelas.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {u.guru.guruKelas.map(gk => (
+                                    <span key={gk.kelas.id} className="text-xs px-2 py-0.5 bg-secondary-container/30 text-on-surface-variant rounded-full">
+                                      {gk.kelas.nama}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {(!u.guru?.kelasWali || u.guru.kelasWali.length === 0) && (!u.guru?.guruKelas || u.guru.guruKelas.length === 0) && (
+                                <span className="text-xs text-outline">—</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-center gap-1">
