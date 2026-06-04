@@ -1114,16 +1114,17 @@ router.get('/activity', async (req, res, next) => {
           guru: { select: { nama: true } },
         },
       }),
-      // Guru menginput presensi
+      // Guru clock-in presensi
       prisma.presensiGuru.findMany({
         orderBy: { createdAt: 'desc' },
         take: limit,
         select: {
           id: true,
+          tanggal: true,
+          waktuDatang: true,
+          waktuPulang: true,
           createdAt: true,
-          status: true,
           guru: { select: { nama: true } },
-          kelas: { select: { nama: true } },
         },
       }),
     ]);
@@ -1163,8 +1164,8 @@ router.get('/activity', async (req, res, next) => {
         timestamp: p.createdAt.toISOString(),
         actor: p.guru?.nama ?? '—',
         actorRole: 'guru' as const,
-        description: `Menginput presensi kelas ${p.kelas?.nama ?? '—'}`,
-        meta: p.status,
+        description: `Clock-in presensi`,
+        meta: p.waktuDatang ? new Date(p.waktuDatang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
       })),
     ];
 
