@@ -49,11 +49,15 @@ export default function PresensiGuruKiosk() {
   });
 
   const [attendedCount, setAttendedCount] = useState(0);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  // Permission & Camera states
+  const [cameraPermission, setCameraPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
+  const [locationPermission, setLocationPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -63,7 +67,29 @@ export default function PresensiGuruKiosk() {
   useEffect(() => {
     loadGuruList();
     loadRecentActivity();
+    requestPermissionsOnLoad();
+
+    // Cleanup camera stream on unmount
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, []);
+
+  // Start camera stream when permission granted
+  useEffect(() => {
+    if (cameraPermission === 'granted' && !cameraStream) {
+      startCameraStream();
+    }
+  }, [cameraPermission]);
+
+  // Update video element when stream changes
+  useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
 
   const loadGuruList = async () => {
     setLoading(true);
@@ -106,9 +132,6 @@ export default function PresensiGuruKiosk() {
     setSelectedGuru(guru);
     setSearch('');
     setShowSearchResults(false);
-    setCapturedPhoto(null);
-    setLocation(null);
-    setPermissionError(null);
 
     // Determine mode
     if (!guru.statusHariIni?.sudahDatang) {
@@ -124,115 +147,130 @@ export default function PresensiGuruKiosk() {
   const handleReset = () => {
     setSelectedGuru(null);
     setSearch('');
-    setCapturedPhoto(null);
-    setLocation(null);
-    setPermissionError(null);
     setTimeout(() => searchInputRef.current?.focus(), 100);
   };
 
-  const requestCameraPermission = async (): Promise<string | null> => {
+  // Request permissions on page load
+  const requestPermissionsOnLoad = async () => {
+    // Request Camera
     try {
-      // Trigger camera permission by creating video element
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: 640, height: 480 },
       });
+      setCameraStream(stream);
+      setCameraPermission('granted');
+    } catch (err: any) {
+      console.error('Camera permission error:', err);
+      setCameraPermission('denied');
+    }
 
-      // Capture photo immediately
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
+    // Request Location
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+      setCurrentLocation({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+      setLocationPermission('granted');
+    } catch (err: any) {
+      console.error('Location permission error:', err);
+      setLocationPermission('denied');
+    }
+  };
 
-      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for video ready
+  const startCameraStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 },
+      });
+      setCameraStream(stream);
+    } catch (err) {
+      console.error('Failed to start camera:', err);
+    }
+  };
 
+  const retryCamera = async () => {
+    setCameraPermission('pending');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 640, height: 480 },
+      });
+      setCameraStream(stream);
+      setCameraPermission('granted');
+      toast.success('Izin kamera berhasil diberikan');
+    } catch (err) {
+      setCameraPermission('denied');
+      toast.error('Izin kamera ditolak. Mohon aktifkan di pengaturan browser.');
+    }
+  };
+
+  const retryLocation = async () => {
+    setLocationPermission('pending');
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+      setCurrentLocation({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+      setLocationPermission('granted');
+      toast.success('Izin lokasi berhasil diberikan');
+    } catch (err) {
+      setLocationPermission('denied');
+      toast.error('Izin lokasi ditolak. Mohon aktifkan di pengaturan browser.');
+    }
+  };
+
+  const captureFotoFromStream = (): string | null => {
+    if (!videoRef.current || !cameraStream) return null;
+
+    try {
       const canvas = document.createElement('canvas');
       canvas.width = 640;
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, 640, 480);
+
+      if (ctx && videoRef.current) {
+        ctx.drawImage(videoRef.current, 0, 0, 640, 480);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-
         return dataUrl;
       }
-
-      stream.getTracks().forEach(track => track.stop());
       return null;
-    } catch (err: any) {
-      console.error('Camera error:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        throw new Error('Izin kamera ditolak. Silakan aktifkan izin kamera di pengaturan browser.');
-      } else if (err.name === 'NotFoundError') {
-        throw new Error('Kamera tidak ditemukan pada perangkat ini.');
-      } else {
-        throw new Error('Gagal mengakses kamera: ' + err.message);
-      }
+    } catch (err) {
+      console.error('Capture error:', err);
+      return null;
     }
   };
 
-  const requestLocationPermission = async (): Promise<{ lat: number; lng: number }> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation tidak didukung oleh browser ini.'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.error('Location error:', error);
-          if (error.code === error.PERMISSION_DENIED) {
-            reject(new Error('Izin lokasi ditolak. Silakan aktifkan izin lokasi di pengaturan browser.'));
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            reject(new Error('Lokasi tidak tersedia. Pastikan GPS aktif.'));
-          } else if (error.code === error.TIMEOUT) {
-            reject(new Error('Waktu habis saat mendapatkan lokasi. Coba lagi.'));
-          } else {
-            reject(new Error('Gagal mendapatkan lokasi: ' + error.message));
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      );
-    });
-  };
-
   const handleSubmit = async () => {
-    if (!selectedGuru) return;
+    if (!selectedGuru || !currentLocation || cameraPermission !== 'granted') return;
 
     setSubmitting(true);
-    setPermissionError(null);
 
     try {
-      // 1. Request Camera Permission & Capture Photo
-      toast.info('Mengakses kamera...');
-      const photo = await requestCameraPermission();
+      // Capture photo from stream
+      const photo = captureFotoFromStream();
       if (!photo) {
-        throw new Error('Gagal mengambil foto');
+        throw new Error('Gagal mengambil foto dari kamera');
       }
-      setCapturedPhoto(photo);
 
-      // 2. Request Location Permission
-      toast.info('Mengakses lokasi...');
-      const loc = await requestLocationPermission();
-      setLocation(loc);
-
-      // 3. Submit to API
+      // Submit to API
       const endpoint = mode === 'datang' ? '/api/presensi/guru/datang' : '/api/presensi/guru/pulang';
       const response: any = await api.post(endpoint, {
         guruId: selectedGuru.id,
-        latitude: loc.lat,
-        longitude: loc.lng,
+        latitude: currentLocation.lat,
+        longitude: currentLocation.lng,
         fotoBase64: photo,
       });
 
@@ -254,14 +292,14 @@ export default function PresensiGuruKiosk() {
     } catch (err: any) {
       console.error('Submit error:', err);
       const errorMsg = err?.message || err?.error || 'Gagal mencatat presensi';
-      setPermissionError(errorMsg);
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canSubmit = selectedGuru && !submitting;
+  const canSubmit = selectedGuru && !submitting && cameraPermission === 'granted' && locationPermission === 'granted';
+  const permissionsReady = cameraPermission === 'granted' && locationPermission === 'granted';
 
   return (
     <div className="bg-background text-on-background font-sans overflow-hidden min-h-screen flex flex-col">
@@ -429,29 +467,174 @@ export default function PresensiGuruKiosk() {
             )}
           </div>
 
+          {/* Permission Status & Camera Preview */}
+          {!selectedGuru && (
+            <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
+              <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                <span className="bg-secondary text-on-secondary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">
+                  <Camera className="w-3 h-3 md:w-4 md:h-4" />
+                </span>
+                <h2 className="text-lg md:text-2xl font-semibold">Status Sistem</h2>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Camera Preview */}
+                <div className="space-y-3">
+                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
+                    {cameraPermission === 'granted' && cameraStream ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                      />
+                    ) : cameraPermission === 'pending' ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-container text-on-surface-variant">
+                        <div className="w-8 h-8 border-4 border-primary/40 border-t-primary rounded-full animate-spin mb-3" />
+                        <p className="text-sm">Meminta izin kamera...</p>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-error-container text-error">
+                        <AlertTriangle className="w-12 h-12 mb-3" />
+                        <p className="text-sm font-semibold mb-2">Kamera Tidak Aktif</p>
+                        <button onClick={retryCamera} className="text-xs underline hover:no-underline">
+                          Coba Lagi
+                        </button>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white">
+                      <div className={`w-2 h-2 rounded-full ${cameraPermission === 'granted' ? 'bg-green-500' : 'bg-red-500'}`} />
+                      Live
+                    </div>
+                  </div>
+                </div>
+
+                {/* Permission Status */}
+                <div className="space-y-3">
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
+                    cameraPermission === 'granted'
+                      ? 'bg-green-50 border-green-500'
+                      : cameraPermission === 'pending'
+                      ? 'bg-surface-container border-outline-variant'
+                      : 'bg-error-container border-error'
+                  }`}>
+                    <Camera className={`w-5 h-5 shrink-0 mt-0.5 ${
+                      cameraPermission === 'granted' ? 'text-green-600' : 'text-error'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold mb-1">
+                        {cameraPermission === 'granted' ? 'Kamera Aktif' : cameraPermission === 'pending' ? 'Menunggu Izin Kamera' : 'Kamera Tidak Aktif'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant leading-snug">
+                        {cameraPermission === 'granted'
+                          ? 'Kamera siap untuk mengambil foto presensi'
+                          : 'Izinkan akses kamera untuk melanjutkan presensi'}
+                      </p>
+                      {cameraPermission === 'denied' && (
+                        <button onClick={retryCamera} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                          Coba Aktifkan Lagi →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
+                    locationPermission === 'granted'
+                      ? 'bg-green-50 border-green-500'
+                      : locationPermission === 'pending'
+                      ? 'bg-surface-container border-outline-variant'
+                      : 'bg-error-container border-error'
+                  }`}>
+                    <MapPin className={`w-5 h-5 shrink-0 mt-0.5 ${
+                      locationPermission === 'granted' ? 'text-green-600' : 'text-error'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold mb-1">
+                        {locationPermission === 'granted' ? 'Lokasi Aktif' : locationPermission === 'pending' ? 'Menunggu Izin Lokasi' : 'Lokasi Tidak Aktif'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant leading-snug">
+                        {locationPermission === 'granted'
+                          ? `Lokasi terdeteksi: ${currentLocation?.lat.toFixed(6)}, ${currentLocation?.lng.toFixed(6)}`
+                          : 'Izinkan akses lokasi untuk validasi kehadiran'}
+                      </p>
+                      {locationPermission === 'denied' && (
+                        <button onClick={retryLocation} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                          Coba Aktifkan Lagi →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {!permissionsReady && (
+                    <div className="flex items-start gap-2 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                      <p className="text-xs text-orange-800 leading-snug">
+                        Pastikan kamera dan lokasi aktif sebelum melakukan presensi.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Step 2: Submit Button */}
           {selectedGuru && (
             <div className="flex-1 flex flex-col gap-4 md:gap-6">
               <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
                 <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
                   <span className="bg-primary text-on-primary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">2</span>
-                  <h2 className="text-lg md:text-2xl font-semibold">Ambil Foto & Lokasi</h2>
+                  <h2 className="text-lg md:text-2xl font-semibold">Verifikasi & Submit</h2>
                 </div>
 
                 <div className="space-y-3 md:space-y-4">
-                  <div className="flex items-start md:items-center gap-2 md:gap-3 p-3 md:p-4 bg-surface-container rounded-lg">
-                    <Camera className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0 mt-0.5 md:mt-0" />
-                    <span className="text-xs md:text-sm leading-snug">Kamera akan diaktifkan otomatis saat presensi</span>
-                  </div>
-                  <div className="flex items-start md:items-center gap-2 md:gap-3 p-3 md:p-4 bg-surface-container rounded-lg">
-                    <MapPin className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0 mt-0.5 md:mt-0" />
-                    <span className="text-xs md:text-sm leading-snug">Lokasi akan divalidasi untuk memastikan Anda di sekolah</span>
+                  {/* Camera Preview - Always Shown */}
+                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
+                    {cameraPermission === 'granted' && cameraStream ? (
+                      <>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white">
+                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                          Recording
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-error-container text-error">
+                        <AlertTriangle className="w-12 h-12 mb-3" />
+                        <p className="text-sm font-semibold">Kamera Tidak Aktif</p>
+                      </div>
+                    )}
                   </div>
 
-                  {permissionError && (
-                    <div className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-error-container rounded-lg border-2 border-error">
-                      <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-error shrink-0 mt-0.5" />
-                      <div className="text-xs md:text-sm text-error whitespace-pre-line">{permissionError}</div>
+                  {/* Status Indicators */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+                      cameraPermission === 'granted' ? 'bg-green-50 border-green-500' : 'bg-error-container border-error'
+                    }`}>
+                      <Camera className={`w-4 h-4 ${cameraPermission === 'granted' ? 'text-green-600' : 'text-error'}`} />
+                      <span className="text-xs font-semibold">{cameraPermission === 'granted' ? 'Kamera Siap' : 'Kamera Tidak Aktif'}</span>
+                    </div>
+                    <div className={`flex items-center gap-2 p-3 rounded-lg border ${
+                      locationPermission === 'granted' ? 'bg-green-50 border-green-500' : 'bg-error-container border-error'
+                    }`}>
+                      <MapPin className={`w-4 h-4 ${locationPermission === 'granted' ? 'text-green-600' : 'text-error'}`} />
+                      <span className="text-xs font-semibold">{locationPermission === 'granted' ? 'Lokasi Siap' : 'Lokasi Tidak Aktif'}</span>
+                    </div>
+                  </div>
+
+                  {!permissionsReady && (
+                    <div className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-orange-50 rounded-lg border-2 border-orange-400">
+                      <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-600 shrink-0 mt-0.5" />
+                      <div className="text-xs md:text-sm text-orange-800 leading-snug">
+                        Kamera dan lokasi harus aktif sebelum melakukan presensi. Mohon aktifkan izin di browser Anda.
+                      </div>
                     </div>
                   )}
 
