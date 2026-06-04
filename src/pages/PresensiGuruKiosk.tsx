@@ -319,84 +319,75 @@ export default function PresensiGuruKiosk() {
   const permissionsReady = cameraPermission === 'granted' && locationPermission === 'granted';
 
   return (
-    <div className="bg-background text-on-background font-sans min-h-screen flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] font-[Inter]">
       {/* Header */}
-      <header className="bg-white border-b border-[#e2e8f0] px-8 py-4 shadow-sm">
+      <header className="bg-white border-b border-[#e2e8f0] px-6 py-4 shadow-sm">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          {/* Left: Clock */}
-          <div className="flex items-center gap-4">
+          {/* Left: Logo + School */}
+          <div className="flex items-center gap-3">
             {cfg.logoUrl ? (
-              <img src={cfg.logoUrl} alt={schoolName} className="h-14 w-14 object-contain rounded-lg" />
+              <img src={cfg.logoUrl} alt={schoolName} className="h-12 w-12 object-contain rounded-lg" />
             ) : (
-              <div className="h-14 w-14 bg-[#1e40af] rounded-lg flex items-center justify-center text-white">
-                <GraduationCap className="w-8 h-8" />
+              <div className="h-12 w-12 bg-[#1e40af] rounded-lg flex items-center justify-center text-white">
+                <GraduationCap className="w-7 h-7" />
               </div>
             )}
             <div>
-              <div className="text-3xl font-bold text-[#1e40af] tabular-nums leading-tight">
-                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </div>
-              <div className="text-sm text-[#64748b] mt-1">
-                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
+              <h1 className="text-lg font-semibold text-[#0f172a]">{schoolName}</h1>
+              <p className="text-xs text-[#64748b] uppercase tracking-wider font-medium">Sistem Presensi Digital</p>
             </div>
           </div>
 
-          {/* Center: Title */}
-          <div className="hidden md:block text-center">
-            <h1 className="text-2xl font-semibold text-[#0f172a]">{schoolName}</h1>
-            <p className="text-sm text-[#64748b] uppercase tracking-wider font-medium">Kiosk Presensi Guru</p>
+          {/* Right: Clock + Home */}
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <div className="text-2xl font-bold text-[#1e40af] tabular-nums leading-tight">
+                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+              <div className="text-xs text-[#64748b]">
+                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-[#e2e8f0] text-[#1e40af] hover:bg-[#f8fafc] transition-all"
+            >
+              <Home className="w-5 h-5" />
+              <span className="font-medium text-sm">Beranda</span>
+            </Link>
           </div>
-
-          {/* Right: Home Button */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-white border border-[#e2e8f0] text-[#1e40af] hover:bg-[#f8fafc] transition-all shadow-sm"
-          >
-            <Home className="w-5 h-5" />
-            <span className="font-medium">Beranda</span>
-          </Link>
         </div>
       </header>
 
       {/* Status Bar */}
-      <div className="bg-surface-container-low px-4 md:px-20 py-2 md:py-4 border-b border-outline-variant/30">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
-          <div className="flex flex-wrap gap-2 md:gap-6 items-center w-full sm:w-auto">
-            <div className="flex items-center gap-1.5 md:gap-2 bg-surface px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-outline-variant/50 shadow-sm text-xs md:text-sm">
-              <Clock className="w-3 h-3 md:w-4 md:h-4 text-primary shrink-0" />
-              <span className="text-on-surface-variant whitespace-nowrap">
-                <span className="hidden sm:inline">Jam Masuk: </span>
-                <span className="font-bold text-on-surface">07:00</span>
-              </span>
-              <span className="text-outline-variant mx-0.5 md:mx-1 hidden sm:inline">|</span>
-              <span className="text-on-surface-variant whitespace-nowrap hidden sm:inline">
-                Jam Pulang: <span className="font-bold text-on-surface">15:30</span>
-              </span>
+      <div className="bg-white border-b border-[#e2e8f0] px-6 py-3">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-sm text-[#64748b]">
+              <Clock className="w-4 h-4 text-[#1e40af]" />
+              <span>Jam Masuk: <span className="font-semibold text-[#0f172a]">07:00</span></span>
+              <span className="text-[#e2e8f0]">|</span>
+              <span>Jam Pulang: <span className="font-semibold text-[#0f172a]">15:30</span></span>
             </div>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-surface px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-outline-variant/50 shadow-sm text-xs md:text-sm">
-              <Users className="w-3 h-3 md:w-4 md:h-4 text-tertiary shrink-0" />
-              <span className="text-on-surface-variant whitespace-nowrap">
-                <span className="hidden sm:inline">Kehadiran: </span>
-                <span className="font-bold text-tertiary">{attendedCount}/{guruList.length}</span>
-                <span className="hidden sm:inline"> guru</span>
-              </span>
+            <div className="flex items-center gap-2 text-sm text-[#64748b]">
+              <Users className="w-4 h-4 text-[#1e40af]" />
+              <span>Kehadiran: <span className="font-semibold text-[#0f172a]">{attendedCount}/{guruList.length}</span> guru</span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2 text-primary font-bold text-xs md:text-sm">
-            <span className="relative flex h-2 w-2 md:h-3 md:w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 md:h-3 md:w-3 bg-primary"></span>
+          <div className="flex items-center gap-2 text-[#1e40af] font-semibold text-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1e40af] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1e40af]"></span>
             </span>
-            <span className="font-semibold tracking-wider">LIVE</span>
+            <span>LIVE</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 px-4 md:px-20 py-4 md:py-8">
-        {/* Left: Action Area */}
-        <section className="lg:col-span-8 flex flex-col gap-4 md:gap-8 h-full">
+      <main className="max-w-[1400px] mx-auto p-6 flex gap-6">
+        {/* Center: Action Card */}
+        <section className="flex-1 flex items-start justify-center pt-12">
           {/* Step 1: Teacher Selection */}
           <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
             <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
@@ -681,85 +672,113 @@ export default function PresensiGuruKiosk() {
           )}
         </section>
 
-        {/* Right: Recent Activity */}
-        <aside className="lg:col-span-4 flex flex-col bg-surface-container-low rounded-xl border border-outline-variant">
-          <div className="p-4 md:p-6 border-b border-outline-variant bg-surface flex justify-between items-center">
-            <h3 className="text-lg md:text-2xl font-semibold">Recap Hari Ini</h3>
-            <span className="bg-primary-container text-on-primary-container px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold">Terbaru</span>
+        {/* Right Sidebar: Activity */}
+        <aside className="w-[360px] bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[calc(100vh-180px)]">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-[#f1f5f9]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-[#0f172a]">Aktivitas Hari Ini</h3>
+              <span className="bg-[#dde1ff] text-[#1e40af] px-3 py-1 rounded-full text-xs font-semibold">LIVE</span>
+            </div>
+            <p className="text-xs text-[#64748b]">Rekap kehadiran guru hari ini</p>
           </div>
-          <div className="overflow-y-auto p-4 md:p-6 flex flex-col gap-3 md:gap-4 max-h-[400px] lg:max-h-[600px]">
+
+          {/* Activity List */}
+          <div className="flex-1 overflow-y-auto">
             {recentActivity.length === 0 ? (
-              <div className="text-center py-12 text-on-surface-variant">
-                <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">Belum ada guru yang hadir hari ini</p>
+              <div className="text-center py-16 text-[#64748b]">
+                <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">Belum ada guru yang hadir</p>
               </div>
             ) : (
-              recentActivity.map((activity, idx) => (
-                <div key={activity.id} className={`bg-surface p-4 rounded-xl border border-outline-variant/50 shadow-sm`} style={{ opacity: 1 - idx * 0.08 }}>
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-on-surface truncate">{activity.nama}</p>
-                      <p className="text-xs text-outline mb-2">{activity.nip}</p>
+              <div className="divide-y divide-[#f1f5f9]">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                    <div className="flex items-start gap-3 mb-3">
+                      {/* Icon */}
+                      <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-5 h-5 text-[#1e40af]" />
+                      </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className={`font-bold ${activity.waktuDatang ? 'text-green-600' : 'text-outline'}`}>
-                            Datang {activity.waktuDatang || '--:--'}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
+                        <div className="text-xs text-[#64748b]">NIP: {activity.nip}</div>
+                      </div>
+                    </div>
+
+                    {/* Time Info */}
+                    <div className="ml-[52px] space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#64748b]">Datang:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${activity.waktuDatang ? 'text-green-600' : 'text-[#c4c5d5]'}`}>
+                            {activity.waktuDatang || '--:--'}
                           </span>
                           {activity.keterlambatan > 0 && (
-                            <span className="bg-error-container text-error px-2 py-0.5 rounded-full text-[10px] font-bold">
-                              Telat {activity.keterlambatan}m
+                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                              Telat {activity.keterlambatan} Menit
                             </span>
                           )}
                         </div>
+                      </div>
 
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className={`font-bold ${activity.waktuPulang ? 'text-primary' : 'text-outline'}`}>
-                            Pulang {activity.waktuPulang || '--:--'}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#64748b]">Pulang:</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${activity.waktuPulang ? 'text-[#1e40af]' : 'text-[#c4c5d5]'}`}>
+                            {activity.waktuPulang || '--:--'}
                           </span>
                           {activity.autoCheckout && (
-                            <span className="bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded-full text-[10px] font-bold">
+                            <span className="bg-[#f8fafc] text-[#64748b] px-2 py-0.5 rounded-full text-[10px] font-semibold">
                               Auto
                             </span>
                           )}
                         </div>
-
-                        {activity.totalJam > 0 && (
-                          <div className="text-xs text-on-surface-variant pt-1 border-t border-outline-variant/30 mt-2">
-                            <span className="font-semibold">Total: {formatMinutesToHours(activity.totalJam)}</span>
-                          </div>
-                        )}
                       </div>
+
+                      {activity.totalJam > 0 && (
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-[#f1f5f9]">
+                          <span className="text-[#64748b]">Total Jam:</span>
+                          <span className="font-semibold text-[#0f172a]">{formatMinutesToHours(activity.totalJam)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </aside>
       </main>
 
+      {/* Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
+        <p className="text-xs text-center text-[#64748b]">
+          © 2026 EDUCATIONAL EXCELLENCE SYSTEMS
+        </p>
+      </footer>
+
       {/* Success Overlay */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 bg-on-background/60 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="bg-surface rounded-2xl md:rounded-3xl p-6 md:p-8 max-w-xl w-full text-center shadow-2xl scale-100 transition-transform duration-300">
-            <div className="mb-4 md:mb-6 flex justify-center">
-              <div className="h-12 w-12 md:h-16 md:w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-8">
+          <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6 mx-auto">
+              <CheckCircle className="w-12 h-12" />
             </div>
-            <h2 className="text-xl md:text-3xl font-bold text-primary mb-2 md:mb-3 leading-tight">
-              {successData.type === 'datang' ? 'Selamat datang,' : 'Sampai jumpa,'} <br />
-              <span className="text-on-surface">{successData.nama}!</span>
+            <h2 className="text-3xl font-bold text-[#0f172a] mb-3">
+              {successData.type === 'datang' ? 'Selamat Datang!' : 'Sampai Jumpa!'}
             </h2>
-            <p className="text-sm md:text-lg font-semibold text-on-surface-variant mb-2 md:mb-3">
-              Presensi {successData.type} tercatat pada pukul <span className="font-bold text-on-surface">{successData.time}</span>
+            <p className="text-[#64748b] mb-2">
+              <span className="font-semibold text-xl text-[#1e40af]">{successData.nama}</span>
             </p>
+            <p className="text-sm text-[#64748b] mb-6">Presensi {successData.type} berhasil dicatat</p>
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#dde1ff] rounded-lg">
+              <Clock className="w-5 h-5 text-[#1e40af]" />
+              <span className="font-bold text-xl text-[#1e40af]">{successData.time}</span>
+            </div>
             {successData.jarak !== undefined && (
-              <p className="text-xs md:text-sm text-green-600 font-medium">
+              <p className="text-xs text-green-600 font-medium mt-4">
                 ✓ Lokasi terverifikasi ({successData.jarak} meter dari sekolah)
               </p>
             )}

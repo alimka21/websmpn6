@@ -347,22 +347,25 @@ export default function PresensiSiswaKiosk() {
               <div className="divide-y divide-[#f1f5f9]">
                 {filteredActivity.map((activity) => (
                   <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-[#1e40af]" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
-                          <div className="text-xs text-[#64748b]">{activity.kelas}</div>
-                        </div>
+                    <div className="flex items-start gap-3">
+                      {/* Icon */}
+                      <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-5 h-5 text-[#1e40af]" />
                       </div>
-                      <div className="text-right flex-shrink-0 ml-2">
-                        <div className="text-sm font-bold text-[#1e40af]">{activity.waktu}</div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
+                        <div className="text-xs text-[#64748b]">{activity.kelas}</div>
+                      </div>
+
+                      {/* Time & Status */}
+                      <div className="text-right flex-shrink-0 min-w-[80px]">
+                        <div className="text-sm font-bold text-[#1e40af] mb-0.5">{activity.waktu}</div>
                         {activity.tepatWaktu ? (
-                          <div className="text-[10px] font-semibold text-green-600 uppercase">Tepat Waktu</div>
+                          <div className="text-xs font-semibold text-green-600">Tepat Waktu</div>
                         ) : (
-                          <div className="text-[10px] font-semibold text-red-600 uppercase">Telat {activity.keterlambatan}m</div>
+                          <div className="text-xs font-semibold text-red-600">Telat {activity.keterlambatan} Menit</div>
                         )}
                       </div>
                     </div>
