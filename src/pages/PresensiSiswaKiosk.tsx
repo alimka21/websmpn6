@@ -121,31 +121,34 @@ export default function PresensiSiswaKiosk() {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-sans h-screen flex flex-col overflow-hidden">
+    <div className="bg-surface text-on-surface font-sans min-h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-surface-container-lowest h-24 px-20 flex items-center justify-between shadow-sm z-50">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
-            <Users className="w-8 h-8" />
+      <header className="bg-surface-container-lowest h-16 md:h-24 px-4 md:px-20 flex items-center justify-between shadow-sm z-50">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="w-10 h-10 md:w-14 md:h-14 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
+            <Users className="w-6 h-6 md:w-8 md:h-8" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">{schoolName}</h1>
-            <p className="text-xs text-secondary uppercase tracking-widest">Sistem Presensi Digital</p>
+          <div className="hidden sm:block">
+            <h1 className="text-base md:text-2xl font-bold text-primary">{schoolName}</h1>
+            <p className="text-[10px] md:text-xs text-secondary uppercase tracking-widest">Sistem Presensi Digital</p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-primary tabular-nums">
+          <div className="text-2xl md:text-3xl font-bold text-primary tabular-nums">
             {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
-          <div className="text-lg font-semibold text-secondary-fixed-variant">
+          <div className="text-xs md:text-lg font-semibold text-secondary-fixed-variant hidden sm:block">
             {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+          <div className="text-[10px] text-secondary-fixed-variant sm:hidden">
+            {currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex overflow-hidden">
         {/* Left Sidebar (Hidden on mobile, shown on large screens) */}
-        <aside className="hidden lg:flex fixed left-0 top-24 h-[calc(100vh-96px)] w-64 bg-surface-container-low flex-col py-8 border-r border-outline-variant/30">
+        <aside className="hidden lg:flex fixed left-0 top-24 h-[calc(100vh-96px)] w-64 bg-surface-container-low flex-col py-8 border-r border-outline-variant/30 z-10">
           <div className="px-6 mb-8">
             <h3 className="text-xs text-secondary uppercase font-bold mb-4 tracking-wider">Navigasi Kiosk</h3>
             <nav className="space-y-2">
@@ -165,19 +168,19 @@ export default function PresensiSiswaKiosk() {
         </aside>
 
         {/* Center: Input Area */}
-        <section className="flex-1 flex flex-col items-center justify-center bg-background px-8 lg:ml-64 lg:mr-[380px]">
-          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-[2rem] p-12 shadow-xl border border-outline-variant/20 text-center relative overflow-hidden">
+        <section className="flex-1 flex flex-col items-center justify-center bg-background px-4 md:px-8 py-8 lg:ml-64 lg:mr-[380px]">
+          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-2xl md:rounded-[2rem] p-6 md:p-12 shadow-xl border border-outline-variant/20 text-center relative overflow-hidden">
             {/* Success Overlay */}
             {showSuccess && (
-              <div className="absolute inset-0 bg-green-50/95 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-in fade-in zoom-in duration-300">
-                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white mb-6">
-                  <CheckCircle className="w-16 h-16" />
+              <div className="absolute inset-0 bg-green-50/95 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-in fade-in zoom-in duration-300 p-4">
+                <div className="w-16 h-16 md:w-24 md:h-24 bg-green-500 rounded-full flex items-center justify-center text-white mb-4 md:mb-6">
+                  <CheckCircle className="w-10 h-10 md:w-16 md:h-16" />
                 </div>
-                <h2 className="text-3xl font-bold text-green-800 mb-2">Absensi Berhasil!</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">Absensi Berhasil!</h2>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-green-900">{successData.nama}</p>
-                  <p className="text-green-700 text-lg">{successData.kelas}</p>
-                  <p className="mt-4 text-sm text-green-800 bg-white/50 px-4 py-2 rounded-full inline-block">
+                  <p className="text-xl md:text-2xl font-bold text-green-900">{successData.nama}</p>
+                  <p className="text-green-700 text-base md:text-lg">{successData.kelas}</p>
+                  <p className="mt-3 md:mt-4 text-xs md:text-sm text-green-800 bg-white/50 px-3 md:px-4 py-1.5 md:py-2 rounded-full inline-block">
                     Hadir pukul {successData.time}
                   </p>
                 </div>
@@ -196,10 +199,10 @@ export default function PresensiSiswaKiosk() {
                     </div>
                   </div>
 
-                  <h2 className="text-3xl font-bold mb-2 text-on-surface">Scan atau Masukkan NIS</h2>
-                  <p className="text-on-surface-variant mb-10">Silakan gunakan kartu pelajar Anda atau masukkan nomor induk siswa.</p>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2 text-on-surface">Scan atau Masukkan NIS</h2>
+                  <p className="text-sm md:text-base text-on-surface-variant mb-6 md:mb-10 px-2">Silakan gunakan kartu pelajar Anda atau masukkan nomor induk siswa.</p>
 
-                  <div className="space-y-6">
+                  <div className="space-y-4 md:space-y-6">
                     <div className="relative group">
                       <input
                         ref={inputRef}
@@ -208,52 +211,52 @@ export default function PresensiSiswaKiosk() {
                         onChange={(e) => setNis(e.target.value)}
                         onKeyPress={handleKeyPress}
                         disabled={loading}
-                        className="w-full h-24 px-8 text-center text-[32px] font-bold border-2 border-outline-variant rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-outline/40 placeholder:font-normal outline-none disabled:opacity-50"
+                        className="w-full h-20 md:h-24 px-4 md:px-8 text-center text-2xl md:text-[32px] font-bold border-2 border-outline-variant rounded-xl md:rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all placeholder:text-outline/40 placeholder:font-normal outline-none disabled:opacity-50"
                         placeholder="Scan kartu atau ketik NIS..."
                         autoFocus
                       />
-                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-primary opacity-0 group-focus-within:opacity-100 transition-opacity">
-                        <ArrowRight className="w-8 h-8" />
+                      <div className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 text-primary opacity-0 group-focus-within:opacity-100 transition-opacity">
+                        <ArrowRight className="w-6 h-6 md:w-8 md:h-8" />
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleSearch()}
                       disabled={loading || !nis.trim()}
-                      className="w-full h-20 bg-primary-container text-white font-semibold text-2xl rounded-2xl hover:scale-[1.01] active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-4 disabled:opacity-50"
+                      className="w-full h-16 md:h-20 bg-primary-container text-white font-semibold text-xl md:text-2xl rounded-xl md:rounded-2xl hover:scale-[1.01] active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-3 md:gap-4 disabled:opacity-50"
                     >
                       {loading ? (
                         <>
-                          <div className="w-6 h-6 border-4 border-white/40 border-t-white rounded-full animate-spin" />
-                          Mencari...
+                          <div className="w-5 h-5 md:w-6 md:h-6 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+                          <span className="text-lg md:text-2xl">Mencari...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-6 h-6" />
+                          <CheckCircle className="w-5 h-5 md:w-6 md:h-6" />
                           Absen Sekarang
                         </>
                       )}
                     </button>
 
-                    <p className="text-on-surface-variant text-sm flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                    <p className="text-xs md:text-sm text-on-surface-variant flex items-center justify-center gap-2 px-4">
+                      <span className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                         <span className="text-xs">ℹ</span>
                       </span>
-                      Dekatkan kartu ke scanner, atau ketik NIS lalu tekan Enter
+                      <span className="leading-snug">Dekatkan kartu ke scanner, atau ketik NIS lalu tekan Enter</span>
                     </p>
                   </div>
                 </>
               ) : (
                 // Confirmation View
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  <div className="bg-primary/5 border-2 border-primary/20 rounded-2xl p-8 space-y-4">
+                <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="bg-primary/5 border-2 border-primary/20 rounded-xl md:rounded-2xl p-6 md:p-8 space-y-4">
                     <div className="text-center">
-                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <User className="w-10 h-10 text-primary" />
+                      <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                        <User className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                       </div>
-                      <h3 className="text-3xl font-bold text-on-surface">{siswa.nama}</h3>
-                      <p className="text-on-surface-variant mt-1 text-lg">NIS: {siswa.nis}</p>
-                      <p className="text-xl font-semibold text-primary mt-3">{siswa.kelas}</p>
+                      <h3 className="text-2xl md:text-3xl font-bold text-on-surface">{siswa.nama}</h3>
+                      <p className="text-on-surface-variant mt-1 text-base md:text-lg">NIS: {siswa.nis}</p>
+                      <p className="text-lg md:text-xl font-semibold text-primary mt-2 md:mt-3">{siswa.kelas}</p>
                     </div>
                   </div>
 
@@ -265,23 +268,23 @@ export default function PresensiSiswaKiosk() {
                         inputRef.current?.focus();
                       }}
                       disabled={submitting}
-                      className="py-4 px-4 border-2 border-outline-variant rounded-xl text-base font-semibold text-on-surface-variant hover:border-primary hover:text-primary transition-all disabled:opacity-50"
+                      className="py-3 md:py-4 px-3 md:px-4 border-2 border-outline-variant rounded-xl text-sm md:text-base font-semibold text-on-surface-variant hover:border-primary hover:text-primary active:bg-surface-container transition-all disabled:opacity-50"
                     >
                       Batal
                     </button>
                     <button
                       onClick={handleSubmit}
                       disabled={submitting}
-                      className="py-4 text-lg font-bold bg-secondary-container text-white rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="py-3 md:py-4 text-base md:text-lg font-bold bg-secondary-container text-white rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {submitting ? (
                         <>
-                          <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          Menyimpan...
+                          <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          <span className="text-sm md:text-lg">Menyimpan...</span>
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-5 h-5" />
+                          <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
                           Konfirmasi
                         </>
                       )}

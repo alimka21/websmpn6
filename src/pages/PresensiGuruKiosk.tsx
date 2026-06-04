@@ -264,75 +264,96 @@ export default function PresensiGuruKiosk() {
   const canSubmit = selectedGuru && !submitting;
 
   return (
-    <div className="bg-background text-on-background font-sans overflow-hidden h-screen flex flex-col">
+    <div className="bg-background text-on-background font-sans overflow-hidden min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-surface border-b border-outline-variant px-20 py-6 flex justify-between items-center z-30">
-        <div className="flex items-center gap-4">
-          <div className="h-14 w-14 bg-primary rounded-xl flex items-center justify-center text-on-primary">
-            <GraduationCap className="w-9 h-9" />
+      <header className="bg-surface border-b border-outline-variant px-4 md:px-20 py-3 md:py-6 z-30">
+        <div className="flex justify-between items-center gap-2">
+          {/* Left: Logo + Name */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="h-10 w-10 md:h-14 md:w-14 bg-primary rounded-lg md:rounded-xl flex items-center justify-center text-on-primary">
+              <GraduationCap className="w-6 h-6 md:w-9 md:h-9" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-base md:text-2xl font-bold text-primary">{schoolName}</h1>
+              <p className="text-[10px] md:text-xs text-on-surface-variant uppercase tracking-widest">Kiosk Presensi Guru</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">{schoolName}</h1>
-            <p className="text-xs text-on-surface-variant uppercase tracking-widest">Kiosk Presensi Guru</p>
+
+          {/* Center: Clock */}
+          <div className="text-center">
+            <div className="text-2xl md:text-5xl font-bold text-on-surface tracking-tighter leading-none tabular-nums">
+              {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+            <div className="text-xs md:text-2xl font-semibold text-on-surface-variant mt-0.5 md:mt-1 hidden sm:block">
+              {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+            <div className="text-[10px] text-on-surface-variant mt-0.5 sm:hidden">
+              {currentTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </div>
           </div>
-        </div>
-        <div className="text-center">
-          <div className="text-5xl font-bold text-on-surface tracking-tighter leading-none tabular-nums">
-            {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+
+          {/* Right: Terminal + Settings */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="text-right hidden lg:block">
+              <p className="text-xs uppercase tracking-wider text-outline">Terminal ID</p>
+              <p className="text-xl md:text-2xl font-bold text-primary">#01</p>
+            </div>
+            <button className="h-8 w-8 md:h-12 md:w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all">
+              <Settings className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
           </div>
-          <div className="text-2xl font-semibold text-on-surface-variant mt-1">
-            {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider text-outline">Terminal ID</p>
-            <p className="text-2xl font-bold text-primary">#01-A Main Lobby</p>
-          </div>
-          <button className="h-12 w-12 rounded-full flex items-center justify-center bg-surface-container-high text-on-surface hover:bg-primary-container hover:text-on-primary transition-all">
-            <Settings className="w-5 h-5" />
-          </button>
         </div>
       </header>
 
       {/* Status Bar */}
-      <div className="bg-surface-container-low px-20 py-4 flex justify-between items-center border-b border-outline-variant/30">
-        <div className="flex gap-6 items-center">
-          <div className="flex items-center gap-2 bg-surface px-4 py-2 rounded-full border border-outline-variant/50 shadow-sm">
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="text-sm text-on-surface-variant">Jam Masuk: <span className="font-bold text-on-surface">07:00</span></span>
-            <span className="text-outline-variant mx-1">|</span>
-            <span className="text-sm text-on-surface-variant">Jam Pulang: <span className="font-bold text-on-surface">15:30</span></span>
+      <div className="bg-surface-container-low px-4 md:px-20 py-2 md:py-4 border-b border-outline-variant/30">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">
+          <div className="flex flex-wrap gap-2 md:gap-6 items-center w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 md:gap-2 bg-surface px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-outline-variant/50 shadow-sm text-xs md:text-sm">
+              <Clock className="w-3 h-3 md:w-4 md:h-4 text-primary shrink-0" />
+              <span className="text-on-surface-variant whitespace-nowrap">
+                <span className="hidden sm:inline">Jam Masuk: </span>
+                <span className="font-bold text-on-surface">07:00</span>
+              </span>
+              <span className="text-outline-variant mx-0.5 md:mx-1 hidden sm:inline">|</span>
+              <span className="text-on-surface-variant whitespace-nowrap hidden sm:inline">
+                Jam Pulang: <span className="font-bold text-on-surface">15:30</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 md:gap-2 bg-surface px-2 md:px-4 py-1.5 md:py-2 rounded-full border border-outline-variant/50 shadow-sm text-xs md:text-sm">
+              <Users className="w-3 h-3 md:w-4 md:h-4 text-tertiary shrink-0" />
+              <span className="text-on-surface-variant whitespace-nowrap">
+                <span className="hidden sm:inline">Kehadiran: </span>
+                <span className="font-bold text-tertiary">{attendedCount}/{guruList.length}</span>
+                <span className="hidden sm:inline"> guru</span>
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 bg-surface px-4 py-2 rounded-full border border-outline-variant/50 shadow-sm">
-            <Users className="w-4 h-4 text-tertiary" />
-            <span className="text-sm text-on-surface-variant">Kehadiran: <span className="font-bold text-tertiary">{attendedCount} dari {guruList.length} guru hadir</span></span>
+          <div className="flex items-center gap-1.5 md:gap-2 text-primary font-bold text-xs md:text-sm">
+            <span className="relative flex h-2 w-2 md:h-3 md:w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 md:h-3 md:w-3 bg-primary"></span>
+            </span>
+            <span className="font-semibold tracking-wider">LIVE</span>
           </div>
-        </div>
-        <div className="flex items-center gap-2 text-primary font-bold">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-          </span>
-          <span className="text-xs font-semibold tracking-wider">SYSTEM LIVE</span>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 grid grid-cols-12 gap-6 px-20 py-8 overflow-hidden">
+      <main className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 px-4 md:px-20 py-4 md:py-8 overflow-y-auto lg:overflow-hidden">
         {/* Left: Action Area */}
-        <section className="col-span-8 flex flex-col gap-8 h-full">
+        <section className="lg:col-span-8 flex flex-col gap-4 md:gap-8 h-full">
           {/* Step 1: Teacher Selection */}
-          <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="bg-primary text-on-primary h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
-              <h2 className="text-2xl font-semibold">Identifikasi Diri</h2>
+          <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+              <span className="bg-primary text-on-primary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">1</span>
+              <h2 className="text-lg md:text-2xl font-semibold">Identifikasi Diri</h2>
             </div>
 
             {!selectedGuru ? (
               <div className="relative">
-                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                  <GraduationCap className="w-8 h-8 text-outline" />
+                <div className="absolute inset-y-0 left-3 md:left-6 flex items-center pointer-events-none">
+                  <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-outline" />
                 </div>
                 <input
                   ref={searchInputRef}
@@ -341,14 +362,14 @@ export default function PresensiGuruKiosk() {
                   onChange={(e) => setSearch(e.target.value)}
                   onFocus={() => setShowSearchResults(true)}
                   placeholder="Cari Nama Anda atau NIP..."
-                  className="w-full pl-16 pr-6 py-6 bg-surface-bright border-2 border-outline-variant rounded-xl text-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
+                  className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-4 md:py-6 bg-surface-bright border-2 border-outline-variant rounded-xl text-lg md:text-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
                   autoFocus
                 />
 
                 {showSearchResults && search && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl z-20 max-h-[300px] overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl z-20 max-h-[50vh] md:max-h-[300px] overflow-y-auto">
                     {filteredGuru.length === 0 ? (
-                      <div className="p-4 text-center text-on-surface-variant">Tidak ditemukan</div>
+                      <div className="p-4 text-center text-on-surface-variant text-sm">Tidak ditemukan</div>
                     ) : (
                       filteredGuru.map((guru) => {
                         const status = guru.statusHariIni;
@@ -358,27 +379,27 @@ export default function PresensiGuruKiosk() {
                           <div
                             key={guru.id}
                             onClick={() => !sudahLengkap && handleSelectGuru(guru)}
-                            className={`p-4 border-b border-outline-variant last:border-0 transition-colors flex justify-between items-center ${
-                              sudahLengkap ? 'opacity-50 cursor-not-allowed' : 'hover:bg-surface-container-high cursor-pointer'
+                            className={`p-3 md:p-4 border-b border-outline-variant last:border-0 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
+                              sudahLengkap ? 'opacity-50 cursor-not-allowed' : 'hover:bg-surface-container-high cursor-pointer active:bg-surface-container'
                             }`}
                           >
-                            <div>
-                              <p className="text-lg font-semibold text-on-surface">{guru.nama}</p>
-                              <p className="text-sm text-outline">NIP: {guru.nip}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-base md:text-lg font-semibold text-on-surface truncate">{guru.nama}</p>
+                              <p className="text-xs md:text-sm text-outline">NIP: {guru.nip}</p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                               {status?.sudahDatang && (
-                                <span className="bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">
+                                <span className="bg-primary-fixed text-on-primary-fixed-variant px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap">
                                   Datang · {status.waktuDatang}
                                 </span>
                               )}
                               {status?.sudahPulang && (
-                                <span className="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full text-xs font-bold">
+                                <span className="bg-tertiary-fixed text-on-tertiary-fixed-variant px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap">
                                   Pulang · {status.waktuPulang}
                                 </span>
                               )}
                               {!status?.sudahDatang && (
-                                <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs">
+                                <span className="bg-secondary-container text-on-secondary-container px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
                                   Belum Hadir
                                 </span>
                               )}
@@ -391,18 +412,18 @@ export default function PresensiGuruKiosk() {
                 )}
               </div>
             ) : (
-              <div className="mt-6 p-6 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary">
-                    <GraduationCap className="w-8 h-8 text-primary" />
+              <div className="mt-4 md:mt-6 p-4 md:p-6 bg-primary/5 rounded-xl border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                  <div className="h-12 w-12 md:h-16 md:w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary shrink-0">
+                    <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-3xl font-bold text-primary">{selectedGuru.nama}</h3>
-                    <p className="text-base text-on-surface-variant tracking-widest">NIP: {selectedGuru.nip}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xl md:text-3xl font-bold text-primary truncate">{selectedGuru.nama}</h3>
+                    <p className="text-sm md:text-base text-on-surface-variant tracking-wide md:tracking-widest">NIP: {selectedGuru.nip}</p>
                   </div>
                 </div>
-                <button onClick={handleReset} className="text-error font-bold flex items-center gap-1 hover:underline">
-                  <X className="w-5 h-5" /> Batalkan
+                <button onClick={handleReset} className="text-error font-bold flex items-center gap-1 hover:underline text-sm md:text-base shrink-0 self-end sm:self-auto">
+                  <X className="w-4 h-4 md:w-5 md:h-5" /> Batalkan
                 </button>
               </div>
             )}
@@ -410,47 +431,47 @@ export default function PresensiGuruKiosk() {
 
           {/* Step 2: Submit Button */}
           {selectedGuru && (
-            <div className="flex-1 flex flex-col gap-6">
-              <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="bg-primary text-on-primary h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
-                  <h2 className="text-2xl font-semibold">Ambil Foto & Lokasi</h2>
+            <div className="flex-1 flex flex-col gap-4 md:gap-6">
+              <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
+                <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+                  <span className="bg-primary text-on-primary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">2</span>
+                  <h2 className="text-lg md:text-2xl font-semibold">Ambil Foto & Lokasi</h2>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 bg-surface-container rounded-lg">
-                    <Camera className="w-5 h-5 text-primary" />
-                    <span className="text-sm">Kamera akan diaktifkan otomatis saat presensi</span>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="flex items-start md:items-center gap-2 md:gap-3 p-3 md:p-4 bg-surface-container rounded-lg">
+                    <Camera className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0 mt-0.5 md:mt-0" />
+                    <span className="text-xs md:text-sm leading-snug">Kamera akan diaktifkan otomatis saat presensi</span>
                   </div>
-                  <div className="flex items-center gap-3 p-4 bg-surface-container rounded-lg">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <span className="text-sm">Lokasi akan divalidasi untuk memastikan Anda di sekolah</span>
+                  <div className="flex items-start md:items-center gap-2 md:gap-3 p-3 md:p-4 bg-surface-container rounded-lg">
+                    <MapPin className="w-4 h-4 md:w-5 md:h-5 text-primary shrink-0 mt-0.5 md:mt-0" />
+                    <span className="text-xs md:text-sm leading-snug">Lokasi akan divalidasi untuk memastikan Anda di sekolah</span>
                   </div>
 
                   {permissionError && (
-                    <div className="flex items-start gap-3 p-4 bg-error-container rounded-lg border-2 border-error">
-                      <AlertTriangle className="w-5 h-5 text-error shrink-0 mt-0.5" />
-                      <div className="text-sm text-error whitespace-pre-line">{permissionError}</div>
+                    <div className="flex items-start gap-2 md:gap-3 p-3 md:p-4 bg-error-container rounded-lg border-2 border-error">
+                      <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-error shrink-0 mt-0.5" />
+                      <div className="text-xs md:text-sm text-error whitespace-pre-line">{permissionError}</div>
                     </div>
                   )}
 
                   <button
                     onClick={handleSubmit}
                     disabled={!canSubmit}
-                    className={`w-full py-8 rounded-2xl text-3xl font-bold transition-all flex items-center justify-center gap-4 ${
+                    className={`w-full py-6 md:py-8 rounded-xl md:rounded-2xl text-xl md:text-3xl font-bold transition-all flex items-center justify-center gap-3 md:gap-4 active:scale-[0.98] ${
                       mode === 'datang'
-                        ? 'bg-green-600 text-white hover:bg-green-700 disabled:bg-surface-container-high disabled:text-outline-variant'
-                        : 'bg-primary text-white hover:bg-primary/90 disabled:bg-surface-container-high disabled:text-outline-variant'
+                        ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800 disabled:bg-surface-container-high disabled:text-outline-variant'
+                        : 'bg-primary text-white hover:bg-primary/90 active:bg-primary/80 disabled:bg-surface-container-high disabled:text-outline-variant'
                     }`}
                   >
                     {submitting ? (
                       <>
-                        <div className="w-8 h-8 border-4 border-white/40 border-t-white rounded-full animate-spin" />
-                        Memproses...
+                        <div className="w-6 h-6 md:w-8 md:h-8 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+                        <span className="text-base md:text-3xl">Memproses...</span>
                       </>
                     ) : (
                       <>
-                        {mode === 'datang' ? <LogIn className="w-10 h-10" /> : <LogOut className="w-10 h-10" />}
+                        {mode === 'datang' ? <LogIn className="w-8 h-8 md:w-10 md:h-10" /> : <LogOut className="w-8 h-8 md:w-10 md:h-10" />}
                         TAP {mode.toUpperCase()}
                       </>
                     )}
@@ -462,12 +483,12 @@ export default function PresensiGuruKiosk() {
         </section>
 
         {/* Right: Recent Activity */}
-        <aside className="col-span-4 flex flex-col h-full overflow-hidden bg-surface-container-low rounded-xl border border-outline-variant">
-          <div className="p-6 border-b border-outline-variant bg-surface flex justify-between items-center">
-            <h3 className="text-2xl font-semibold">Recap Hari Ini</h3>
-            <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-bold">Terbaru</span>
+        <aside className="lg:col-span-4 flex flex-col h-auto lg:h-full overflow-hidden bg-surface-container-low rounded-xl border border-outline-variant">
+          <div className="p-4 md:p-6 border-b border-outline-variant bg-surface flex justify-between items-center">
+            <h3 className="text-lg md:text-2xl font-semibold">Recap Hari Ini</h3>
+            <span className="bg-primary-container text-on-primary-container px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold">Terbaru</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-3 md:gap-4 max-h-[400px] lg:max-h-none">
             {recentActivity.length === 0 ? (
               <div className="text-center py-12 text-on-surface-variant">
                 <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -524,22 +545,22 @@ export default function PresensiGuruKiosk() {
 
       {/* Success Overlay */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 bg-on-background/60 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-300">
-          <div className="bg-surface rounded-3xl p-12 max-w-2xl w-full text-center shadow-2xl scale-100 transition-transform duration-300">
-            <div className="mb-8 flex justify-center">
-              <div className="h-24 w-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-16 h-16" />
+        <div className="fixed inset-0 z-50 bg-on-background/60 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+          <div className="bg-surface rounded-2xl md:rounded-3xl p-6 md:p-12 max-w-2xl w-full text-center shadow-2xl scale-100 transition-transform duration-300">
+            <div className="mb-6 md:mb-8 flex justify-center">
+              <div className="h-16 w-16 md:h-24 md:w-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 md:w-16 md:h-16" />
               </div>
             </div>
-            <h2 className="text-5xl font-bold text-primary mb-4">
+            <h2 className="text-2xl md:text-5xl font-bold text-primary mb-3 md:mb-4 leading-tight">
               {successData.type === 'datang' ? 'Selamat datang,' : 'Sampai jumpa,'} <br />
               <span className="text-on-surface">{successData.nama}!</span>
             </h2>
-            <p className="text-2xl font-semibold text-on-surface-variant mb-4">
+            <p className="text-base md:text-2xl font-semibold text-on-surface-variant mb-3 md:mb-4">
               Presensi {successData.type} tercatat pada pukul <span className="font-bold text-on-surface">{successData.time}</span>
             </p>
             {successData.jarak !== undefined && (
-              <p className="text-sm text-green-600 font-medium">
+              <p className="text-xs md:text-sm text-green-600 font-medium">
                 ✓ Lokasi terverifikasi ({successData.jarak} meter dari sekolah)
               </p>
             )}
