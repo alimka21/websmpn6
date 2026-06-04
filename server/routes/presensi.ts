@@ -89,6 +89,9 @@ export function startAutoCheckoutCron(): void {
 router.get('/guru-list', async (req, res, next) => {
   try {
     const today = tanggalHariIni();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const list = await prisma.guru.findMany({
       where: { user: { isActive: true } },
       select: {
@@ -96,7 +99,12 @@ router.get('/guru-list', async (req, res, next) => {
         nama: true,
         nip: true,
         presensiGuru: {
-          where: { tanggal: today },
+          where: {
+            tanggal: {
+              gte: today,
+              lt: tomorrow
+            }
+          },
           select: { waktuDatang: true, waktuPulang: true, autoCheckout: true },
         },
       },
@@ -259,13 +267,21 @@ router.post('/guru/pulang', async (req, res, next) => {
 router.get('/guru/recent', async (req, res, next) => {
   try {
     const today = tanggalHariIni();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const limit = Number(req.query.limit) || 10;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
 
     const data = await prisma.presensiGuru.findMany({
-      where: { tanggal: today },
+      where: {
+        tanggal: {
+          gte: today,
+          lt: tomorrow
+        }
+      },
       orderBy: { waktuDatang: 'desc' },
       take: limit,
       select: {
@@ -320,13 +336,21 @@ router.get('/guru/recent', async (req, res, next) => {
 router.get('/siswa/recent', async (req, res, next) => {
   try {
     const today = tanggalHariIni();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const limit = Number(req.query.limit) || 10;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
 
     const data = await prisma.presensiSiswa.findMany({
-      where: { tanggal: today },
+      where: {
+        tanggal: {
+          gte: today,
+          lt: tomorrow
+        }
+      },
       orderBy: { waktuDatang: 'desc' },
       take: limit,
       select: {
@@ -721,13 +745,20 @@ router.delete('/siswa/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (re
 router.get('/siswa/stats', async (req, res, next) => {
   try {
     const today = tanggalHariIni();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Total siswa
     const totalSiswa = await prisma.siswa.count();
 
     // Hadir hari ini
     const hadirCount = await prisma.presensiSiswa.count({
-      where: { tanggal: today }
+      where: {
+        tanggal: {
+          gte: today,
+          lt: tomorrow
+        }
+      }
     });
 
     // Per kelas summary
@@ -740,7 +771,12 @@ router.get('/siswa/stats', async (req, res, next) => {
           select: {
             id: true,
             presensiSiswa: {
-              where: { tanggal: today },
+              where: {
+                tanggal: {
+                  gte: today,
+                  lt: tomorrow
+                }
+              },
               select: { id: true }
             }
           }
