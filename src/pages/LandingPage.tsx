@@ -388,23 +388,25 @@ export default function LandingPage() {
           </div>
 
           {/* Visi & Misi */}
-          <div className="grid lg:grid-cols-2 gap-6 mt-12 items-start">
-            {/* Kiri: foto sekolah + Visi */}
-            <div className="space-y-6">
-              {cfg.profilImageUrl ? (
-                <div className="relative group overflow-hidden rounded-2xl shadow-lg border border-outline-variant/30">
-                  <img
-                    src={cfg.profilImageUrl}
-                    alt={schoolName}
-                    className="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-6 left-6 text-white">
-                    <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-90">Kampus Kami</p>
-                  </div>
+          <div className="grid lg:grid-cols-2 gap-8 mt-12 items-start">
+            {/* Kiri: Foto Sekolah */}
+            {cfg.profilImageUrl && (
+              <div className="relative group overflow-hidden rounded-2xl shadow-lg border border-outline-variant/30 h-full">
+                <img
+                  src={cfg.profilImageUrl}
+                  alt={schoolName}
+                  className="w-full h-full min-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-6 left-6 text-white">
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-90">Kampus Kami</p>
                 </div>
-              ) : null}
+              </div>
+            )}
 
+            {/* Kanan: Visi & Misi */}
+            <div className="space-y-6">
+              {/* Visi */}
               {cfg.visi && (
                 <div className="bg-surface-container-lowest p-8 md:p-10 rounded-2xl shadow-sm border border-outline-variant/30 card-hover space-y-4">
                   <div className="flex items-center gap-4 mb-2">
@@ -416,27 +418,27 @@ export default function LandingPage() {
                   <p className="text-on-surface-variant leading-relaxed text-lg">{cfg.visi}</p>
                 </div>
               )}
-            </div>
 
-            {/* Kanan: Misi */}
-            {misiLines.length > 0 && (
-              <div className="bg-surface-container-lowest p-8 md:p-10 rounded-2xl shadow-sm border border-outline-variant/30 card-hover h-full flex flex-col">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
-                    <Target className="w-6 h-6" />
+              {/* Misi */}
+              {misiLines.length > 0 && (
+                <div className="bg-surface-container-lowest p-8 md:p-10 rounded-2xl shadow-sm border border-outline-variant/30 card-hover flex flex-col">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
+                      <Target className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-on-background">Misi</h3>
                   </div>
-                  <h3 className="text-2xl font-semibold text-on-background">Misi</h3>
+                  <ul className="space-y-6">
+                    {misiLines.map((item, i) => (
+                      <li key={i} className="flex gap-4 items-start">
+                        <CheckCircle className="w-6 h-6 text-primary mt-0.5 shrink-0" />
+                        <span className="text-on-surface-variant text-lg leading-relaxed">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-6 flex-grow">
-                  {misiLines.map((item, i) => (
-                    <li key={i} className="flex gap-4 items-start">
-                      <CheckCircle className="w-6 h-6 text-primary mt-0.5 shrink-0" />
-                      <span className="text-on-surface-variant text-lg leading-relaxed">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </section>
