@@ -146,4 +146,194 @@ router.get('/stats', async (req, res, next) => {
   } catch(error) { next(error); }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Public Presensi Guru
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/presensi/guru', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const tanggal = req.query.tanggal ? String(req.query.tanggal) : null;
+    const bulan = req.query.bulan ? Number(req.query.bulan) : null;
+    const tahun = req.query.tahun ? Number(req.query.tahun) : null;
+
+    // Filter tanggal
+    let dateFilter: any = {};
+    if (tanggal) {
+      // Per tanggal
+      const d = new Date(tanggal);
+      d.setHours(0, 0, 0, 0);
+      dateFilter = { tanggal: d };
+    } else if (bulan && tahun) {
+      // Per bulan
+      const start = new Date(tahun, bulan - 1, 1);
+      const end = new Date(tahun, bulan, 0, 23, 59, 59, 999);
+      dateFilter = { tanggal: { gte: start, lte: end } };
+    } else {
+      // Default hari ini
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dateFilter = { tanggal: today };
+    }
+
+    // Filter search nama guru
+    const guruWhere: any = {};
+    if (search) {
+      guruWhere.OR = [
+        { nama: { contains: search, mode: 'insensitive' } },
+        { nip: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const where = {
+      ...dateFilter,
+      guru: guruWhere,
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.presensiGuru.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ tanggal: 'desc' }, { waktuDatang: 'desc' }],
+        select: {
+          id: true,
+          tanggal: true,
+          waktuDatang: true,
+          waktuPulang: true,
+          autoCheckout: true,
+          guru: {
+            select: {
+              id: true,
+              nama: true,
+              nip: true,
+            },
+          },
+        },
+      }),
+      prisma.presensiGuru.count({ where }),
+    ]);
+
+    const rows = data.map((p, idx) => {
+      let durasi: number | null = null;
+      if (p.waktuDatang && p.waktuPulang) {
+        durasi = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
+      }
+      return {
+        no: skip + idx + 1,
+        id: p.id,
+        nama: p.guru.nama,
+        nip: p.guru.nip,
+        tanggal: p.tanggal.toISOString(),
+        waktuDatang: p.waktuDatang ? p.waktuDatang.toISOString() : null,
+        waktuPulang: p.waktuPulang ? p.waktuPulang.toISOString() : null,
+        durasi,
+        autoCheckout: p.autoCheckout,
+      };
+    });
+
+    res.json({
+      data: rows,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public Presensi Siswa
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/presensi/siswa', async (req, res, next) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const search = String(req.query.search || '').trim();
+    const tanggal = req.query.tanggal ? String(req.query.tanggal) : null;
+    const bulan = req.query.bulan ? Number(req.query.bulan) : null;
+    const tahun = req.query.tahun ? Number(req.query.tahun) : null;
+
+    // Filter tanggal
+    let dateFilter: any = {};
+    if (tanggal) {
+      const d = new Date(tanggal);
+      d.setHours(0, 0, 0, 0);
+      dateFilter = { tanggal: d };
+    } else if (bulan && tahun) {
+      const start = new Date(tahun, bulan - 1, 1);
+      const end = new Date(tahun, bulan, 0, 23, 59, 59, 999);
+      dateFilter = { tanggal: { gte: start, lte: end } };
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dateFilter = { tanggal: today };
+    }
+
+    // Filter search
+    const siswaWhere: any = {};
+    if (search) {
+      siswaWhere.OR = [
+        { nama: { contains: search, mode: 'insensitive' } },
+        { nis: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const where = {
+      ...dateFilter,
+      siswa: siswaWhere,
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.presensiSiswa.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ tanggal: 'desc' }, { waktuDatang: 'desc' }],
+        select: {
+          id: true,
+          tanggal: true,
+          waktuDatang: true,
+          siswa: {
+            select: {
+              id: true,
+              nama: true,
+              nis: true,
+              kelas: {
+                select: {
+                  nama: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.presensiSiswa.count({ where }),
+    ]);
+
+    const rows = data.map((p, idx) => ({
+      no: skip + idx + 1,
+      id: p.id,
+      nis: p.siswa.nis,
+      nama: p.siswa.nama,
+      kelas: p.siswa.kelas?.nama || '—',
+      tanggal: p.tanggal.toISOString(),
+      waktuDatang: p.waktuDatang.toISOString(),
+    }));
+
+    res.json({
+      data: rows,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

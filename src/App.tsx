@@ -29,6 +29,8 @@ const ActivityLog   = lazy(() => import('./pages/dashboard/ActivityLog'));
 const PresensiAdmin = lazy(() => import('./pages/dashboard/PresensiAdmin'));
 const DokumenAgendaAdmin = lazy(() => import('./pages/dashboard/DokumenAgendaAdmin'));
 const DokumenPublik = lazy(() => import('./pages/DokumenPublik'));
+const PresensiGuruPublik = lazy(() => import('./pages/PresensiGuruPublik'));
+const PresensiSiswaPublik = lazy(() => import('./pages/PresensiSiswaPublik'));
 
 // Guru
 const GuruDashboard = lazy(() => import('./pages/dashboard/guru/GuruDashboard'));
@@ -89,6 +91,8 @@ export default function App() {
           <Route path="/berita" element={<BeritaList />} />
           <Route path="/berita/:slug" element={<BeritaDetail />} />
           <Route path="/dokumen" element={<DokumenPublik />} />
+          <Route path="/presensi/guru" element={<PresensiGuruPublik />} />
+          <Route path="/presensi/siswa" element={<PresensiSiswaPublik />} />
           {/* ALUMNI_HIDDEN: <Route path="/alumni/daftar" element={<AlumniRegister />} /> */}
 
           {/* Public route but redirect if logged in */}
