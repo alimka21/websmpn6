@@ -385,89 +385,19 @@ export default function PresensiGuruKiosk() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto p-6">
-        {/* Top: Split Layout 30/70 */}
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8">
-          {/* Left 30%: Camera & Status */}
-          <section className="lg:col-span-3 space-y-4">
-            {/* Camera Preview */}
-            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
-              <div className="relative bg-black aspect-video">
-                {cameraPermission === 'granted' && cameraStream ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Camera className="w-12 h-12 text-gray-500" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Status Cards */}
-            <div className="space-y-3">
-              {/* Camera Status */}
-              <div className="bg-white rounded-lg border border-[#e2e8f0] p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    cameraPermission === 'granted' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                    <Camera className={`w-5 h-5 ${
-                      cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-[#0f172a]">Kamera</div>
-                    <div className={`text-xs font-medium ${
-                      cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {cameraPermission === 'granted' ? 'Aktif' : cameraPermission === 'denied' ? 'Ditolak' : 'Menunggu izin...'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Location Status */}
-              <div className="bg-white rounded-lg border border-[#e2e8f0] p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    locationPermission === 'granted' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                    <MapPin className={`w-5 h-5 ${
-                      locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold text-[#0f172a]">Lokasi</div>
-                    <div className={`text-xs font-medium ${
-                      locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {locationPermission === 'granted' ? 'Aktif' : locationPermission === 'denied' ? 'Ditolak' : 'Menunggu izin...'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Right 70%: Identifikasi Diri */}
-          <section className="lg:col-span-7">
-          {/* Step 1: Teacher Selection */}
-          <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
-            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-              <span className="bg-primary text-on-primary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">1</span>
-              <h2 className="text-base font-semibold text-[#0f172a]">Identifikasi Diri</h2>
+      <main className="max-w-[1200px] mx-auto p-6">
+        {/* Step 1: Identifikasi Diri - Full Width */}
+        <div className="mb-6">
+          <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="bg-primary text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">1</span>
+              <h2 className="text-lg font-semibold text-[#0f172a]">Identifikasi Diri</h2>
             </div>
 
             {!selectedGuru ? (
               <div className="relative">
-                <div className="absolute inset-y-0 left-3 md:left-6 flex items-center pointer-events-none">
-                  <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-outline" />
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                  <GraduationCap className="w-6 h-6 text-[#64748b]" />
                 </div>
                 <input
                   ref={searchInputRef}
@@ -476,14 +406,14 @@ export default function PresensiGuruKiosk() {
                   onChange={(e) => setSearch(e.target.value)}
                   onFocus={() => setShowSearchResults(true)}
                   placeholder="Cari Nama Anda atau NIP..."
-                  className="w-full pl-14 pr-6 py-3 bg-white border-2 border-[#e2e8f0] rounded-lg text-base focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 transition-all outline-none"
+                  className="w-full pl-14 pr-6 py-4 bg-white border-2 border-[#e2e8f0] rounded-xl text-base focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 transition-all outline-none"
                   autoFocus
                 />
 
                 {showSearchResults && search && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl z-20 max-h-[50vh] md:max-h-[300px] overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#e2e8f0] rounded-xl shadow-2xl z-20 max-h-[400px] overflow-y-auto">
                     {filteredGuru.length === 0 ? (
-                      <div className="p-4 text-center text-on-surface-variant text-sm">Tidak ditemukan</div>
+                      <div className="p-4 text-center text-[#64748b] text-sm">Tidak ditemukan</div>
                     ) : (
                       filteredGuru.map((guru) => {
                         const status = guru.statusHariIni;
@@ -493,27 +423,27 @@ export default function PresensiGuruKiosk() {
                           <div
                             key={guru.id}
                             onClick={() => !sudahLengkap && handleSelectGuru(guru)}
-                            className={`p-3 md:p-4 border-b border-outline-variant last:border-0 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 ${
-                              sudahLengkap ? 'opacity-50 cursor-not-allowed' : 'hover:bg-surface-container-high cursor-pointer active:bg-surface-container'
+                            className={`p-4 border-b border-[#e2e8f0] last:border-0 transition-colors flex justify-between items-center gap-3 ${
+                              sudahLengkap ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'hover:bg-[#f8fafc] cursor-pointer active:bg-[#f1f5f9]'
                             }`}
                           >
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-semibold text-[#0f172a] truncate">{guru.nama}</p>
                               <p className="text-xs text-[#64748b]">NIP: {guru.nip}</p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+                            <div className="flex items-center gap-2">
                               {status?.sudahDatang && (
-                                <span className="bg-primary-fixed text-on-primary-fixed-variant px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap">
+                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
                                   Datang · {status.waktuDatang}
                                 </span>
                               )}
                               {status?.sudahPulang && (
-                                <span className="bg-tertiary-fixed text-on-tertiary-fixed-variant px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold whitespace-nowrap">
+                                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
                                   Pulang · {status.waktuPulang}
                                 </span>
                               )}
                               {!status?.sudahDatang && (
-                                <span className="bg-secondary-container text-on-secondary-container px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs whitespace-nowrap">
+                                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs whitespace-nowrap">
                                   Belum Hadir
                                 </span>
                               )}
@@ -526,7 +456,7 @@ export default function PresensiGuruKiosk() {
                 )}
               </div>
             ) : (
-              <div className="mt-4 p-4 bg-[#dde1ff] rounded-lg border border-[#1e40af]/20 flex items-center justify-between gap-3">
+              <div className="p-4 bg-[#dde1ff] rounded-xl border border-[#1e40af]/20 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="h-12 w-12 rounded-full bg-[#1e40af] flex items-center justify-center shrink-0">
                     <GraduationCap className="w-6 h-6 text-white" />
@@ -542,23 +472,71 @@ export default function PresensiGuruKiosk() {
               </div>
             )}
           </div>
-          </section>
+
+          {/* Status Indicators - Below Identification */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {/* Camera Status */}
+            <div className={`p-4 rounded-xl border-2 flex items-center gap-3 ${
+              cameraPermission === 'granted'
+                ? 'bg-green-50 border-green-500'
+                : 'bg-red-50 border-red-500'
+            }`}>
+              <Camera className={`w-6 h-6 ${
+                cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+              }`} />
+              <div>
+                <div className="text-sm font-semibold text-[#0f172a]">Kamera</div>
+                <div className={`text-xs font-medium ${
+                  cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {cameraPermission === 'granted'
+                    ? selectedGuru ? 'Siap Mengambil Foto' : 'Aktif Terkini'
+                    : cameraPermission === 'denied'
+                    ? 'Ditolak - Aktifkan di browser'
+                    : 'Menunggu izin...'}
+                </div>
+              </div>
+            </div>
+
+            {/* Location Status */}
+            <div className={`p-4 rounded-xl border-2 flex items-center gap-3 ${
+              locationPermission === 'granted'
+                ? 'bg-green-50 border-green-500'
+                : 'bg-red-50 border-red-500'
+            }`}>
+              <MapPin className={`w-6 h-6 ${
+                locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+              }`} />
+              <div>
+                <div className="text-sm font-semibold text-[#0f172a]">Lokasi</div>
+                <div className={`text-xs font-medium ${
+                  locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {locationPermission === 'granted'
+                    ? selectedGuru ? 'Terdeteksi untuk Validasi' : 'Aktif Terkini'
+                    : locationPermission === 'denied'
+                    ? 'Ditolak - Aktifkan di browser'
+                    : 'Menunggu izin...'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Step 2: Verifikasi (when guru selected) */}
+        {/* Step 2: Verifikasi & Submit (when guru selected) */}
         {selectedGuru && (
           <div className="mb-8">
             <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <span className="bg-primary text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
-                <h2 className="text-base font-semibold text-[#0f172a]">Verifikasi & Submit</h2>
+                <h2 className="text-lg font-semibold text-[#0f172a]">Verifikasi & Submit</h2>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Camera Preview */}
-                <div className="space-y-3">
-                  <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
-                    {cameraPermission === 'granted' && cameraStream ? (
+              {/* Camera Live Preview */}
+              <div className="mb-6">
+                <div className="relative bg-black rounded-xl overflow-hidden" style={{ height: '400px' }}>
+                  {cameraPermission === 'granted' && cameraStream ? (
+                    <>
                       <video
                         ref={videoRef}
                         autoPlay
@@ -566,92 +544,103 @@ export default function PresensiGuruKiosk() {
                         muted
                         className="w-full h-full object-cover"
                       />
-                    ) : cameraPermission === 'pending' ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-container text-on-surface-variant">
-                        <div className="w-8 h-8 border-4 border-primary/40 border-t-primary rounded-full animate-spin mb-3" />
-                        <p className="text-sm">Meminta izin kamera...</p>
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/70 backdrop-blur-sm rounded-full text-xs text-white font-medium">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        LIVE
                       </div>
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-error-container text-error">
-                        <AlertTriangle className="w-12 h-12 mb-3" />
-                        <p className="text-sm font-semibold mb-2">Kamera Tidak Aktif</p>
-                        <button onClick={retryCamera} className="text-xs underline hover:no-underline">
-                          Coba Lagi
-                        </button>
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full text-xs text-white">
-                      <div className={`w-2 h-2 rounded-full ${cameraPermission === 'granted' ? 'bg-green-500' : 'bg-red-500'}`} />
-                      Live
+                    </>
+                  ) : cameraPermission === 'pending' ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-gray-300">
+                      <div className="w-12 h-12 border-4 border-gray-600 border-t-white rounded-full animate-spin mb-4" />
+                      <p className="text-sm">Meminta izin kamera...</p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Permission Status */}
-                <div className="space-y-3">
-                  <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
-                    cameraPermission === 'granted'
-                      ? 'bg-green-50 border-green-500'
-                      : cameraPermission === 'pending'
-                      ? 'bg-surface-container border-outline-variant'
-                      : 'bg-error-container border-error'
-                  }`}>
-                    <Camera className={`w-5 h-5 shrink-0 mt-0.5 ${
-                      cameraPermission === 'granted' ? 'text-green-600' : 'text-error'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold mb-1">
-                        {cameraPermission === 'granted' ? 'Kamera Aktif' : cameraPermission === 'pending' ? 'Menunggu Izin Kamera' : 'Kamera Tidak Aktif'}
-                      </p>
-                      <p className="text-xs text-on-surface-variant leading-snug">
-                        {cameraPermission === 'granted'
-                          ? 'Kamera siap untuk mengambil foto presensi'
-                          : 'Izinkan akses kamera untuk melanjutkan presensi'}
-                      </p>
-                      {cameraPermission === 'denied' && (
-                        <button onClick={retryCamera} className="mt-2 text-xs font-semibold text-primary hover:underline">
-                          Coba Aktifkan Lagi →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
-                    locationPermission === 'granted'
-                      ? 'bg-green-50 border-green-500'
-                      : locationPermission === 'pending'
-                      ? 'bg-surface-container border-outline-variant'
-                      : 'bg-error-container border-error'
-                  }`}>
-                    <MapPin className={`w-5 h-5 shrink-0 mt-0.5 ${
-                      locationPermission === 'granted' ? 'text-green-600' : 'text-error'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold mb-1">
-                        {locationPermission === 'granted' ? 'Lokasi Aktif' : locationPermission === 'pending' ? 'Menunggu Izin Lokasi' : 'Lokasi Tidak Aktif'}
-                      </p>
-                      <p className="text-xs text-on-surface-variant leading-snug">
-                        {locationPermission === 'granted'
-                          ? `Lokasi terdeteksi: ${currentLocation?.lat.toFixed(6)}, ${currentLocation?.lng.toFixed(6)}`
-                          : 'Izinkan akses lokasi untuk validasi kehadiran'}
-                      </p>
-                      {locationPermission === 'denied' && (
-                        <button onClick={retryLocation} className="mt-2 text-xs font-semibold text-primary hover:underline">
-                          Coba Aktifkan Lagi →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {!permissionsReady && (
-                    <div className="flex items-start gap-2 p-3 bg-orange-50 border-2 border-orange-400 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                      <p className="text-xs text-orange-800 leading-snug">
-                        Pastikan kamera dan lokasi aktif sebelum melakukan presensi.
-                      </p>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 text-red-600">
+                      <AlertTriangle className="w-16 h-16 mb-4" />
+                      <p className="text-base font-semibold mb-2">Kamera Tidak Aktif</p>
+                      <button onClick={retryCamera} className="text-sm underline hover:no-underline">
+                        Coba Lagi
+                      </button>
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Permission Status & Submit Button */}
+              <div className="space-y-4">
+                {/* Status Indicators Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Camera Status */}
+                  <div className={`p-4 rounded-xl border-2 flex items-center gap-3 ${
+                    cameraPermission === 'granted'
+                      ? 'bg-green-50 border-green-500'
+                      : 'bg-red-50 border-red-500'
+                  }`}>
+                    <Camera className={`w-6 h-6 ${
+                      cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                    <div>
+                      <div className="text-sm font-semibold text-[#0f172a]">Kamera</div>
+                      <div className={`text-xs font-medium ${
+                        cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {cameraPermission === 'granted' ? 'Aktif Terkini' : 'Tidak Aktif'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Status */}
+                  <div className={`p-4 rounded-xl border-2 flex items-center gap-3 ${
+                    locationPermission === 'granted'
+                      ? 'bg-green-50 border-green-500'
+                      : 'bg-red-50 border-red-500'
+                  }`}>
+                    <MapPin className={`w-6 h-6 ${
+                      locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                    <div>
+                      <div className="text-sm font-semibold text-[#0f172a]">Lokasi</div>
+                      <div className={`text-xs font-medium ${
+                        locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {locationPermission === 'granted' ? 'Aktif Terkini' : 'Tidak Aktif'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning if not ready */}
+                {!permissionsReady && (
+                  <div className="flex items-start gap-3 p-4 bg-orange-50 border-2 border-orange-400 rounded-xl">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                    <p className="text-sm text-orange-800 leading-snug">
+                      Kamera dan lokasi harus aktif sebelum melakukan presensi. Mohon aktifkan izin di browser Anda.
+                    </p>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className={`w-full py-5 rounded-xl text-lg font-bold transition-all flex items-center justify-center gap-3 active:scale-[0.98] ${
+                    mode === 'datang'
+                      ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed'
+                  }`}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-6 h-6 border-4 border-white/40 border-t-white rounded-full animate-spin" />
+                      <span>Memproses...</span>
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'datang' ? <LogIn className="w-6 h-6" /> : <LogOut className="w-6 h-6" />}
+                      TAP {mode.toUpperCase()}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
