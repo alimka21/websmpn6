@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, Home, User, Clock, GraduationCap, IdCard } from 'lucide-react';
+import { CheckCircle, Home, User, Clock, GraduationCap, IdCard, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
