@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, Home, User, Clock, GraduationCap, IdCard, ArrowRight } from 'lucide-react';
+import { CheckCircle, Home, User, Clock, GraduationCap, IdCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -30,6 +30,14 @@ interface KelasSummary {
   hadirCount: number;
 }
 
+interface SiswaBelumHadir {
+  id: string;
+  nama: string;
+  nis: string;
+  kelas: string;
+  kelasId: string;
+}
+
 export default function PresensiSiswaKiosk() {
   const cfg = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
@@ -46,6 +54,8 @@ export default function PresensiSiswaKiosk() {
   const [totalSiswa, setTotalSiswa] = useState(0);
   const [kelasList, setKelasList] = useState<KelasSummary[]>([]);
   const [selectedKelasFilter, setSelectedKelasFilter] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<'hadir' | 'belum'>('hadir');
+  const [siswaBelumHadir, setSiswaBelumHadir] = useState<SiswaBelumHadir[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,8 +67,16 @@ export default function PresensiSiswaKiosk() {
   useEffect(() => {
     loadRecentActivity();
     loadKelasData();
+    loadSiswaBelumHadir();
     inputRef.current?.focus();
   }, []);
+
+  // Reload data saat filter atau tab berubah
+  useEffect(() => {
+    if (activeTab === 'belum') {
+      loadSiswaBelumHadir();
+    }
+  }, [selectedKelasFilter, activeTab]);
 
   const loadRecentActivity = async () => {
     try {
@@ -75,6 +93,16 @@ export default function PresensiSiswaKiosk() {
       const stats = await api.get('/api/presensi/siswa/stats');
       setTotalSiswa(stats.totalSiswa || 0);
       setKelasList(stats.kelasSummary || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadSiswaBelumHadir = async () => {
+    try {
+      const kelasParam = selectedKelasFilter !== 'ALL' ? `?kelasId=${selectedKelasFilter}` : '';
+      const data = await api.get(`/api/presensi/siswa/belum-hadir${kelasParam}`);
+      setSiswaBelumHadir(data);
     } catch (err) {
       console.error(err);
     }
@@ -125,6 +153,7 @@ export default function PresensiSiswaKiosk() {
         setNis('');
         loadRecentActivity();
         loadKelasData();
+        loadSiswaBelumHadir();
         inputRef.current?.focus();
       }, 3000);
 
@@ -321,7 +350,7 @@ export default function PresensiSiswaKiosk() {
             <select
               value={selectedKelasFilter}
               onChange={(e) => setSelectedKelasFilter(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-[#e2e8f0] bg-white rounded-lg focus:border-[#1e40af] focus:ring-2 focus:ring-[#1e40af]/10 outline-none font-medium transition-all"
+              className="w-full px-3 py-2 text-sm border border-[#e2e8f0] bg-white rounded-lg focus:border-[#1e40af] focus:ring-2 focus:ring-[#1e40af]/10 outline-none font-medium transition-all mb-4"
             >
               <option value="ALL">Filter Kelas (Semua)</option>
               {kelasList.map(k => (
@@ -330,65 +359,122 @@ export default function PresensiSiswaKiosk() {
                 </option>
               ))}
             </select>
+
+            {/* Toggle Tabs */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('hadir')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'hadir'
+                    ? 'bg-[#1e40af] text-white shadow-sm'
+                    : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#e2e7ff]'
+                }`}
+              >
+                Hadir ({attendedCount})
+              </button>
+              <button
+                onClick={() => setActiveTab('belum')}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'belum'
+                    ? 'bg-[#1e40af] text-white shadow-sm'
+                    : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#e2e7ff]'
+                }`}
+              >
+                Belum Hadir ({belumHadir})
+              </button>
+            </div>
           </div>
 
           {/* Activity List */}
           <div className="flex-1 overflow-y-auto">
-            {filteredActivity.length === 0 ? (
-              <div className="text-center py-16 text-[#64748b]">
-                <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-medium">
-                  {selectedKelasFilter === 'ALL'
-                    ? 'Belum ada siswa yang hadir'
-                    : 'Belum ada dari kelas ini'}
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-[#f1f5f9]">
-                {filteredActivity.map((activity) => (
-                  <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                    <div className="flex items-start gap-3">
-                      {/* Icon */}
-                      <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-5 h-5 text-[#1e40af]" />
-                      </div>
+            {activeTab === 'hadir' ? (
+              // Tab Hadir
+              filteredActivity.length === 0 ? (
+                <div className="text-center py-16 text-[#64748b]">
+                  <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-medium">
+                    {selectedKelasFilter === 'ALL'
+                      ? 'Belum ada siswa yang hadir'
+                      : 'Belum ada dari kelas ini yang hadir'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#f1f5f9]">
+                  {filteredActivity.map((activity) => (
+                    <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-[#1e40af]" />
+                        </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
-                        <div className="text-xs text-[#64748b]">{activity.kelas}</div>
-                      </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
+                          <div className="text-xs text-[#64748b]">{activity.kelas}</div>
+                        </div>
 
-                      {/* Time & Status */}
-                      <div className="text-right flex-shrink-0 min-w-[80px]">
-                        <div className="text-sm font-bold text-[#1e40af] mb-0.5">{activity.waktu}</div>
-                        {activity.tepatWaktu ? (
-                          <div className="text-xs font-semibold text-green-600">Tepat Waktu</div>
-                        ) : (
-                          <div className="text-xs font-semibold text-red-600">Telat {activity.keterlambatan} Menit</div>
-                        )}
+                        {/* Time & Status */}
+                        <div className="text-right flex-shrink-0 min-w-[80px]">
+                          <div className="text-sm font-bold text-[#1e40af] mb-0.5">{activity.waktu}</div>
+                          {activity.tepatWaktu ? (
+                            <div className="text-xs font-semibold text-green-600">Tepat Waktu</div>
+                          ) : (
+                            <div className="text-xs font-semibold text-red-600">Telat {activity.keterlambatan} Menit</div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              // Tab Belum Hadir
+              siswaBelumHadir.length === 0 ? (
+                <div className="text-center py-16 text-[#64748b]">
+                  <User className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-medium">
+                    {selectedKelasFilter === 'ALL'
+                      ? 'Semua siswa sudah hadir!'
+                      : 'Semua siswa dari kelas ini sudah hadir!'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#f1f5f9]">
+                  {siswaBelumHadir.map((siswa) => (
+                    <div key={siswa.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-red-600" />
+                        </div>
 
-          {/* Footer Link */}
-          <div className="px-6 py-4 border-t border-[#f1f5f9] bg-[#f8fafc]">
-            <button className="text-[#1e40af] text-sm font-medium hover:underline flex items-center gap-2 mx-auto">
-              Lihat Laporan Lengkap
-              <ArrowRight className="w-4 h-4" />
-            </button>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-[#0f172a] truncate">{siswa.nama}</div>
+                          <div className="text-xs text-[#64748b]">{siswa.kelas} • NIS: {siswa.nis}</div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="flex-shrink-0">
+                          <div className="px-3 py-1 bg-red-100 rounded-full">
+                            <span className="text-xs font-semibold text-red-700">Belum Hadir</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         </aside>
       </main>
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
-        <p className="text-xs text-center text-[#64748b]">
-          © 2026 EDUCATIONAL EXCELLENCE SYSTEMS
+        <p className="text-center text-[#64748b]">
+          © 2026 Sistem Presensi Digital
         </p>
       </footer>
     </div>

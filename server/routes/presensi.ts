@@ -796,4 +796,55 @@ router.get('/siswa/stats', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 3f. GET /api/presensi/siswa/belum-hadir - Siswa yang belum hadir hari ini
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/siswa/belum-hadir', async (req, res, next) => {
+  try {
+    const today = tanggalHariIni();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const kelasId = req.query.kelasId as string | undefined;
+
+    // Query siswa yang belum hadir
+    const siswaList = await prisma.siswa.findMany({
+      where: {
+        ...(kelasId && kelasId !== 'ALL' ? { kelasId } : {}),
+        presensiSiswa: {
+          none: {
+            tanggal: {
+              gte: today,
+              lt: tomorrow
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        nama: true,
+        nis: true,
+        kelas: {
+          select: {
+            id: true,
+            nama: true
+          }
+        }
+      },
+      orderBy: { nama: 'asc' }
+    });
+
+    const result = siswaList.map(s => ({
+      id: s.id,
+      nama: s.nama,
+      nis: s.nis,
+      kelas: s.kelas?.nama || '-',
+      kelasId: s.kelas?.id || ''
+    }));
+
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
 export default router;

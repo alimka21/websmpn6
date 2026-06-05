@@ -676,7 +676,7 @@ export default function PresensiGuruKiosk() {
         </section>
 
         {/* Bottom: Activity Table */}
-        <section className="mt-12 bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden">
+        <section className="mt-12 mb-20 bg-white rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
             <div>
@@ -770,8 +770,8 @@ export default function PresensiGuruKiosk() {
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
-        <p className="text-xs text-center text-[#64748b]">
-          © 2026 EDUCATIONAL EXCELLENCE SYSTEMS
+        <p className="text-center text-[#64748b]">
+          © 2026 Sistem Presensi Digital
         </p>
       </footer>
 
