@@ -179,7 +179,23 @@ export default function PresensiSiswaKiosk() {
     ? recentActivity
     : recentActivity.filter(a => a.kelasId === selectedKelasFilter);
 
-  const belumHadir = totalSiswa - attendedCount;
+  // Hitung belum hadir berdasarkan filter kelas
+  const belumHadir = selectedKelasFilter === 'ALL'
+    ? totalSiswa - attendedCount
+    : (() => {
+        const selectedKelas = kelasList.find(k => k.id === selectedKelasFilter);
+        if (!selectedKelas) return 0;
+        return selectedKelas.totalSiswa - selectedKelas.hadirCount;
+      })();
+
+  // Count untuk tab display (sesuai filter)
+  const filteredHadirCount = selectedKelasFilter === 'ALL'
+    ? attendedCount
+    : filteredActivity.length;
+
+  const filteredBelumCount = selectedKelasFilter === 'ALL'
+    ? belumHadir
+    : siswaBelumHadir.length;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-[Inter]">
@@ -370,7 +386,7 @@ export default function PresensiSiswaKiosk() {
                     : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#e2e7ff]'
                 }`}
               >
-                Hadir ({attendedCount})
+                Hadir ({filteredHadirCount})
               </button>
               <button
                 onClick={() => setActiveTab('belum')}
@@ -380,7 +396,7 @@ export default function PresensiSiswaKiosk() {
                     : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#e2e7ff]'
                 }`}
               >
-                Belum Hadir ({belumHadir})
+                Belum Hadir ({filteredBelumCount})
               </button>
             </div>
           </div>
@@ -473,7 +489,7 @@ export default function PresensiSiswaKiosk() {
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
-        <p className="text-center text-[#64748b]">
+        <p className="text-center text-[#64748b] text-[11px]">
           © 2026 Sistem Presensi Digital
         </p>
       </footer>

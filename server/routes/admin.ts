@@ -1364,4 +1364,55 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MANAGE GURU KELAS
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/admin/guru/:guruId/kelas - Tambah kelas ke guru
+router.post('/guru/:guruId/kelas', async (req, res, next) => {
+  try {
+    const { guruId } = req.params;
+    const { kelasId } = req.body;
+
+    if (!kelasId) {
+      return res.status(400).json({ error: 'kelasId wajib diisi' });
+    }
+
+    // Check if already exists
+    const existing = await prisma.guruKelas.findUnique({
+      where: { guruId_kelasId: { guruId, kelasId } }
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: 'Guru sudah mengajar di kelas ini' });
+    }
+
+    // Create relation
+    await prisma.guruKelas.create({
+      data: { guruId, kelasId }
+    });
+
+    invalidateByPrefix('admin:');
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/guru/:guruId/kelas/:kelasId - Hapus kelas dari guru
+router.delete('/guru/:guruId/kelas/:kelasId', async (req, res, next) => {
+  try {
+    const { guruId, kelasId } = req.params;
+
+    await prisma.guruKelas.delete({
+      where: { guruId_kelasId: { guruId, kelasId } }
+    });
+
+    invalidateByPrefix('admin:');
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

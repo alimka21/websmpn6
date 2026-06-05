@@ -113,6 +113,12 @@ export default function ManageUsers() {
   const [kelasErrors, setKelasErrors] = useState<Record<string, string>>({});
   const [isSubmittingKelas, setIsSubmittingKelas] = useState(false);
 
+  // ── Manage Guru Kelas Modal ──
+  const [showManageKelasGuruModal, setShowManageKelasGuruModal] = useState(false);
+  const [selectedGuruForKelas, setSelectedGuruForKelas] = useState<GuruUser | null>(null);
+  const [availableKelasForGuru, setAvailableKelasForGuru] = useState<KelasItem[]>([]);
+  const [isLoadingGuruKelas, setIsLoadingGuruKelas] = useState(false);
+
   // ── Shared Modals ──
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -141,6 +147,7 @@ export default function ManageUsers() {
   const siswaModalRef = useModalA11y<HTMLDivElement>(showSiswaModal, () => setShowSiswaModal(false));
   const guruModalRef = useModalA11y<HTMLDivElement>(showGuruModal, () => setShowGuruModal(false));
   const kelasModalRef = useModalA11y<HTMLDivElement>(showKelasModal, () => setShowKelasModal(false));
+  const manageKelasGuruModalRef = useModalA11y<HTMLDivElement>(showManageKelasGuruModal, () => setShowManageKelasGuruModal(false));
   const deleteModalRef = useModalA11y<HTMLDivElement>(deleteConfirm !== null, () => setDeleteConfirm(null));
   const resetModalRef = useModalA11y<HTMLDivElement>(resetConfirm !== null, () => setResetConfirm(null));
 
@@ -201,6 +208,54 @@ export default function ManageUsers() {
       toast.error(e.message || 'Gagal memuat data kelas');
     }
     finally { setIsLoadingKelas(false); }
+  };
+
+  const openManageKelasGuruModal = async (guru: GuruUser) => {
+    setSelectedGuruForKelas(guru);
+    setShowManageKelasGuruModal(true);
+    setIsLoadingGuruKelas(true);
+
+    try {
+      // Fetch all kelas
+      const allKelas = await api.get('/api/admin/kelas');
+      setAvailableKelasForGuru(allKelas);
+    } catch (e: any) {
+      toast.error('Gagal memuat data kelas');
+    } finally {
+      setIsLoadingGuruKelas(false);
+    }
+  };
+
+  const handleAddKelasToGuru = async (kelasId: string) => {
+    if (!selectedGuruForKelas) return;
+
+    try {
+      await api.post(`/api/admin/guru/${selectedGuruForKelas.guru.id}/kelas`, { kelasId });
+      toast.success('Kelas berhasil ditambahkan');
+      await fetchGuru(); // Reload data
+      // Update selected guru
+      const updated = await api.get(`/api/admin/users?role=GURU`);
+      const updatedGuru = updated.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
+      if (updatedGuru) setSelectedGuruForKelas(updatedGuru);
+    } catch (e: any) {
+      toast.error(e.message || 'Gagal menambahkan kelas');
+    }
+  };
+
+  const handleRemoveKelasFromGuru = async (kelasId: string) => {
+    if (!selectedGuruForKelas) return;
+
+    try {
+      await api.delete(`/api/admin/guru/${selectedGuruForKelas.guru.id}/kelas/${kelasId}`);
+      toast.success('Kelas berhasil dihapus');
+      await fetchGuru();
+      // Update selected guru
+      const updated = await api.get(`/api/admin/users?role=GURU`);
+      const updatedGuru = updated.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
+      if (updatedGuru) setSelectedGuruForKelas(updatedGuru);
+    } catch (e: any) {
+      toast.error(e.message || 'Gagal menghapus kelas');
+    }
   };
 
   const retryAll = () => {
@@ -761,30 +816,17 @@ export default function ManageUsers() {
                               ? u.guru.guruMataPelajaran.map(m => m.nama).join(', ')
                               : u.guru?.mataPelajaran || '—'}
                           </td>
-                          <td className="px-4 py-3 text-on-surface-variant">
-                            <div className="space-y-1">
-                              {u.guru?.kelas && u.guru.kelas.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {u.guru.kelas.map(k => (
-                                    <span key={k.id} className="text-xs px-2 py-0.5 bg-primary-container text-on-primary-container rounded-full">
-                                      {k.nama} (Wali)
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              {u.guru?.guruKelas && u.guru.guruKelas.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {u.guru.guruKelas.map(gk => (
-                                    <span key={gk.kelas.id} className="text-xs px-2 py-0.5 bg-secondary-container/30 text-on-surface-variant rounded-full">
-                                      {gk.kelas.nama}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              {(!u.guru?.kelas || u.guru.kelas.length === 0) && (!u.guru?.guruKelas || u.guru.guruKelas.length === 0) && (
-                                <span className="text-xs text-outline">—</span>
-                              )}
-                            </div>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => openManageKelasGuruModal(u)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#1e40af] bg-[#dde1ff] hover:bg-[#b8c4ff] rounded-lg transition-colors"
+                              title="Manage Kelas"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span>
+                                {(u.guru?.kelas?.length || 0) + (u.guru?.guruKelas?.length || 0)} Kelas
+                              </span>
+                            </button>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-center gap-1">
@@ -1310,6 +1352,138 @@ export default function ManageUsers() {
             </div>
             <div className="px-6 pb-6 flex justify-end">
               <Button onClick={() => setImportResult(null)} className="bg-primary hover:bg-primary/90">
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════ MODAL: MANAGE KELAS GURU ════ */}
+      {showManageKelasGuruModal && selectedGuruForKelas && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowManageKelasGuruModal(false)}>
+          <div
+            ref={manageKelasGuruModalRef}
+            className="bg-surface rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-outline-variant bg-surface-container-low">
+              <h2 className="text-xl font-semibold text-on-surface flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-primary" />
+                Manage Kelas: {selectedGuruForKelas.guru.nama}
+              </h2>
+              <p className="text-sm text-on-surface-variant mt-1">
+                NIP: {selectedGuruForKelas.guru.nip}
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+              {isLoadingGuruKelas ? (
+                <div className="py-12 flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <p className="text-sm text-on-surface-variant">Memuat data kelas...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Kelas Guru Saat Ini */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-on-surface uppercase tracking-wider mb-3">Kelas Saat Ini</h3>
+                    <div className="space-y-2">
+                      {/* Wali Kelas */}
+                      {selectedGuruForKelas.guru.kelas && selectedGuruForKelas.guru.kelas.length > 0 && (
+                        <div>
+                          <p className="text-xs text-on-surface-variant mb-2 font-medium">Wali Kelas:</p>
+                          <div className="space-y-2">
+                            {selectedGuruForKelas.guru.kelas.map(k => (
+                              <div key={k.id} className="flex items-center justify-between p-3 bg-primary-fixed rounded-lg border border-primary/20">
+                                <div className="flex items-center gap-2">
+                                  <GraduationCap className="w-4 h-4 text-primary" />
+                                  <span className="font-semibold text-on-surface">{k.nama}</span>
+                                  <span className="px-2 py-0.5 bg-primary text-white rounded-full text-[10px] font-bold">WALI KELAS</span>
+                                </div>
+                                <span className="text-xs text-on-surface-variant">Tidak bisa dihapus di sini</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Kelas Mengajar */}
+                      {selectedGuruForKelas.guru.guruKelas && selectedGuruForKelas.guru.guruKelas.length > 0 ? (
+                        <div>
+                          <p className="text-xs text-on-surface-variant mb-2 font-medium">Kelas Mengajar:</p>
+                          <div className="space-y-2">
+                            {selectedGuruForKelas.guru.guruKelas.map(gk => (
+                              <div key={gk.kelas.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg border border-outline-variant">
+                                <div className="flex items-center gap-2">
+                                  <BookOpen className="w-4 h-4 text-secondary" />
+                                  <span className="font-medium text-on-surface">{gk.kelas.nama}</span>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveKelasFromGuru(gk.kelas.id)}
+                                  className="px-3 py-1 text-xs font-medium text-error hover:bg-error-container rounded-lg transition-colors"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : !selectedGuruForKelas.guru.kelas?.length && (
+                        <p className="text-sm text-on-surface-variant italic py-4 text-center bg-surface-container rounded-lg">
+                          Belum ada kelas
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tambah Kelas */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-on-surface uppercase tracking-wider mb-3">Tambah Kelas</h3>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {availableKelasForGuru
+                        .filter(k => {
+                          // Filter out kelas yang sudah dipilih
+                          const isWaliKelas = selectedGuruForKelas.guru.kelas?.some(wk => wk.id === k.id);
+                          const isMengajar = selectedGuruForKelas.guru.guruKelas?.some(gk => gk.kelas.id === k.id);
+                          return !isWaliKelas && !isMengajar;
+                        })
+                        .map(k => (
+                          <div key={k.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg border border-outline-variant hover:border-primary/50 transition-colors">
+                            <div>
+                              <div className="font-medium text-on-surface">{k.nama}</div>
+                              <div className="text-xs text-on-surface-variant">
+                                Tingkat {k.tingkat} • {k.tahunAjaran}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleAddKelasToGuru(k.id)}
+                              className="px-3 py-1 text-xs font-medium bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
+                            >
+                              Tambah
+                            </button>
+                          </div>
+                        ))}
+                      {availableKelasForGuru.filter(k => {
+                        const isWaliKelas = selectedGuruForKelas.guru.kelas?.some(wk => wk.id === k.id);
+                        const isMengajar = selectedGuruForKelas.guru.guruKelas?.some(gk => gk.kelas.id === k.id);
+                        return !isWaliKelas && !isMengajar;
+                      }).length === 0 && (
+                        <p className="text-sm text-on-surface-variant italic py-4 text-center bg-surface-container rounded-lg">
+                          Semua kelas sudah ditambahkan
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-outline-variant bg-surface-container-low flex justify-end">
+              <Button onClick={() => setShowManageKelasGuruModal(false)} variant="outline">
                 Tutup
               </Button>
             </div>

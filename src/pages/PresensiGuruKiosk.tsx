@@ -386,8 +386,77 @@ export default function PresensiGuruKiosk() {
 
       {/* Main Content */}
       <main className="max-w-[1400px] mx-auto p-6">
-        {/* Top: Action Card */}
-        <section className="max-w-4xl mx-auto mb-8">
+        {/* Top: Split Layout 30/70 */}
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8">
+          {/* Left 30%: Camera & Status */}
+          <section className="lg:col-span-3 space-y-4">
+            {/* Camera Preview */}
+            <div className="bg-white rounded-xl border border-[#e2e8f0] shadow-sm overflow-hidden">
+              <div className="relative bg-black aspect-video">
+                {cameraPermission === 'granted' && cameraStream ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Camera className="w-12 h-12 text-gray-500" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Status Cards */}
+            <div className="space-y-3">
+              {/* Camera Status */}
+              <div className="bg-white rounded-lg border border-[#e2e8f0] p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    cameraPermission === 'granted' ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <Camera className={`w-5 h-5 ${
+                      cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-[#0f172a]">Kamera</div>
+                    <div className={`text-xs font-medium ${
+                      cameraPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {cameraPermission === 'granted' ? 'Aktif' : cameraPermission === 'denied' ? 'Ditolak' : 'Menunggu izin...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Status */}
+              <div className="bg-white rounded-lg border border-[#e2e8f0] p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    locationPermission === 'granted' ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <MapPin className={`w-5 h-5 ${
+                      locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-[#0f172a]">Lokasi</div>
+                    <div className={`text-xs font-medium ${
+                      locationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {locationPermission === 'granted' ? 'Aktif' : locationPermission === 'denied' ? 'Ditolak' : 'Menunggu izin...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Right 70%: Identifikasi Diri */}
+          <section className="lg:col-span-7">
           {/* Step 1: Teacher Selection */}
           <div className="bg-surface-container-lowest p-4 md:p-8 rounded-xl border border-outline-variant shadow-sm">
             <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
@@ -473,18 +542,16 @@ export default function PresensiGuruKiosk() {
               </div>
             )}
           </div>
+          </section>
+        </div>
 
-          {/* Spacing */}
-          <div className="h-8"></div>
-
-          {/* Permission Status & Camera Preview */}
-          {!selectedGuru && (
+        {/* Step 2: Verifikasi (when guru selected) */}
+        {selectedGuru && (
+          <div className="mb-8">
             <div className="bg-white p-6 rounded-xl border border-[#e2e8f0] shadow-sm">
-              <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
-                <span className="bg-secondary text-on-secondary h-6 w-6 md:h-8 md:w-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm">
-                  <Camera className="w-3 h-3 md:w-4 md:h-4" />
-                </span>
-                <h2 className="text-base font-semibold text-[#0f172a]">Status Sistem</h2>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="bg-primary text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+                <h2 className="text-base font-semibold text-[#0f172a]">Verifikasi & Submit</h2>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -770,7 +837,7 @@ export default function PresensiGuruKiosk() {
 
       {/* Footer */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
-        <p className="text-center text-[#64748b]">
+        <p className="text-center text-[#64748b] text-[11px]">
           © 2026 Sistem Presensi Digital
         </p>
       </footer>
