@@ -73,6 +73,28 @@ async function request<T = any>(
 
   let data: any;
   const contentType = res.headers.get("content-type");
+
+  // Deteksi HTML response dari firewall/CDN
+  if (contentType?.includes("text/html")) {
+    const htmlText = await res.text();
+
+    // Deteksi Hostinger firewall challenge
+    if (htmlText.includes("Checking your browser") ||
+        htmlText.includes("jschallenge") ||
+        htmlText.includes("hcdn-cgi")) {
+      throw new ApiError(
+        "Permintaan diblokir oleh firewall. Silakan coba lagi dalam beberapa detik atau hubungi administrator.",
+        403
+      );
+    }
+
+    // HTML response lain yang tidak diharapkan
+    throw new ApiError(
+      "Server mengembalikan halaman HTML, bukan data JSON. Periksa koneksi atau hubungi administrator.",
+      res.status
+    );
+  }
+
   if (contentType?.includes("application/json")) {
     data = await res.json();
   } else {

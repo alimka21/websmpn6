@@ -42,6 +42,15 @@ export default defineConfig(({mode}) => {
             recharts: ['recharts'],
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           },
+          // Tambahkan timestamp untuk force reload setiap build baru
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name === 'index.css') {
+              return 'assets/index.[hash].css';
+            }
+            return 'assets/[name].[hash][extname]';
+          },
+          chunkFileNames: 'assets/[name].[hash].js',
+          entryFileNames: 'assets/[name].[hash].js',
         },
       },
     },

@@ -143,18 +143,60 @@ export default function BuatUjian() {
     try {
       setIsLoading(true);
       const finalTipe = tipeUjian === '__LAINNYA__' ? tipeKustom.trim() : tipeUjian;
-      const res = await api.post('/api/guru/ujian', {
-        judul, mataPelajaran, tipeUjian: finalTipe,
-        durasi: parseInt(durasi), tanggalMulai, tanggalSelesai,
-        acak, acakOpsi,
-        tampilkanPembahasan: true, tampilkanNilai: true,
-        kelasIds: selectedKelas,
-        ...(isAdmin && guruId ? { guruId } : {}),
-      });
-      toast.success('Ujian berhasil dibuat! Silakan tambahkan soal.');
-      navigate(`/dashboard/guru/ujian/${res.id}/soal`);
+
+      // Retry logic untuk bypass firewall
+      let lastError: any = null;
+      const maxRetries = 3;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          // Tambah delay sebelum retry untuk avoid rate limiting
+          if (attempt > 1) {
+            toast.info(`Mencoba ulang... (${attempt}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          }
+
+          const res = await api.post('/api/guru/ujian', {
+            judul, mataPelajaran, tipeUjian: finalTipe,
+            durasi: parseInt(durasi), tanggalMulai, tanggalSelesai,
+            acak, acakOpsi,
+            tampilkanPembahasan: true, tampilkanNilai: true,
+            kelasIds: selectedKelas,
+            ...(isAdmin && guruId ? { guruId } : {}),
+          }, 30000); // 30 detik timeout
+
+          toast.success('Ujian berhasil dibuat! Silakan tambahkan soal.');
+          navigate(`/dashboard/guru/ujian/${res.id}/soal`);
+          return; // Success, exit
+
+        } catch (err: any) {
+          lastError = err;
+
+          // Jika error 403 (firewall), retry
+          if (err.status === 403 && attempt < maxRetries) {
+            continue;
+          }
+
+          // Error lain atau retry habis, throw
+          throw err;
+        }
+      }
+
+      // Jika sampai sini berarti retry habis
+      throw lastError;
+
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal menyimpan ujian');
+      console.error('Error creating ujian:', err);
+
+      // Pesan error yang lebih informatif
+      let errorMessage = err.message || 'Gagal menyimpan ujian';
+
+      if (err.status === 403) {
+        errorMessage = 'Permintaan diblokir oleh firewall server. Silakan tunggu beberapa detik dan coba lagi.';
+      }
+
+      setErrorMsg(errorMessage);
+      toast.error(errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
