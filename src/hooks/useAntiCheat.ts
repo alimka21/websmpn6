@@ -47,25 +47,37 @@ export function useAntiCheat({
   const playAlarm = useCallback(() => {
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      
+      if (!AudioContextClass) {
+        console.warn('[ANTI-CHEAT] AudioContext tidak didukung di browser ini');
+        return;
+      }
+
       const ctx = new AudioContextClass();
-      
+
+      // Resume AudioContext jika di-suspend oleh browser (autoplay policy)
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          console.log('[ANTI-CHEAT] AudioContext di-resume');
+        }).catch(err => {
+          console.error('[ANTI-CHEAT] Gagal resume AudioContext:', err);
+        });
+      }
+
       const playTone = (freq: number, startTime: number, duration: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        
+
         osc.type = 'square';
         osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
-        
+
         gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
-        gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + startTime + 0.05);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime + startTime + duration - 0.05);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + startTime + 0.05); // Volume lebih keras: 0.1 → 0.3
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + startTime + duration - 0.05);
         gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + duration);
-        
+
         osc.connect(gain);
         gain.connect(ctx.destination);
-        
+
         osc.start(ctx.currentTime + startTime);
         osc.stop(ctx.currentTime + startTime + duration);
       };
@@ -74,9 +86,11 @@ export function useAntiCheat({
       playTone(880, 0, 0.15);
       playTone(660, 0.15, 0.15);
       playTone(880, 0.3, 0.15);
-      
+
+      console.log('[ANTI-CHEAT] Alarm dibunyikan');
+
     } catch (e) {
-      console.error("Web Audio API gagal", e);
+      console.error('[ANTI-CHEAT] Web Audio API gagal:', e);
     }
   }, []);
 
@@ -92,26 +106,34 @@ export function useAntiCheat({
     countRef.current += 1;
     const currentCount = countRef.current;
 
+    console.log(`[ANTI-CHEAT] Pelanggaran #${currentCount}:`, type, message);
+
     setViolations(prev => [...prev, v]);
     setLatestViolation(v);
     setIsWarningVisible(true);
-    
+
     playAlarm();
 
     if (onViolation) {
       onViolation(v, currentCount);
     }
 
+    // Kirim ke server
     try {
       if (sessionId) {
-        await api.post(`/api/siswa/sesi/${sessionId}/violation`, { tipe: type, pesan: message });
+        console.log(`[ANTI-CHEAT] Mengirim ke server... sessionId=${sessionId}`);
+        const response = await api.post(`/api/siswa/sesi/${sessionId}/violation`, { tipe: type, pesan: message });
+        console.log('[ANTI-CHEAT] Berhasil tercatat di server:', response);
+      } else {
+        console.error('[ANTI-CHEAT] sessionId kosong, tidak bisa mencatat ke server!');
       }
     } catch (error) {
-      console.error("Gagal mencatat pelanggaran", error);
+      console.error("[ANTI-CHEAT] GAGAL mencatat pelanggaran ke server:", error);
     }
 
     if (currentCount >= maxViolations) {
       isAutoSubmittingRef.current = true;
+      console.log('[ANTI-CHEAT] Batas pelanggaran tercapai, auto-submit dalam 2 detik...');
       setTimeout(() => {
         if (onAutoSubmit) onAutoSubmit();
       }, 2000);
@@ -126,14 +148,17 @@ export function useAntiCheat({
     const blurTimer = { id: 0 };
 
     const handleVisibilityChange = () => {
+      console.log('[ANTI-CHEAT] Visibility changed:', document.hidden ? 'HIDDEN' : 'VISIBLE');
       if (document.hidden) {
         clearTimeout(tabSwitchTimer.id);
         tabSwitchTimer.id = window.setTimeout(() => {
           if (document.hidden) {
+            console.log('[ANTI-CHEAT] Tab masih hidden setelah 400ms, trigger violation!');
             triggerViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau meminimalkan browser.');
           }
         }, 400);
       } else {
+        console.log('[ANTI-CHEAT] Tab kembali visible, batalkan timer');
         clearTimeout(tabSwitchTimer.id);
       }
     };
@@ -179,9 +204,12 @@ export function useAntiCheat({
       e.preventDefault();
     };
 
+    console.log('[ANTI-CHEAT] Memasang event listeners... sessionId:', sessionId);
+
     // TAB_SWITCH detection (visibilitychange) — AKTIF di semua platform
     // termasuk iOS. Fire saat siswa switch app / lock screen.
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    console.log('[ANTI-CHEAT] ✓ visibilitychange listener terpasang');
 
     // Fullscreen + blur detection — SKIP di iOS karena:
     //  - fullscreenchange tidak akan fire (Fullscreen API tidak ada)
@@ -191,10 +219,14 @@ export function useAntiCheat({
       document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
       window.addEventListener('blur', handleWindowBlur);
       window.addEventListener('focus', handleWindowFocus);
+      console.log('[ANTI-CHEAT] ✓ fullscreen & blur listeners terpasang');
+    } else {
+      console.log('[ANTI-CHEAT] ⊗ Fullscreen tidak didukung (iOS/browser tidak kompatibel)');
     }
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
+    console.log('[ANTI-CHEAT] ✓ keyboard & contextmenu listeners terpasang');
 
     // Initial state — di non-iOS baca dari DOM. Di iOS biarkan false
     // sampai siswa tap "Mulai Ujian" yg call requestFullscreen() (yg
@@ -219,12 +251,38 @@ export function useAntiCheat({
   }, [triggerViolation]);
 
   const requestFullscreen = async () => {
+    console.log('[ANTI-CHEAT] requestFullscreen dipanggil');
+
+    // Init AudioContext saat user interaction untuk bypass autoplay policy
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+        console.log('[ANTI-CHEAT] AudioContext diinit saat user click, state:', ctx.state);
+        // Play silent tone untuk "unlock" audio
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.001; // Hampir silent
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.01);
+      }
+    } catch (e) {
+      console.warn('[ANTI-CHEAT] Gagal init AudioContext:', e);
+    }
+
     // iOS / browser tanpa Fullscreen API: bypass dgn set state langsung.
     // Siswa lanjut masuk ujian. Anti-cheat tetap aktif via TAB_SWITCH.
     if (!isFullscreenSupported) {
+      console.log('[ANTI-CHEAT] Fullscreen tidak didukung, set state langsung');
       setIsFullscreen(true);
       return;
     }
+
     try {
       const el = document.documentElement as any;
       if (el.requestFullscreen) {
@@ -234,8 +292,9 @@ export function useAntiCheat({
       } else if (el.msRequestFullscreen) {
         await el.msRequestFullscreen();
       }
+      console.log('[ANTI-CHEAT] Berhasil masuk fullscreen');
     } catch (e) {
-      console.error("Gagal masuk layar penuh", e);
+      console.error('[ANTI-CHEAT] Gagal masuk layar penuh:', e);
     }
   };
 
