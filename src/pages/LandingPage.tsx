@@ -463,13 +463,7 @@ export default function LandingPage() {
                   <h3 className="text-2xl font-semibold mb-4 text-on-background group-hover:text-primary transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-on-surface-variant mb-8 leading-relaxed">{item.desc}</p>
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="text-primary font-bold text-xs flex items-center gap-2 group-hover:translate-x-2 transition-transform uppercase tracking-wider"
-                  >
-                    PELAJARI LEBIH LANJUT <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <p className="text-on-surface-variant leading-relaxed">{item.desc}</p>
                 </div>
               );
             })}
