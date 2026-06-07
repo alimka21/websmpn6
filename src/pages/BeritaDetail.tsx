@@ -1,10 +1,14 @@
 import { toast } from 'sonner';
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { GraduationCap, ArrowLeft, Calendar, Share2, Link as LinkIcon, FileText } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import DOMPurify from 'dompurify';
+import { GraduationCap, ArrowLeft, Calendar, Share2, Link as LinkIcon, FileText, User, Tag as TagIcon } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import api from '../lib/api';
 import SiteFooter from '../components/SiteFooter';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 export default function BeritaDetail() {
   const { slug } = useParams();
@@ -98,8 +102,28 @@ export default function BeritaDetail() {
     );
   }
 
+  // SEO meta tags
+  const siteName = import.meta.env.VITE_SITE_NAME || 'Portal Sekolah';
+  const siteUrl = import.meta.env.VITE_APP_URL || '';
+  const pageUrl = `${siteUrl}/berita/${berita.slug}`;
+  const metaDescription = berita.metaDescription || berita.ringkasan || berita.judul;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Helmet>
+        <title>{berita.judul} — {siteName}</title>
+        <meta name="description" content={metaDescription} />
+        <meta property="og:title" content={berita.judul} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={berita.imageUrl || ''} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={pageUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={berita.judul} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={berita.imageUrl || ''} />
+      </Helmet>
+
       {/* Navbar */}
       <nav className="h-16 bg-surface/95 backdrop-blur-md border-b border-outline-variant sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 h-full flex items-center justify-between">
@@ -126,15 +150,36 @@ export default function BeritaDetail() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-headline-lg text-on-surface leading-tight mb-4">{berita.judul}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant font-medium">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4" />
-              {new Date(berita.publishedAt ?? berita.createdAt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-            <span className="inline-flex items-center rounded-full bg-primary-container/20 text-primary px-3 py-1 text-label-sm uppercase tracking-wider font-bold">
-              Berita Resmi
+          {berita.kategori && (
+            <span className="inline-flex items-center rounded-full bg-primary-container/20 text-primary px-3 py-1.5 text-label-sm uppercase tracking-wider font-bold mb-3">
+              {berita.kategori}
             </span>
+          )}
+          <h1 className="text-headline-lg text-on-surface leading-tight mb-4">{berita.judul}</h1>
+
+          {/* Author & Date */}
+          <div className="flex items-center gap-3 text-sm text-on-surface-variant pb-4 mb-4 border-b border-outline-variant">
+            {berita.penulis && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary-container rounded-full flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-on-surface">{berita.penulis}</p>
+                  <p className="text-xs">
+                    {berita.publishedAt
+                      ? format(new Date(berita.publishedAt), 'dd MMMM yyyy', { locale: id })
+                      : 'Belum dipublikasi'}
+                  </p>
+                </div>
+              </div>
+            )}
+            {!berita.penulis && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                {new Date(berita.publishedAt ?? berita.createdAt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -153,9 +198,29 @@ export default function BeritaDetail() {
               {berita.ringkasan}
             </p>
           )}
-          <div className="prose prose-slate md:prose-lg max-w-none text-on-surface leading-relaxed whitespace-pre-wrap">
-            {berita.konten}
-          </div>
+          <div
+            className="tiptap-content prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(berita.konten) }}
+          />
+
+          {/* Tags */}
+          {berita.tags && JSON.parse(berita.tags).length > 0 && (
+            <div className="mt-8 pt-6 border-t border-outline-variant">
+              <div className="flex items-start gap-2 flex-wrap">
+                <TagIcon className="w-4 h-4 text-on-surface-variant mt-1 shrink-0" />
+                <div className="flex flex-wrap gap-2">
+                  {JSON.parse(berita.tags).map((tag: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-secondary-container/40 text-on-secondary-container"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Share */}
           <div className="mt-10 pt-6 border-t border-outline-variant">

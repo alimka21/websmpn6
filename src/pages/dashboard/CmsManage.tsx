@@ -3,12 +3,26 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input, Label } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
-import { Plus, Edit, Trash2, Eye, ExternalLink, Search, Globe, FileEdit, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ExternalLink, Search, Globe, FileEdit, X, Copy, Tag } from 'lucide-react';
 import api from '../../lib/api';
 import { useModalA11y } from '../../hooks/useModalA11y';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { RichTextEditor } from '../../components/ui/RichTextEditor';
+import { useAuthStore } from '../../store/authStore';
 
-const EMPTY_FORM = { judul: '', ringkasan: '', konten: '', imageUrl: '', status: 'DRAFT', slug: '' };
+const EMPTY_FORM = {
+  judul: '', ringkasan: '', konten: '', imageUrl: '', status: 'DRAFT', slug: '',
+  kategori: '', tags: '[]', metaDescription: '', penulis: ''
+};
+
+const KATEGORI_OPTIONS = [
+  { value: '', label: '-- Pilih Kategori --' },
+  { value: 'Akademik', label: 'Akademik' },
+  { value: 'Prestasi', label: 'Prestasi' },
+  { value: 'Kegiatan', label: 'Kegiatan' },
+  { value: 'Pengumuman', label: 'Pengumuman' },
+  { value: 'Umum', label: 'Umum' }
+];
 
 const statusBadge = (status: string) => {
   const base = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-label-sm uppercase tracking-wider font-bold';
@@ -18,6 +32,7 @@ const statusBadge = (status: string) => {
 };
 
 export default function CmsManage() {
+  const { user } = useAuthStore();
   const [beritaList, setBeritaList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -30,6 +45,7 @@ export default function CmsManage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState('');
   const modalRef = useModalA11y<HTMLDivElement>(showModal, () => setShowModal(false));
 
   const fetchBerita = async () => {
@@ -64,10 +80,21 @@ export default function CmsManage() {
   const handleOpenModal = (b?: any) => {
     if (b) {
       setEditingId(b.id);
-      setFormData({ judul: b.judul, ringkasan: b.ringkasan || '', konten: b.konten, imageUrl: b.imageUrl || '', status: b.status, slug: b.slug });
+      setFormData({
+        judul: b.judul,
+        ringkasan: b.ringkasan || '',
+        konten: b.konten,
+        imageUrl: b.imageUrl || '',
+        status: b.status,
+        slug: b.slug,
+        kategori: b.kategori || '',
+        tags: b.tags || '[]',
+        metaDescription: b.metaDescription || '',
+        penulis: b.penulis || user?.profile?.nama || ''
+      });
     } else {
       setEditingId(null);
-      setFormData({ ...EMPTY_FORM });
+      setFormData({ ...EMPTY_FORM, penulis: user?.profile?.nama || '' });
     }
     setShowModal(true);
   };
@@ -117,6 +144,53 @@ export default function CmsManage() {
       fetchBerita();
     } catch (error: any) {
       toast.error(error.message || 'Gagal menghapus berita');
+    }
+  };
+
+  const handleDuplikat = async (id: string) => {
+    try {
+      const result = await api.post(`/api/admin/berita/${id}/duplikat`);
+      toast.success('Berita berhasil diduplikat', {
+        description: 'Draft baru siap diedit.',
+        action: {
+          label: 'Edit sekarang',
+          onClick: () => handleOpenModal(result)
+        }
+      });
+      fetchBerita();
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal menduplikat berita');
+    }
+  };
+
+  // Tags management
+  const handleAddTag = () => {
+    if (!tagInput.trim()) return;
+    try {
+      const currentTags = JSON.parse(formData.tags || '[]');
+      if (currentTags.length >= 5) {
+        toast.error('Maksimal 5 tag');
+        return;
+      }
+      if (currentTags.includes(tagInput.trim())) {
+        toast.error('Tag sudah ada');
+        return;
+      }
+      const newTags = [...currentTags, tagInput.trim()];
+      setFormData({ ...formData, tags: JSON.stringify(newTags) });
+      setTagInput('');
+    } catch (e) {
+      console.error('Tag parse error:', e);
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    try {
+      const currentTags = JSON.parse(formData.tags || '[]');
+      const newTags = currentTags.filter((t: string) => t !== tag);
+      setFormData({ ...formData, tags: JSON.stringify(newTags) });
+    } catch (e) {
+      console.error('Tag parse error:', e);
     }
   };
 
@@ -195,6 +269,18 @@ export default function CmsManage() {
                         <p className="font-semibold text-on-surface line-clamp-1">{b.judul}</p>
                         <p className="text-xs text-on-surface-variant font-mono mt-0.5 truncate">/{b.slug}</p>
                         {b.ringkasan && <p className="text-xs text-on-surface-variant mt-1 line-clamp-1">{b.ringkasan}</p>}
+                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                          {b.kategori && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-container/20 text-primary">
+                              {b.kategori}
+                            </span>
+                          )}
+                          {b.penulis && (
+                            <span className="text-[10px] text-on-surface-variant">
+                              oleh {b.penulis}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-center">{statusBadge(b.status)}</td>
                       <td className="px-4 py-4 text-center text-xs text-on-surface-variant whitespace-nowrap">
@@ -218,6 +304,9 @@ export default function CmsManage() {
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleOpenModal(b)} className="h-8 px-2" title="Edit">
                             <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDuplikat(b.id)} className="h-8 px-2" title="Duplikat">
+                            <Copy className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleteConfirmId(b.id)} className="h-8 px-2 text-error hover:bg-error-container" title="Hapus">
                             <Trash2 className="w-4 h-4" />
@@ -317,14 +406,83 @@ export default function CmsManage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="konten">Isi Konten Lengkap <span className="text-error">*</span></Label>
+                <Label htmlFor="kategori">Kategori</Label>
+                <Select
+                  value={formData.kategori}
+                  onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
+                  options={KATEGORI_OPTIONS}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="penulis">Penulis</Label>
+                <Input
+                  id="penulis"
+                  value={formData.penulis}
+                  onChange={e => setFormData({ ...formData, penulis: e.target.value })}
+                  placeholder="Nama penulis berita"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tags (Maksimal 5)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                    placeholder="Ketik tag dan tekan Enter"
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddTag}>
+                    <Tag className="w-4 h-4 mr-1" /> Tambah
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {JSON.parse(formData.tags || '[]').map((tag: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-secondary-container/40 text-on-secondary-container"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="hover:text-error transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="metaDescription">
+                  Meta Description (SEO)
+                  <span className={`ml-2 text-xs ${(formData.metaDescription?.length || 0) > 160 ? 'text-error' : 'text-on-surface-variant'}`}>
+                    {formData.metaDescription?.length || 0}/160
+                  </span>
+                </Label>
                 <textarea
-                  id="konten"
+                  id="metaDescription"
+                  value={formData.metaDescription}
+                  onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
+                  rows={2}
+                  maxLength={160}
+                  className="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                  placeholder="Deskripsi singkat yang muncul di hasil pencarian Google (max 160 karakter)"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="konten">Isi Konten Lengkap <span className="text-error">*</span></Label>
+                <RichTextEditor
                   value={formData.konten}
-                  onChange={e => setFormData({ ...formData, konten: e.target.value })}
-                  rows={12}
-                  className="w-full p-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y font-mono"
-                  placeholder="Tuliskan konten lengkap di sini. Mendukung Markdown..."
+                  onChange={(html) => setFormData({ ...formData, konten: html })}
+                  placeholder="Tulis konten berita dengan Rich Text Editor..."
+                  minHeight="400px"
                 />
               </div>
             </div>

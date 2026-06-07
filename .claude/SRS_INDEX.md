@@ -89,8 +89,10 @@
 | 2026-06-06 | Fix anti-cheat not recording violations | ISS-001 |
 | 2026-06-06 | Fix Hostinger firewall blocking API | ISS-002 |
 | 2026-06-06 | Fix cache busting for lazy-loaded modules | ISS-003 |
+| 2026-06-07 | Remove Statistik menu from admin sidebar | REQ-005 |
+| 2026-06-07 | Remove grayscale hover effect on Google Maps | REQ-005 |
 
 ---
 
-**Last Updated:** 2026-06-06  
+**Last Updated:** 2026-06-07  
 **Maintainer:** Claude Code + User (alimka)

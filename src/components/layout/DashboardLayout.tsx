@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-do
 import { toast } from 'sonner';
 import {
   LogOut, Menu, X, LayoutDashboard, Users, FileText, Settings,
-  GraduationCap, ClipboardList, PenTool, BarChart3, Newspaper,
+  GraduationCap, ClipboardList, PenTool, Newspaper,
   ExternalLink, CalendarCheck, FolderOpen, Activity,
 } from 'lucide-react';
 import { useAuthStore, Role } from '../../store/authStore';
@@ -23,7 +23,6 @@ const navConfig: Record<Role, NavItem[]> = {
     { label: 'Dokumen & Agenda', href: '/dashboard/admin/konten',    icon: <FolderOpen className="w-5 h-5" /> },
     { label: 'Berita / CMS',     href: '/dashboard/admin/cms',       icon: <Newspaper className="w-5 h-5" /> },
     { label: 'Pengaturan Situs', href: '/dashboard/admin/site',     icon: <Settings className="w-5 h-5" /> },
-    { label: 'Statistik',        href: '/dashboard/admin/stats',    icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Log Aktivitas',    href: '/dashboard/admin/activity', icon: <Activity className="w-5 h-5" /> },
   ],
   GURU: [
@@ -48,7 +47,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/admin/konten':    'Dokumen & Agenda',
   '/dashboard/admin/cms':       'Berita / CMS',
   '/dashboard/admin/site':      'Pengaturan Situs',
-  '/dashboard/admin/stats':     'Statistik',
   '/dashboard/admin/activity':  'Log Aktivitas',
   '/dashboard/guru':            'Dashboard Guru',
   '/dashboard/guru/ujian':      'Daftar Ujian',

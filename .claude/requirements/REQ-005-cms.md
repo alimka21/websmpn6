@@ -112,6 +112,19 @@ Backend:
 - **Reason:** User request - tidak perlu link ke login
 - **File Changed:** `src/pages/LandingPage.tsx` line 467-472
 
+### Remove Grayscale Hover Effect on Google Maps (2026-06-07)
+- **Change:** Hapus efek `grayscale hover:grayscale-0` di iframe Google Maps
+- **Previous:** Maps abu-abu, berwarna saat hover
+- **Now:** Maps selalu fresh dan berwarna (no grayscale)
+- **Reason:** User request - maps harus tetap colorful
+- **File Changed:** `src/components/SiteFooter.tsx` line 129
+
+### Remove "Statistik" Menu from Admin Sidebar (2026-06-07)
+- **Change:** Hapus menu "Statistik" dari sidebar admin
+- **Reason:** Duplikat dengan statistik di dashboard admin (ikhtisar sistem)
+- **Impact:** User akses statistik dari dashboard utama, bukan menu terpisah
+- **File Changed:** `src/components/layout/DashboardLayout.tsx` line 26, 51
+
 ---
 
 ## 📝 Notes

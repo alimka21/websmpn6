@@ -9,17 +9,24 @@ router.get('/berita', async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
+    const kategori = req.query.kategori as string | undefined;
     const skip = (page - 1) * limit;
 
-    const result = await withCache(`pub:berita:${limit}:${page}`, 600, async () => {
+    const cacheKey = `pub:berita:${limit}:${page}:${kategori || 'all'}`;
+    const result = await withCache(cacheKey, 600, async () => {
+      const where = {
+        status: 'PUBLISHED',
+        ...(kategori && kategori !== 'all' ? { kategori } : {})
+      };
+
       const data = await prisma.berita.findMany({
-        where: { status: 'PUBLISHED' },
+        where,
         skip,
         take: limit,
         orderBy: { publishedAt: 'desc' }
       });
-      const total = await prisma.berita.count({ where: { status: 'PUBLISHED' } });
-      return { data, total, page, limit };
+      const total = await prisma.berita.count({ where });
+      return { data, total, page, limit, kategori: kategori || null };
     });
 
     res.json(result);

@@ -183,3 +183,89 @@
 [data-sonner-toast][data-mounted="true"] {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TipTap Rich Text Editor Content Styling
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+.tiptap-content {
+  color: var(--color-on-surface);
+  line-height: 1.75;
+}
+
+.tiptap-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--color-on-surface);
+}
+
+.tiptap-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--color-on-surface);
+}
+
+.tiptap-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.tiptap-content ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.tiptap-content ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.tiptap-content li {
+  margin-bottom: 0.5rem;
+}
+
+.tiptap-content blockquote {
+  border-left: 4px solid var(--color-secondary);
+  padding-left: 1rem;
+  color: var(--color-on-surface-variant);
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+.tiptap-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.tiptap-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.tiptap-content a:hover {
+  text-decoration: none;
+}
+
+/* Editor placeholder */
+.tiptap-content .is-editor-empty:first-child::before {
+  color: var(--color-on-surface-variant);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Editor focus */
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror {
+  min-height: 200px;
+}

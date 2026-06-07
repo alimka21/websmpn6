@@ -632,8 +632,15 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="p-8 space-y-4">
-                    <div className="text-[11px] text-primary font-bold flex items-center gap-2 uppercase tracking-wider">
-                      <Clock className="w-3.5 h-3.5" /> {formatTanggal(item.publishedAt)}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(item as any).kategori && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/20 text-primary uppercase tracking-wider">
+                          {(item as any).kategori}
+                        </span>
+                      )}
+                      <div className="text-[11px] text-on-surface-variant font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                        <Clock className="w-3.5 h-3.5" /> {formatTanggal(item.publishedAt)}
+                      </div>
                     </div>
                     <h3 className="text-xl font-semibold leading-tight text-on-background group-hover:text-primary transition-colors line-clamp-2">
                       {item.judul}
@@ -641,6 +648,11 @@ export default function LandingPage() {
                     {item.ringkasan && (
                       <p className="text-on-surface-variant line-clamp-3 leading-relaxed text-sm">
                         {item.ringkasan}
+                      </p>
+                    )}
+                    {(item as any).penulis && (
+                      <p className="text-xs text-on-surface-variant">
+                        Oleh {(item as any).penulis}
                       </p>
                     )}
                   </div>

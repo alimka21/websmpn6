@@ -32,13 +32,15 @@ export default function BeritaList() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [kategoriFilter, setKategoriFilter] = useState('all');
 
   useEffect(() => {
     const fetchBerita = async () => {
       try {
         setIsLoading(true);
         setErrorMsg(null);
-        const res = await api.get(`/api/berita?page=${page}&limit=${PAGE_SIZE}`);
+        const kategoriParam = kategoriFilter !== 'all' ? `&kategori=${kategoriFilter}` : '';
+        const res = await api.get(`/api/berita?page=${page}&limit=${PAGE_SIZE}${kategoriParam}`);
         setItems(res.data || []);
         setTotal(res.total || 0);
       } catch (err: any) {
@@ -50,7 +52,7 @@ export default function BeritaList() {
     };
     fetchBerita();
     window.scrollTo(0, 0);
-  }, [page]);
+  }, [page, kategoriFilter]);
 
   const q = search.toLowerCase().trim();
   const filtered = q
@@ -87,9 +89,10 @@ export default function BeritaList() {
         </div>
       </header>
 
-      {/* Search bar — floating di atas content */}
+      {/* Search & Filter */}
       <div className="max-w-6xl mx-auto px-4 -mt-8 mb-8 w-full">
-        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant p-3">
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant p-3 space-y-3">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none" />
             <Input
@@ -98,6 +101,33 @@ export default function BeritaList() {
               placeholder="Cari berita berdasarkan judul atau ringkasan..."
               className="pl-10 h-11 border-0 bg-surface-container-low"
             />
+          </div>
+
+          {/* Kategori Filter */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setKategoriFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                kategoriFilter === 'all'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              Semua
+            </button>
+            {['Akademik', 'Prestasi', 'Kegiatan', 'Pengumuman', 'Umum'].map(kat => (
+              <button
+                key={kat}
+                onClick={() => setKategoriFilter(kat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                  kategoriFilter === kat
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                }`}
+              >
+                {kat}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -146,15 +176,27 @@ export default function BeritaList() {
                     )}
                   </div>
                   <div className="p-5 flex flex-col flex-1">
-                    <div className="flex items-center gap-1.5 text-label-sm text-on-surface-variant uppercase tracking-wider mb-2 font-medium">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {formatDate(b.publishedAt ?? b.createdAt)}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      {(b as any).kategori && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-container/20 text-primary uppercase tracking-wider">
+                          {(b as any).kategori}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5 text-label-sm text-on-surface-variant uppercase tracking-wider font-medium">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatDate(b.publishedAt ?? b.createdAt)}
+                      </div>
                     </div>
                     <h2 className="font-bold text-on-surface text-lg leading-tight mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                       {b.judul}
                     </h2>
                     {b.ringkasan && (
-                      <p className="text-sm text-on-surface-variant line-clamp-3 leading-relaxed">{b.ringkasan}</p>
+                      <p className="text-sm text-on-surface-variant line-clamp-3 leading-relaxed mb-2">{b.ringkasan}</p>
+                    )}
+                    {(b as any).penulis && (
+                      <p className="text-xs text-on-surface-variant mt-auto pt-2">
+                        Oleh {(b as any).penulis}
+                      </p>
                     )}
                     <span className="mt-4 text-label-sm font-bold uppercase tracking-wider text-primary inline-flex items-center gap-1">
                       Baca selengkapnya <ArrowRight className="w-3 h-3" />

@@ -319,18 +319,23 @@ model Alumni {
 }
 
 model Berita {
-  id          String    @id @default(uuid())
-  judul       String
-  slug        String    @unique
-  konten      String    @db.LongText
-  ringkasan   String?   @db.Text
-  imageUrl    String?
-  status      String // DRAFT, PUBLISHED, ARCHIVED
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  judul           String
+  slug            String    @unique
+  konten          String    @db.LongText
+  ringkasan       String?   @db.Text
+  imageUrl        String?
+  status          String    // DRAFT, PUBLISHED, ARCHIVED
+  publishedAt     DateTime?
+  kategori        String?   @db.VarChar(50)   // Akademik, Prestasi, Kegiatan, Pengumuman, Umum
+  tags            String?   @db.Text          // JSON array: ["lomba","juara"]
+  metaDescription String?   @db.VarChar(160)  // SEO meta description
+  penulis         String?   @db.VarChar(100)  // Author name
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([status, publishedAt])
+  @@index([kategori])
 }
 
 // Singleton config untuk landing page (1 row saja).

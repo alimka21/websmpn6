@@ -2,6 +2,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import ExcelJS from 'exceljs';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
@@ -10,6 +13,65 @@ import { toTitleCase } from '../lib/format';
 
 const router = Router();
 router.use(requireAuth, requireRole(['SUPER_ADMIN']));
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Multer Configuration untuk Upload Gambar Berita
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita');
+const uploadBaseUrl = process.env.UPLOAD_BASE_URL || '';
+
+// Ensure upload directory exists
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const sanitized = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
+    const filename = `${Date.now()}-${sanitized}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Format file tidak didukung. Gunakan JPEG, PNG, WEBP, atau GIF.'));
+    }
+  }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Upload Gambar untuk Rich Text Editor
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+router.post('/upload/berita', upload.single('image'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({
+        error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi di environment variables'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'File gambar tidak ditemukan' });
+    }
+
+    const url = `${uploadBaseUrl}/uploads/berita/${req.file.filename}`;
+    res.json({ url });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/stats', async (req, res, next) => {
   try {
@@ -718,6 +780,36 @@ router.delete('/berita/:id', async (req, res, next) => {
     invalidateByPrefix('pub:berita');
     invalidateByPrefix('admin:stats');
     res.json({ success: true });
+  } catch(error) {
+    next(error);
+  }
+});
+
+// Duplikat berita
+router.post('/berita/:id/duplikat', async (req, res, next) => {
+  try {
+    const original = await prisma.berita.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!original) {
+      return res.status(404).json({ error: 'Berita tidak ditemukan' });
+    }
+
+    // Copy semua field dengan override
+    const { id, slug, createdAt, updatedAt, ...data } = original;
+    const duplicated = await prisma.berita.create({
+      data: {
+        ...data,
+        judul: `Salinan — ${original.judul}`,
+        slug: `salinan-${original.slug}-${Date.now()}`,
+        status: 'DRAFT',
+        publishedAt: null
+      }
+    });
+
+    invalidateByPrefix('pub:berita');
+    res.status(201).json(duplicated);
   } catch(error) {
     next(error);
   }

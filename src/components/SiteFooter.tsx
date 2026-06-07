@@ -126,7 +126,7 @@ export default function SiteFooter() {
         <div className="space-y-6">
           <h4 className="text-lg font-semibold text-white">Lokasi</h4>
           {cfg.mapsEmbedUrl ? (
-            <div className="rounded-2xl overflow-hidden border border-inverse-on-surface/15 grayscale hover:grayscale-0 transition-all duration-700 shadow-2xl h-48">
+            <div className="rounded-2xl overflow-hidden border border-inverse-on-surface/15 shadow-2xl h-48">
               <iframe
                 src={cfg.mapsEmbedUrl}
                 className="w-full h-full"
