@@ -343,4 +343,37 @@ router.get('/presensi/siswa', async (req, res, next) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Verifikasi kode akses presensi (publik)
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.post('/presensi/verify-akses', async (req, res, next) => {
+  try {
+    const { jenis, kode } = req.body as { jenis: string; kode: string };
+
+    if (!jenis || !kode) {
+      return res.status(400).json({ error: 'Parameter jenis dan kode wajib diisi' });
+    }
+    if (jenis !== 'guru' && jenis !== 'siswa') {
+      return res.status(400).json({ error: 'Jenis harus guru atau siswa' });
+    }
+
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+
+    const kodeTarget = jenis === 'guru' ? cfg?.kodeAksesGuru : cfg?.kodeAksesSiswa;
+
+    if (!kodeTarget) {
+      return res.status(403).json({ error: 'Kode akses belum dikonfigurasi oleh admin' });
+    }
+
+    if (kode.trim() !== kodeTarget) {
+      return res.status(403).json({ error: 'Kode akses salah' });
+    }
+
+    res.json({ valid: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

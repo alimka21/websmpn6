@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   Settings, Users, GraduationCap, Save, Trash2, Edit2, X,
   ChevronLeft, ChevronRight, Search, RefreshCw, MapPin, Clock,
-  Image as ImageIcon, Download,
+  Image as ImageIcon, Download, KeyRound, Eye, EyeOff, Shuffle,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import api from '../../lib/api';
@@ -104,6 +104,14 @@ export default function PresensiAdmin() {
   });
   const [savingCfg, setSavingCfg] = useState(false);
 
+  // ── Kode Akses state ─────────────────────────────────────────────────────
+  const [kodeGuru, setKodeGuru]           = useState('');
+  const [kodeSiswa, setKodeSiswa]         = useState('');
+  const [showKodeGuru, setShowKodeGuru]   = useState(false);
+  const [showKodeSiswa, setShowKodeSiswa] = useState(false);
+  const [savingKode, setSavingKode]       = useState(false);
+  const [loadingKode, setLoadingKode]     = useState(false);
+
   // ── Guru presensi state ──────────────────────────────────────────────────
   const [guruRows, setGuruRows]     = useState<PresensiGuruRow[]>([]);
   const [guruTotal, setGuruTotal]   = useState(0);
@@ -195,6 +203,18 @@ export default function PresensiAdmin() {
 
   useEffect(() => { if (tab === 'guru') loadGuru(1); }, [tab, loadGuru]);
   useEffect(() => { if (tab === 'siswa') loadSiswa(1); }, [tab, loadSiswa]);
+  useEffect(() => {
+    if (tab === 'pengaturan') {
+      setLoadingKode(true);
+      api.get('/api/admin/pengaturan-presensi/kode-akses')
+        .then((d: any) => {
+          setKodeGuru(d.kodeAksesGuru || '');
+          setKodeSiswa(d.kodeAksesSiswa || '');
+        })
+        .catch(() => {})
+        .finally(() => setLoadingKode(false));
+    }
+  }, [tab]);
 
   // ── Save pengaturan ──────────────────────────────────────────────────────
   const savePengaturan = async (e: React.FormEvent) => {
@@ -224,6 +244,29 @@ export default function PresensiAdmin() {
     } finally {
       setSavingCfg(false);
     }
+  };
+
+  // ── Simpan kode akses ────────────────────────────────────────────────────
+  const saveKodeAkses = async () => {
+    if (kodeGuru && kodeGuru.length !== 6) { toast.error('Kode akses guru harus 6 karakter'); return; }
+    if (kodeSiswa && kodeSiswa.length !== 6) { toast.error('Kode akses siswa harus 6 karakter'); return; }
+    setSavingKode(true);
+    try {
+      await api.put('/api/admin/pengaturan-presensi/kode-akses', {
+        kodeAksesGuru: kodeGuru || null,
+        kodeAksesSiswa: kodeSiswa || null,
+      });
+      toast.success('Kode akses berhasil disimpan');
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan kode akses');
+    } finally {
+      setSavingKode(false);
+    }
+  };
+
+  const generateKode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   };
 
   // ── Edit guru presensi ───────────────────────────────────────────────────
@@ -428,6 +471,7 @@ export default function PresensiAdmin() {
 
       {/* ── TAB: Pengaturan ── */}
       {tab === 'pengaturan' && (
+        <>
         <form onSubmit={savePengaturan} className="space-y-6 max-w-3xl">
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 space-y-6">
             <div className="flex items-center gap-3">
@@ -545,6 +589,102 @@ export default function PresensiAdmin() {
             </Button>
           </div>
         </form>
+
+        {/* ── Kode Akses Presensi ── */}
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 space-y-6 max-w-3xl mt-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <KeyRound className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-on-surface">Kode Akses Presensi</h3>
+              <p className="text-sm text-on-surface-variant">Kode 6 karakter yang wajib diisi sebelum masuk halaman presensi publik</p>
+            </div>
+          </div>
+
+          {loadingKode ? (
+            <p className="text-sm text-on-surface-variant">Memuat kode akses...</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Kode Guru */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4" /> Kode Akses Presensi Guru
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showKodeGuru ? 'text' : 'password'}
+                      value={kodeGuru}
+                      maxLength={6}
+                      onChange={e => setKodeGuru(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm font-mono tracking-widest focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none pr-10"
+                      placeholder="6 karakter"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKodeGuru(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
+                    >
+                      {showKodeGuru ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setKodeGuru(generateKode())}
+                    title="Generate kode acak"
+                    className="px-3 py-2.5 rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant transition-colors"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-on-surface-variant">Kosongkan untuk menonaktifkan proteksi presensi guru</p>
+              </div>
+
+              {/* Kode Siswa */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Kode Akses Presensi Siswa
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showKodeSiswa ? 'text' : 'password'}
+                      value={kodeSiswa}
+                      maxLength={6}
+                      onChange={e => setKodeSiswa(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm font-mono tracking-widest focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none pr-10"
+                      placeholder="6 karakter"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKodeSiswa(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
+                    >
+                      {showKodeSiswa ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setKodeSiswa(generateKode())}
+                    title="Generate kode acak"
+                    className="px-3 py-2.5 rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant transition-colors"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-on-surface-variant">Kosongkan untuk menonaktifkan proteksi presensi siswa</p>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button onClick={saveKodeAkses} disabled={savingKode} className="gap-2 px-8">
+                  {savingKode ? 'Menyimpan...' : <><Save className="w-4 h-4" /> Simpan Kode Akses</>}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+        </>
       )}
 
       {/* ── TAB: Presensi Guru ── */}

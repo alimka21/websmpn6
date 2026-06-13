@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   LogIn, ArrowRight, Users, GraduationCap, BookOpen, Building2,
   Eye, Target, CheckCircle, CalendarCheck, ShieldCheck,
   FileText, ClipboardList, MapPin, Clock, ExternalLink, Newspaper,
   Briefcase, Menu, X, Quote, Calendar, Compass, Lightbulb,
-  Home, Layers, Phone, ChevronDown,
+  Home, Layers, Phone, ChevronDown, KeyRound, Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import SiteFooter from '../components/SiteFooter';
 import api from '../lib/api';
@@ -58,7 +59,36 @@ export default function LandingPage() {
   const [activeSection, setActiveSection] = useState('beranda');
   const [scrolled, setScrolled]           = useState(false);
   const [presensiDropdown, setPresensiDropdown] = useState(false);
+  const [aksesModal, setAksesModal]             = useState<{ open: boolean; jenis: 'guru' | 'siswa' | null }>({ open: false, jenis: null });
+  const [kodeInput, setKodeInput]               = useState('');
+  const [aksesLoading, setAksesLoading]         = useState(false);
+  const kodeRef                                  = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const bukaModalAkses = (jenis: 'guru' | 'siswa') => {
+    setKodeInput('');
+    setAksesModal({ open: true, jenis });
+    setPresensiDropdown(false);
+    setTimeout(() => kodeRef.current?.focus(), 100);
+  };
+
+  const verifikasiKode = async () => {
+    if (kodeInput.length !== 6) {
+      toast.error('Kode akses harus 6 karakter');
+      return;
+    }
+    setAksesLoading(true);
+    try {
+      await api.post('/api/public/presensi/verify-akses', { jenis: aksesModal.jenis, kode: kodeInput });
+      sessionStorage.setItem(`presensi_${aksesModal.jenis}_ok`, '1');
+      setAksesModal({ open: false, jenis: null });
+      navigate(`/presensi/${aksesModal.jenis}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Kode akses salah');
+    } finally {
+      setAksesLoading(false);
+    }
+  };
   const cfg       = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
 
@@ -159,22 +189,20 @@ export default function LandingPage() {
               {presensiDropdown && (
                 <div className="absolute top-full left-0 pt-2">
                   <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[180px]">
-                    <Link
-                      to="/presensi/guru"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors"
-                      onClick={() => setPresensiDropdown(false)}
+                    <button
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors w-full text-left"
+                      onClick={() => bukaModalAkses('guru')}
                     >
                       <GraduationCap className="w-4 h-4" />
                       Presensi Guru
-                    </Link>
-                    <Link
-                      to="/presensi/siswa"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
-                      onClick={() => setPresensiDropdown(false)}
+                    </button>
+                    <button
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 w-full text-left"
+                      onClick={() => bukaModalAkses('siswa')}
                     >
                       <Users className="w-4 h-4" />
                       Presensi Siswa
-                    </Link>
+                    </button>
                   </div>
                 </div>
               )}
@@ -224,22 +252,20 @@ export default function LandingPage() {
             {/* Presensi Dropdown Mobile */}
             <div className="border-t border-outline-variant/30 pt-2 mt-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant px-3 mb-1">Presensi</p>
-              <Link
-                to="/presensi/guru"
-                onClick={() => setMobileOpen(false)}
+              <button
+                onClick={() => { setMobileOpen(false); bukaModalAkses('guru'); }}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
                 <GraduationCap className="w-4 h-4 shrink-0" />
                 Presensi Guru
-              </Link>
-              <Link
-                to="/presensi/siswa"
-                onClick={() => setMobileOpen(false)}
+              </button>
+              <button
+                onClick={() => { setMobileOpen(false); bukaModalAkses('siswa'); }}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
                 <Users className="w-4 h-4 shrink-0" />
                 Presensi Siswa
-              </Link>
+              </button>
             </div>
 
             <Button onClick={() => navigate('/login')} className="w-full mt-3 gap-2">
@@ -664,6 +690,69 @@ export default function LandingPage() {
       </section>
 
       <SiteFooter />
+
+      {/* ══════════════════════════════════════════════════
+          MODAL KODE AKSES PRESENSI
+      ══════════════════════════════════════════════════ */}
+      {aksesModal.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-on-surface">Kode Akses Presensi</h2>
+                <p className="text-xs text-on-surface-variant">
+                  {aksesModal.jenis === 'guru' ? 'Presensi Guru' : 'Presensi Siswa'}
+                </p>
+              </div>
+              <button
+                className="ml-auto p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant"
+                onClick={() => setAksesModal({ open: false, jenis: null })}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-on-surface">
+                Masukkan kode akses 6 karakter
+              </label>
+              <input
+                ref={kodeRef}
+                type="text"
+                maxLength={6}
+                value={kodeInput}
+                onChange={e => setKodeInput(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && verifikasiKode()}
+                placeholder="Contoh: ABC123"
+                className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-on-surface text-center text-xl font-mono tracking-[0.4em] placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAksesModal({ open: false, jenis: null })}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={verifikasiKode}
+                disabled={aksesLoading || kodeInput.length !== 6}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {aksesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {aksesLoading ? 'Memverifikasi...' : 'Masuk'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

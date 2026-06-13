@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { GraduationCap, LogIn, LogOut, Home, Camera, MapPin, CheckCircle, X, Clock, Users, AlertTriangle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -32,6 +32,13 @@ interface RecentActivity {
 export default function PresensiGuruKiosk() {
   const cfg = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('presensi_guru_ok')) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [guruList, setGuruList] = useState<Guru[]>([]);

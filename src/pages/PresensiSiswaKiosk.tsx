@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle, Home, User, Clock, GraduationCap, IdCard, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
 
@@ -41,6 +41,13 @@ interface SiswaBelumHadir {
 export default function PresensiSiswaKiosk() {
   const cfg = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('presensi_siswa_ok')) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [nis, setNis] = useState('');

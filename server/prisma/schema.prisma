@@ -294,6 +294,9 @@ model PengaturanPresensi {
   jamMasukDefault   String   @default("07:00") // format "HH:mm"
   jamPulangDefault  String   @default("15:30")
 
+  kodeAksesGuru     String?  // Kode akses 6 karakter untuk masuk halaman presensi guru
+  kodeAksesSiswa    String?  // Kode akses 6 karakter untuk masuk halaman presensi siswa
+
   updatedAt         DateTime @updatedAt
 }
 

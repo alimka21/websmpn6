@@ -1507,4 +1507,55 @@ router.delete('/guru/:guruId/kelas/:kelasId', async (req, res, next) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Pengaturan Presensi — Kode Akses
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/pengaturan-presensi/kode-akses', async (req, res, next) => {
+  try {
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    res.json({
+      kodeAksesGuru: cfg?.kodeAksesGuru || null,
+      kodeAksesSiswa: cfg?.kodeAksesSiswa || null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/pengaturan-presensi/kode-akses', async (req, res, next) => {
+  try {
+    const { kodeAksesGuru, kodeAksesSiswa } = req.body as {
+      kodeAksesGuru?: string;
+      kodeAksesSiswa?: string;
+    };
+
+    const data: Record<string, string | null> = {};
+
+    if (kodeAksesGuru !== undefined) {
+      if (kodeAksesGuru !== null && kodeAksesGuru !== '' && kodeAksesGuru.length !== 6) {
+        return res.status(400).json({ error: 'Kode akses guru harus tepat 6 karakter' });
+      }
+      data.kodeAksesGuru = kodeAksesGuru || null;
+    }
+    if (kodeAksesSiswa !== undefined) {
+      if (kodeAksesSiswa !== null && kodeAksesSiswa !== '' && kodeAksesSiswa.length !== 6) {
+        return res.status(400).json({ error: 'Kode akses siswa harus tepat 6 karakter' });
+      }
+      data.kodeAksesSiswa = kodeAksesSiswa || null;
+    }
+
+    const existing = await prisma.pengaturanPresensi.findFirst();
+    if (existing) {
+      await prisma.pengaturanPresensi.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.pengaturanPresensi.create({ data: data as any });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
