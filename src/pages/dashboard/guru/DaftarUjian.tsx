@@ -56,6 +56,45 @@ export default function DaftarUjian() {
   // Duplicate
   const [isDuplicating, setIsDuplicating] = useState<string | null>(null);
 
+  // Dashboard toggle state
+  const [dashboardModal, setDashboardModal] = useState<{ open: boolean; ujian: any } | null>(null);
+  const [dashJenis, setDashJenis]           = useState('UH');
+  const [dashMateri, setDashMateri]         = useState('');
+  const [dashSaving, setDashSaving]         = useState(false);
+
+  const JENIS_NILAI_OPTIONS = [
+    { value: 'UH', label: 'Ulangan Harian' },
+    { value: 'UTS', label: 'UTS' },
+    { value: 'UAS', label: 'UAS' },
+    { value: 'PR', label: 'PR / Tugas Rumah' },
+    { value: 'PRAKTEK', label: 'Praktek' },
+    { value: 'LAINNYA', label: 'Lainnya' },
+  ];
+
+  const openDashboardModal = (ujian: any) => {
+    setDashJenis(ujian.jenisNilai || 'UH');
+    setDashMateri(ujian.materiNilai || '');
+    setDashboardModal({ open: true, ujian });
+  };
+
+  const handleDashboardToggle = async (aktif: boolean) => {
+    if (!dashboardModal) return;
+    if (aktif && !dashJenis) { toast.error('Jenis nilai wajib dipilih'); return; }
+    setDashSaving(true);
+    try {
+      await api.patch(`/api/guru/ujian/${dashboardModal.ujian.id}/dashboard-toggle`, {
+        masukkanKeDashboard: aktif,
+        jenisNilai: aktif ? dashJenis : undefined,
+        materiNilai: aktif ? dashMateri : undefined,
+      });
+      toast.success(aktif ? 'Ujian ditambahkan ke Dashboard Tugas' : 'Ujian dikeluarkan dari Dashboard Tugas');
+      setDashboardModal(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Gagal mengubah pengaturan dashboard');
+    } finally { setDashSaving(false); }
+  };
+
   // Mapel list untuk edit modal
   const [mapelList, setMapelList] = useState<string[]>([]);
 
@@ -383,6 +422,17 @@ export default function DaftarUjian() {
                                   <Eye className="w-3.5 h-3.5 text-secondary" /> Hasil
                                 </Button>
                               )}
+                              {status === 'SELESAI' && (
+                                <Button
+                                  variant="outline" size="sm"
+                                  onClick={() => openDashboardModal(ujian)}
+                                  className={`h-8 px-2.5 gap-1 text-xs ${ujian.masukkanKeDashboard ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-white'}`}
+                                  title="Masukkan ke Dashboard Tugas"
+                                >
+                                  <BookOpen className="w-3.5 h-3.5" />
+                                  {ujian.masukkanKeDashboard ? 'Di Dashboard' : 'Dashboard'}
+                                </Button>
+                              )}
                               {ujian.adaUraian && (status === 'SELESAI' || status === 'BERLANGSUNG') && (
                                 <Button
                                   variant="outline" size="sm"
@@ -631,6 +681,63 @@ export default function DaftarUjian() {
               >
                 {isDeleting ? 'Menghapus...' : 'Ya, Hapus Ujian'}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Toggle Dashboard Tugas ── */}
+      {dashboardModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl p-6 space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-on-surface">Dashboard Tugas</h3>
+                <p className="text-xs text-on-surface-variant mt-1">Ujian: <strong>{dashboardModal.ujian.judul}</strong></p>
+              </div>
+            </div>
+
+            <p className="text-sm text-on-surface-variant">
+              {dashboardModal.ujian.masukkanKeDashboard
+                ? 'Ujian ini sedang ditampilkan di Dashboard Tugas publik. Anda bisa mengubah info atau menonaktifkannya.'
+                : 'Aktifkan agar nilai ujian ini tampil di Dashboard Tugas publik. Isi jenis dan materi agar mudah diidentifikasi.'}
+            </p>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-on-surface-variant">Jenis Nilai <span className="text-error">*</span></label>
+                <select value={dashJenis} onChange={e => setDashJenis(e.target.value)}
+                  className="w-full px-3 py-2 border border-outline-variant rounded-xl text-sm focus:border-primary outline-none bg-surface appearance-none">
+                  {JENIS_NILAI_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-on-surface-variant">Materi / Bab (opsional)</label>
+                <input type="text" value={dashMateri} onChange={e => setDashMateri(e.target.value)}
+                  placeholder="Contoh: Bab 5 — Reproduksi"
+                  className="w-full px-3 py-2 border border-outline-variant rounded-xl text-sm focus:border-primary outline-none bg-surface" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 flex-wrap">
+              <button onClick={() => setDashboardModal(null)}
+                className="flex-1 px-4 py-2.5 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors">
+                Batal
+              </button>
+              {dashboardModal.ujian.masukkanKeDashboard && (
+                <button onClick={() => handleDashboardToggle(false)} disabled={dashSaving}
+                  className="px-4 py-2.5 border border-error/30 text-error rounded-xl text-sm font-semibold hover:bg-error/5 disabled:opacity-50 transition-colors">
+                  Nonaktifkan
+                </button>
+              )}
+              <button onClick={() => handleDashboardToggle(true)} disabled={dashSaving}
+                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {dashSaving && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                {dashboardModal.ujian.masukkanKeDashboard ? 'Simpan Perubahan' : 'Aktifkan'}
+              </button>
             </div>
           </div>
         </div>

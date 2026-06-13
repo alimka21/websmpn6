@@ -111,17 +111,56 @@ async function request<T = any>(
   return data;
 }
 
+async function requestBlob(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 60_000
+): Promise<Blob> {
+  let token = null;
+  if (typeof window !== "undefined") {
+    token = localStorage.getItem("token");
+    if (!token) {
+      const authStorage = localStorage.getItem("auth-storage");
+      if (authStorage) {
+        try { const parsed = JSON.parse(authStorage); token = parsed?.state?.token; } catch(e) {}
+      }
+    }
+  }
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_BASE}${url}`, { ...options, headers, credentials: "include", signal: controller.signal });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new ApiError(text || `Request failed (${res.status})`, res.status);
+    }
+    return await res.blob();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export const api = {
-  get:    <T = any>(url: string, timeoutMs?: number) =>
+  get:      <T = any>(url: string, timeoutMs?: number) =>
     request<T>(url, { method: "GET" }, timeoutMs),
-  post:   <T = any>(url: string, body?: any, timeoutMs?: number) =>
+  post:     <T = any>(url: string, body?: any, timeoutMs?: number) =>
     request<T>(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }, timeoutMs),
-  put:    <T = any>(url: string, body?: any, timeoutMs?: number) =>
+  put:      <T = any>(url: string, body?: any, timeoutMs?: number) =>
     request<T>(url, { method: "PUT", body: body ? JSON.stringify(body) : undefined }, timeoutMs),
-  patch:  <T = any>(url: string, body?: any, timeoutMs?: number) =>
+  patch:    <T = any>(url: string, body?: any, timeoutMs?: number) =>
     request<T>(url, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }, timeoutMs),
-  delete: <T = any>(url: string, timeoutMs?: number) =>
+  delete:   <T = any>(url: string, timeoutMs?: number) =>
     request<T>(url, { method: "DELETE" }, timeoutMs),
+  getBlob:  (url: string, timeoutMs?: number) =>
+    requestBlob(url, { method: "GET" }, timeoutMs),
+  postBlob: (url: string, body?: any, timeoutMs?: number) =>
+    requestBlob(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }, timeoutMs),
 };
 
 export default api;

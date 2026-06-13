@@ -16,6 +16,9 @@
 | REQ-004 | [alumni.md](requirements/REQ-004-alumni.md) | Alumni Tracer System | ✅ Implemented |
 | REQ-005 | [cms.md](requirements/REQ-005-cms.md) | CMS (Berita, Agenda, Dokumen, Site Config) | ✅ Implemented |
 | REQ-006 | [deploy.md](requirements/REQ-006-deploy.md) | Deployment & Production (Hostinger, MySQL) | ✅ Implemented |
+| REQ-007 | [dashboard-kehadiran.md](requirements/REQ-007-dashboard-kehadiran.md) | Dashboard Kehadiran Siswa (publik, rekap hadir/sakit/izin/alfa) | 📝 Planned |
+| REQ-008 | [dashboard-potensi.md](requirements/REQ-008-dashboard-potensi.md) | Dashboard Potensi (kebaikan & pelanggaran siswa, form lapor, export DOCX) | 📝 Planned |
+| REQ-009 | [dashboard-tugas.md](requirements/REQ-009-dashboard-tugas.md) | Dashboard Tugas & Nilai (ujian online + input tugas manual guru) | 📝 Planned |
 
 ---
 
@@ -91,8 +94,11 @@
 | 2026-06-06 | Fix cache busting for lazy-loaded modules | ISS-003 |
 | 2026-06-07 | Remove Statistik menu from admin sidebar | REQ-005 |
 | 2026-06-07 | Remove grayscale hover effect on Google Maps | REQ-005 |
+| 2026-06-14 | Tambah REQ-007 Dashboard Kehadiran | REQ-007 |
+| 2026-06-14 | Tambah REQ-008 Dashboard Potensi | REQ-008 |
+| 2026-06-14 | Tambah REQ-009 Dashboard Tugas & Nilai | REQ-009 |
 
 ---
 
-**Last Updated:** 2026-06-07  
+**Last Updated:** 2026-06-14  
 **Maintainer:** Claude Code + User (alimka)

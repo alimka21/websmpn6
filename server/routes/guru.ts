@@ -1329,4 +1329,332 @@ router.get('/ujian/:id/export', async (req, res, next) => {
 // Endpoint presensi lama dihapus — digantikan oleh sistem presensi baru
 // (lihat server/routes/presensi.ts)
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-007: Input Absensi Siswa (Sakit/Izin/Alfa) oleh Guru
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/guru/absensi?tanggal=YYYY-MM-DD&kelasId=xxx
+// Kembalikan daftar siswa di kelas + status kiosk + status absensi manual
+router.get('/absensi', async (req, res, next) => {
+  try {
+    const scope = await resolveScope(req);
+    const { tanggal, kelasId } = req.query as Record<string, string>;
+
+    if (!kelasId) return res.status(400).json({ error: 'kelasId wajib diisi' });
+
+    // Guru hanya bisa akses kelas yang diajarnya; admin bisa semua
+    if (!scope.isAdmin && !scope.teachingKelasIds.includes(kelasId)) {
+      return res.status(403).json({ error: 'Anda tidak memiliki akses ke kelas ini' });
+    }
+
+    const tgl = tanggal ? new Date(tanggal) : new Date();
+    const start = new Date(tgl); start.setHours(0, 0, 0, 0);
+    const end   = new Date(tgl); end.setDate(end.getDate() + 1); end.setHours(0, 0, 0, 0);
+
+    const siswas = await prisma.siswa.findMany({
+      where: { kelasId },
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+      orderBy: { nama: 'asc' },
+    });
+
+    const siswaIds = siswas.map(s => s.id);
+
+    const [presensiList, absensiList] = await Promise.all([
+      prisma.presensiSiswa.findMany({
+        where: { siswaId: { in: siswaIds }, tanggal: { gte: start, lt: end } },
+        select: { siswaId: true, waktuDatang: true },
+      }),
+      prisma.absensiSiswa.findMany({
+        where: { siswaId: { in: siswaIds }, tanggal: { gte: start, lt: end } },
+        select: { id: true, siswaId: true, status: true, keterangan: true },
+      }),
+    ]);
+
+    const hadirMap = new Map(presensiList.map(p => [p.siswaId, p]));
+    const absenMap = new Map(absensiList.map(a => [a.siswaId, a]));
+
+    const result = siswas.map(s => {
+      const kiosk   = hadirMap.get(s.id);
+      const absensi = absenMap.get(s.id);
+      return {
+        siswaId: s.id,
+        nama: s.nama,
+        nis: s.nis,
+        kelas: s.kelas.nama,
+        statusKiosk: kiosk ? { hadir: true, waktu: kiosk.waktuDatang } : null,
+        absensiId: absensi?.id || null,
+        statusManual: absensi?.status || null,
+        keterangan: absensi?.keterangan || null,
+      };
+    });
+
+    res.json({ tanggal: tgl.toISOString().slice(0, 10), kelasId, siswaList: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/guru/absensi
+// Batch upsert absensi; entri dengan status null/HADIR akan dihapus (siswa hadir = tidak perlu record)
+router.post('/absensi', async (req, res, next) => {
+  try {
+    const scope = await resolveScope(req);
+    const { tanggal, kelasId, entries } = req.body as {
+      tanggal: string;
+      kelasId: string;
+      entries: { siswaId: string; status: string | null; keterangan?: string }[];
+    };
+
+    if (!tanggal || !kelasId || !Array.isArray(entries)) {
+      return res.status(400).json({ error: 'tanggal, kelasId, dan entries wajib diisi' });
+    }
+
+    if (!scope.isAdmin && !scope.teachingKelasIds.includes(kelasId)) {
+      return res.status(403).json({ error: 'Anda tidak memiliki akses ke kelas ini' });
+    }
+
+    const tgl = new Date(tanggal); tgl.setHours(0, 0, 0, 0);
+    const guruId = scope.guruId;
+
+    const validStatuses = ['SAKIT', 'IZIN', 'ALFA'];
+    let saved = 0;
+    let deleted = 0;
+
+    await prisma.$transaction(async (tx) => {
+      for (const entry of entries) {
+        // Jika status null atau 'HADIR', hapus record absensi jika ada
+        if (!entry.status || entry.status === 'HADIR') {
+          const del = await tx.absensiSiswa.deleteMany({
+            where: { siswaId: entry.siswaId, tanggal: tgl },
+          });
+          deleted += del.count;
+          continue;
+        }
+
+        if (!validStatuses.includes(entry.status)) continue;
+
+        await tx.absensiSiswa.upsert({
+          where: { siswaId_tanggal: { siswaId: entry.siswaId, tanggal: tgl } },
+          create: {
+            siswaId: entry.siswaId,
+            guruId,
+            tanggal: tgl,
+            status: entry.status,
+            keterangan: entry.keterangan || null,
+          },
+          update: {
+            status: entry.status,
+            keterangan: entry.keterangan || null,
+            guruId,
+          },
+        });
+        saved++;
+      }
+    });
+
+    res.json({ saved, deleted });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-009: Toggle Ujian ke Dashboard Tugas
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.patch('/ujian/:id/dashboard-toggle', async (req, res, next) => {
+  try {
+    const { masukkanKeDashboard, jenisNilai, materiNilai } = req.body as {
+      masukkanKeDashboard: boolean; jenisNilai?: string; materiNilai?: string;
+    };
+    const ujian = await prisma.ujian.findUnique({ where: { id: req.params.id } });
+    if (!ujian) return res.status(404).json({ error: 'Ujian tidak ditemukan' });
+    const scope = await resolveScope(req);
+    if (scope.guruId && ujian.guruId !== scope.guruId) {
+      return res.status(403).json({ error: 'Bukan ujian Anda' });
+    }
+    if (masukkanKeDashboard && !jenisNilai) {
+      return res.status(400).json({ error: 'Jenis nilai wajib diisi saat mengaktifkan dashboard' });
+    }
+    const updated = await prisma.ujian.update({
+      where: { id: req.params.id },
+      data: {
+        masukkanKeDashboard: !!masukkanKeDashboard,
+        jenisNilai: masukkanKeDashboard ? (jenisNilai || null) : null,
+        materiNilai: masukkanKeDashboard ? (materiNilai || null) : null,
+      },
+    });
+    invalidateByPrefix('pub:dashboard:tugas');
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-009: Kolom Nilai Manual (Guru)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/guru/kolom-nilai — list kolom nilai milik guru
+router.get('/kolom-nilai', async (req, res, next) => {
+  try {
+    const scope = await resolveScope(req);
+    const list = await prisma.kolomNilai.findMany({
+      where: scope.guruId ? { guruId: scope.guruId } : {},
+      include: {
+        kelasTarget: { include: { kelas: { select: { id: true, nama: true } } } },
+        _count: { select: { nilai: true } },
+      },
+      orderBy: { tanggal: 'desc' },
+    });
+    res.json(list);
+  } catch (err) { next(err); }
+});
+
+// POST /api/guru/kolom-nilai — tambah kolom nilai baru
+router.post('/kolom-nilai', async (req, res, next) => {
+  try {
+    const { judul, jenis, materi, mataPelajaran, tanggal, kelasIds } = req.body as {
+      judul: string; jenis: string; materi: string; mataPelajaran: string; tanggal: string; kelasIds: string[];
+    };
+    if (!judul?.trim()) return res.status(400).json({ error: 'Judul wajib diisi' });
+    if (!jenis)         return res.status(400).json({ error: 'Jenis tugas wajib dipilih' });
+    if (!materi?.trim()) return res.status(400).json({ error: 'Materi/bab wajib diisi' });
+    if (!mataPelajaran?.trim()) return res.status(400).json({ error: 'Mata pelajaran wajib diisi' });
+    if (!Array.isArray(kelasIds) || kelasIds.length === 0) return res.status(400).json({ error: 'Pilih minimal 1 kelas' });
+
+    const scope  = await resolveScope(req);
+    const guruId = scope.guruId || (req as any).user.profileId;
+
+    const created = await prisma.kolomNilai.create({
+      data: {
+        judul: judul.trim(),
+        jenis,
+        materi: materi.trim(),
+        mataPelajaran: mataPelajaran.trim(),
+        tanggal: tanggal ? new Date(tanggal) : new Date(),
+        guruId,
+        kelasTarget: {
+          create: kelasIds.map((kelasId: string) => ({ kelasId })),
+        },
+      },
+      include: { kelasTarget: { include: { kelas: { select: { id: true, nama: true } } } } },
+    });
+    invalidateByPrefix('pub:dashboard:tugas');
+    res.status(201).json(created);
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/guru/kolom-nilai/:id — edit kolom nilai
+router.patch('/kolom-nilai/:id', async (req, res, next) => {
+  try {
+    const kolom = await prisma.kolomNilai.findUnique({ where: { id: req.params.id } });
+    if (!kolom) return res.status(404).json({ error: 'Kolom nilai tidak ditemukan' });
+    const scope = await resolveScope(req);
+    if (scope.guruId && kolom.guruId !== scope.guruId) return res.status(403).json({ error: 'Bukan kolom Anda' });
+
+    const { judul, jenis, materi, mataPelajaran, tanggal, kelasIds } = req.body as {
+      judul?: string; jenis?: string; materi?: string; mataPelajaran?: string; tanggal?: string; kelasIds?: string[];
+    };
+
+    const updated = await prisma.kolomNilai.update({
+      where: { id: req.params.id },
+      data: {
+        ...(judul          ? { judul: judul.trim() }               : {}),
+        ...(jenis          ? { jenis }                             : {}),
+        ...(materi         ? { materi: materi.trim() }             : {}),
+        ...(mataPelajaran  ? { mataPelajaran: mataPelajaran.trim() } : {}),
+        ...(tanggal        ? { tanggal: new Date(tanggal) }        : {}),
+        ...(Array.isArray(kelasIds) ? {
+          kelasTarget: {
+            deleteMany: {},
+            create: kelasIds.map((kelasId: string) => ({ kelasId })),
+          },
+        } : {}),
+      },
+      include: { kelasTarget: { include: { kelas: { select: { id: true, nama: true } } } } },
+    });
+    invalidateByPrefix('pub:dashboard:tugas');
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/guru/kolom-nilai/:id — hapus kolom nilai
+router.delete('/kolom-nilai/:id', async (req, res, next) => {
+  try {
+    const kolom = await prisma.kolomNilai.findUnique({ where: { id: req.params.id } });
+    if (!kolom) return res.status(404).json({ error: 'Kolom nilai tidak ditemukan' });
+    const scope = await resolveScope(req);
+    if (scope.guruId && kolom.guruId !== scope.guruId) return res.status(403).json({ error: 'Bukan kolom Anda' });
+    await prisma.kolomNilai.delete({ where: { id: req.params.id } });
+    invalidateByPrefix('pub:dashboard:tugas');
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// GET /api/guru/kolom-nilai/:id/nilai — list siswa + nilai untuk kolom ini
+router.get('/kolom-nilai/:id/nilai', async (req, res, next) => {
+  try {
+    const kolom = await prisma.kolomNilai.findUnique({
+      where: { id: req.params.id },
+      include: { kelasTarget: true },
+    });
+    if (!kolom) return res.status(404).json({ error: 'Kolom nilai tidak ditemukan' });
+    const scope = await resolveScope(req);
+    if (scope.guruId && kolom.guruId !== scope.guruId) return res.status(403).json({ error: 'Bukan kolom Anda' });
+
+    const kelasIds = kolom.kelasTarget.map((k: any) => k.kelasId);
+    const siswaList = await prisma.siswa.findMany({
+      where: { kelasId: { in: kelasIds } },
+      include: { kelas: { select: { id: true, nama: true } } },
+      orderBy: [{ kelas: { nama: 'asc' } }, { nama: 'asc' }],
+    });
+
+    const nilaiList = await prisma.nilaiSiswa.findMany({
+      where: { kolomNilaiId: req.params.id },
+    });
+    const nilaiMap = new Map(nilaiList.map((n: any) => [n.siswaId, n]));
+
+    const rows = siswaList.map((siswa: any) => ({
+      siswaId: siswa.id,
+      nama: siswa.nama,
+      nis: siswa.nis,
+      kelas: siswa.kelas.nama,
+      nilai: (nilaiMap.get(siswa.id) as any)?.nilai ?? null,
+      keterangan: (nilaiMap.get(siswa.id) as any)?.keterangan ?? null,
+      nilaiId: (nilaiMap.get(siswa.id) as any)?.id ?? null,
+    }));
+
+    res.json({ kolom, rows });
+  } catch (err) { next(err); }
+});
+
+// POST /api/guru/kolom-nilai/:id/nilai — batch upsert nilai
+router.post('/kolom-nilai/:id/nilai', async (req, res, next) => {
+  try {
+    const kolom = await prisma.kolomNilai.findUnique({ where: { id: req.params.id } });
+    if (!kolom) return res.status(404).json({ error: 'Kolom nilai tidak ditemukan' });
+    const scope = await resolveScope(req);
+    if (scope.guruId && kolom.guruId !== scope.guruId) return res.status(403).json({ error: 'Bukan kolom Anda' });
+
+    const { entries } = req.body as {
+      entries: { siswaId: string; nilai: number | null; keterangan?: string }[];
+    };
+    if (!Array.isArray(entries)) return res.status(400).json({ error: 'entries harus berupa array' });
+
+    const ops = entries.map(e => {
+      if (e.nilai !== null && (isNaN(e.nilai) || e.nilai < 0 || e.nilai > 100)) {
+        throw new Error(`Nilai tidak valid untuk siswa ${e.siswaId}`);
+      }
+      return prisma.nilaiSiswa.upsert({
+        where: { kolomNilaiId_siswaId: { kolomNilaiId: req.params.id, siswaId: e.siswaId } },
+        create: { kolomNilaiId: req.params.id, siswaId: e.siswaId, nilai: e.nilai, keterangan: e.keterangan || null },
+        update: { nilai: e.nilai, keterangan: e.keterangan ?? undefined },
+      });
+    });
+
+    const result = await prisma.$transaction(ops);
+    invalidateByPrefix('pub:dashboard:tugas');
+    res.json({ saved: result.length });
+  } catch (err) { next(err); }
+});
+
 export default router;

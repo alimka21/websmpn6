@@ -410,9 +410,12 @@ export default function CmsManage() {
                 <Select
                   value={formData.kategori}
                   onChange={(e) => setFormData({ ...formData, kategori: e.target.value })}
-                  options={KATEGORI_OPTIONS}
                   className="w-full"
-                />
+                >
+                  {KATEGORI_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
               </div>
 
               <div className="space-y-2">

@@ -1508,6 +1508,468 @@ router.delete('/guru/:guruId/kelas/:kelasId', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// REQ-007: Manajemen Absensi Siswa (Admin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/admin/absensi — list absensi dengan filter
+router.get('/absensi', async (req, res, next) => {
+  try {
+    const { dari, sampai, kelasId, page: pageStr, limit: limitStr } = req.query as Record<string, string>;
+    const page  = Math.max(1, Number(pageStr)  || 1);
+    const limit = Math.min(100, Number(limitStr) || 50);
+
+    const tanggalWhere: any = {};
+    if (dari) {
+      const start = new Date(dari); start.setHours(0, 0, 0, 0);
+      tanggalWhere.gte = start;
+    }
+    if (sampai) {
+      const end = new Date(sampai); end.setDate(end.getDate() + 1); end.setHours(0, 0, 0, 0);
+      tanggalWhere.lt = end;
+    }
+
+    const where: any = {
+      ...(Object.keys(tanggalWhere).length ? { tanggal: tanggalWhere } : {}),
+      ...(kelasId ? { siswa: { kelasId } } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.absensiSiswa.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ tanggal: 'desc' }, { siswa: { nama: 'asc' } }],
+        include: {
+          siswa: { select: { nama: true, nis: true, kelas: { select: { nama: true } } } },
+          guru:  { select: { nama: true } },
+        },
+      }),
+      prisma.absensiSiswa.count({ where }),
+    ]);
+
+    res.json({
+      data: data.map(a => ({
+        id: a.id,
+        tanggal: a.tanggal.toISOString().slice(0, 10),
+        status: a.status,
+        keterangan: a.keterangan,
+        siswa: { nama: a.siswa.nama, nis: a.siswa.nis, kelas: a.siswa.kelas.nama },
+        guru: a.guru ? { nama: a.guru.nama } : null,
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/admin/absensi/:id — edit satu record
+router.put('/absensi/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, keterangan } = req.body as { status?: string; keterangan?: string };
+
+    const validStatuses = ['SAKIT', 'IZIN', 'ALFA'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Status harus SAKIT, IZIN, atau ALFA' });
+    }
+
+    const updated = await prisma.absensiSiswa.update({
+      where: { id },
+      data: {
+        ...(status ? { status } : {}),
+        ...(keterangan !== undefined ? { keterangan: keterangan || null } : {}),
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/absensi/:id — hapus satu record
+router.delete('/absensi/:id', async (req, res, next) => {
+  try {
+    await prisma.absensiSiswa.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/absensi/export — Export Excel
+router.get('/absensi/export', async (req, res, next) => {
+  try {
+    const { dari, sampai, kelasId } = req.query as Record<string, string>;
+
+    const tanggalWhere: any = {};
+    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tanggalWhere.gte = d; }
+    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tanggalWhere.lt = d; }
+
+    // Ambil data hadir dan absensi
+    const siswaWhere: any = kelasId ? { kelasId } : {};
+    const siswas = await prisma.siswa.findMany({
+      where: siswaWhere,
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+      orderBy: { nama: 'asc' },
+    });
+
+    const siswaIds = siswas.map(s => s.id);
+    const tFilter = Object.keys(tanggalWhere).length ? { tanggal: tanggalWhere } : {};
+
+    const [presensiList, absensiList] = await Promise.all([
+      prisma.presensiSiswa.findMany({ where: { siswaId: { in: siswaIds }, ...tFilter }, select: { siswaId: true } }),
+      prisma.absensiSiswa.findMany({  where: { siswaId: { in: siswaIds }, ...tFilter }, select: { siswaId: true, status: true } }),
+    ]);
+
+    const hadirMap: Record<string, number> = {};
+    for (const p of presensiList) hadirMap[p.siswaId] = (hadirMap[p.siswaId] || 0) + 1;
+
+    const absenMap: Record<string, { sakit: number; izin: number; alfa: number }> = {};
+    for (const a of absensiList) {
+      if (!absenMap[a.siswaId]) absenMap[a.siswaId] = { sakit: 0, izin: 0, alfa: 0 };
+      if (a.status === 'SAKIT') absenMap[a.siswaId].sakit++;
+      else if (a.status === 'IZIN') absenMap[a.siswaId].izin++;
+      else if (a.status === 'ALFA') absenMap[a.siswaId].alfa++;
+    }
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Rekap Kehadiran');
+
+    ws.columns = [
+      { header: 'No',          key: 'no',     width: 5  },
+      { header: 'Nama Siswa',  key: 'nama',   width: 30 },
+      { header: 'NIS',         key: 'nis',    width: 15 },
+      { header: 'Kelas',       key: 'kelas',  width: 15 },
+      { header: 'Hadir',       key: 'hadir',  width: 8  },
+      { header: 'Sakit',       key: 'sakit',  width: 8  },
+      { header: 'Izin',        key: 'izin',   width: 8  },
+      { header: 'Alfa',        key: 'alfa',   width: 8  },
+      { header: 'Total Hari',  key: 'total',  width: 12 },
+      { header: '% Kehadiran', key: 'persen', width: 14 },
+    ];
+
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
+
+    siswas.forEach((s, idx) => {
+      const hadir = hadirMap[s.id] || 0;
+      const { sakit = 0, izin = 0, alfa = 0 } = absenMap[s.id] || {};
+      const total = hadir + sakit + izin + alfa;
+      const persen = total > 0 ? `${Math.round((hadir / total) * 1000) / 10}%` : '—';
+      ws.addRow({ no: idx + 1, nama: s.nama, nis: s.nis, kelas: s.kelas.nama, hadir, sakit, izin, alfa, total, persen });
+    });
+
+    const periode = dari && sampai ? `${dari}_sd_${sampai}` : 'semua';
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="rekap-kehadiran-${periode}.xlsx"`);
+    await wb.xlsx.write(res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-008: Potensi — CRUD Jenis & Rekap Laporan
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Jenis Kebaikan ───────────────────────────────────────────────────────────
+
+router.get('/jenis-kebaikan', async (_req, res, next) => {
+  try {
+    const data = await prisma.jenisKebaikan.findMany({ orderBy: { nama: 'asc' } });
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.post('/jenis-kebaikan', async (req, res, next) => {
+  try {
+    const { nama, poin } = req.body as { nama: string; poin: number };
+    if (!nama?.trim() || !poin || poin < 1) return res.status(400).json({ error: 'nama dan poin (min 1) wajib diisi' });
+    const data = await prisma.jenisKebaikan.create({ data: { nama: nama.trim(), poin: Number(poin) } });
+    invalidateByPrefix('pub:jenis-kebaikan');
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.put('/jenis-kebaikan/:id', async (req, res, next) => {
+  try {
+    const { nama, poin, isActive } = req.body as { nama?: string; poin?: number; isActive?: boolean };
+    const data = await prisma.jenisKebaikan.update({
+      where: { id: req.params.id },
+      data: {
+        ...(nama !== undefined ? { nama: nama.trim() } : {}),
+        ...(poin !== undefined ? { poin: Number(poin) } : {}),
+        ...(isActive !== undefined ? { isActive } : {}),
+      },
+    });
+    invalidateByPrefix('pub:jenis-kebaikan');
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.delete('/jenis-kebaikan/:id', async (req, res, next) => {
+  try {
+    await prisma.jenisKebaikan.update({ where: { id: req.params.id }, data: { isActive: false } });
+    invalidateByPrefix('pub:jenis-kebaikan');
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── Jenis Pelanggaran ─────────────────────────────────────────────────────────
+
+router.get('/jenis-pelanggaran', async (_req, res, next) => {
+  try {
+    const data = await prisma.jenisPelanggaran.findMany({ orderBy: { nama: 'asc' } });
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.post('/jenis-pelanggaran', async (req, res, next) => {
+  try {
+    const { nama, poin } = req.body as { nama: string; poin: number };
+    if (!nama?.trim() || !poin || poin < 1) return res.status(400).json({ error: 'nama dan poin (min 1) wajib diisi' });
+    const data = await prisma.jenisPelanggaran.create({ data: { nama: nama.trim(), poin: Number(poin) } });
+    invalidateByPrefix('pub:jenis-pelanggaran');
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.put('/jenis-pelanggaran/:id', async (req, res, next) => {
+  try {
+    const { nama, poin, isActive } = req.body as { nama?: string; poin?: number; isActive?: boolean };
+    const data = await prisma.jenisPelanggaran.update({
+      where: { id: req.params.id },
+      data: {
+        ...(nama !== undefined ? { nama: nama.trim() } : {}),
+        ...(poin !== undefined ? { poin: Number(poin) } : {}),
+        ...(isActive !== undefined ? { isActive } : {}),
+      },
+    });
+    invalidateByPrefix('pub:jenis-pelanggaran');
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+router.delete('/jenis-pelanggaran/:id', async (req, res, next) => {
+  try {
+    await prisma.jenisPelanggaran.update({ where: { id: req.params.id }, data: { isActive: false } });
+    invalidateByPrefix('pub:jenis-pelanggaran');
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── Rekap Laporan ─────────────────────────────────────────────────────────────
+
+router.get('/potensi/rekap', async (req, res, next) => {
+  try {
+    const { dari, sampai, tipe, kelasId, siswaId, page: pg, limit: lm } = req.query as Record<string, string>;
+    const page  = Math.max(1, Number(pg) || 1);
+    const limit = Math.min(100, Number(lm) || 50);
+
+    const tglFilter: any = {};
+    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
+    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+
+    const where: any = {
+      ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}),
+      ...(tipe && tipe !== 'semua' ? { tipe: tipe.toUpperCase() } : {}),
+      ...(siswaId ? { siswaId } : {}),
+      ...(kelasId ? { siswa: { kelasId } } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.laporanPotensi.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { tanggal: 'desc' },
+        include: {
+          siswa: { select: { nama: true, nis: true, kelas: { select: { nama: true } } } },
+          jenisKebaikan:    { select: { nama: true } },
+          jenisPelanggaran: { select: { nama: true } },
+        },
+      }),
+      prisma.laporanPotensi.count({ where }),
+    ]);
+
+    res.json({
+      data: data.map(l => ({
+        id: l.id,
+        tanggal: l.tanggal.toISOString().slice(0, 10),
+        tipe: l.tipe,
+        poin: l.poin,
+        namaPelapor: l.namaPelapor,
+        keterangan: l.keterangan,
+        buktiUrl: l.buktiUrl,
+        jenis: l.jenisKebaikan?.nama || l.jenisPelanggaran?.nama || '—',
+        siswa: { nama: l.siswa.nama, nis: l.siswa.nis, kelas: l.siswa.kelas.nama },
+      })),
+      total, page, totalPages: Math.ceil(total / limit),
+    });
+  } catch (err) { next(err); }
+});
+
+router.delete('/potensi/laporan/:id', async (req, res, next) => {
+  try {
+    await prisma.laporanPotensi.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// Export rekap laporan → Excel
+router.get('/potensi/export-excel', async (req, res, next) => {
+  try {
+    const { dari, sampai, tipe, kelasId } = req.query as Record<string, string>;
+    const tglFilter: any = {};
+    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
+    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+
+    const where: any = {
+      ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}),
+      ...(tipe && tipe !== 'semua' ? { tipe: tipe.toUpperCase() } : {}),
+      ...(kelasId ? { siswa: { kelasId } } : {}),
+    };
+
+    const data = await prisma.laporanPotensi.findMany({
+      where, orderBy: { tanggal: 'desc' },
+      include: {
+        siswa: { select: { nama: true, nis: true, kelas: { select: { nama: true } } } },
+        jenisKebaikan:    { select: { nama: true } },
+        jenisPelanggaran: { select: { nama: true } },
+      },
+    });
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Rekap Potensi');
+    ws.columns = [
+      { header: 'No',         key: 'no',        width: 5 },
+      { header: 'Tanggal',    key: 'tgl',       width: 13 },
+      { header: 'Nama Siswa', key: 'nama',      width: 28 },
+      { header: 'NIS',        key: 'nis',       width: 14 },
+      { header: 'Kelas',      key: 'kelas',     width: 12 },
+      { header: 'Tipe',       key: 'tipe',      width: 14 },
+      { header: 'Jenis',      key: 'jenis',     width: 30 },
+      { header: 'Poin',       key: 'poin',      width: 7 },
+      { header: 'Pelapor',    key: 'pelapor',   width: 22 },
+      { header: 'Keterangan', key: 'ket',       width: 35 },
+    ];
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
+    data.forEach((l, i) => ws.addRow({
+      no: i+1, tgl: l.tanggal.toISOString().slice(0,10),
+      nama: l.siswa.nama, nis: l.siswa.nis, kelas: l.siswa.kelas.nama,
+      tipe: l.tipe, jenis: l.jenisKebaikan?.nama || l.jenisPelanggaran?.nama || '',
+      poin: l.poin, pelapor: l.namaPelapor, ket: l.keterangan || '',
+    }));
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="rekap-potensi.xlsx"');
+    await wb.xlsx.write(res);
+  } catch (err) { next(err); }
+});
+
+// Export DOCX per siswa
+router.post('/potensi/export-docx', async (req, res, next) => {
+  try {
+    const { siswaId, dari, sampai } = req.body as { siswaId: string; dari?: string; sampai?: string };
+    if (!siswaId) return res.status(400).json({ error: 'siswaId wajib diisi' });
+
+    const siswa = await prisma.siswa.findUnique({
+      where: { id: siswaId },
+      select: { nama: true, nis: true, kelas: { select: { nama: true } } },
+    });
+    if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
+
+    const tglFilter: any = {};
+    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
+    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+
+    const laporan = await prisma.laporanPotensi.findMany({
+      where: { siswaId, ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}) },
+      orderBy: { tanggal: 'asc' },
+      include: { jenisKebaikan: { select: { nama: true } }, jenisPelanggaran: { select: { nama: true } } },
+    });
+
+    const kebaikanList = laporan.filter(l => l.tipe === 'KEBAIKAN');
+    const pelanggaranList = laporan.filter(l => l.tipe === 'PELANGGARAN');
+    const totalKebaikan = kebaikanList.reduce((s, l) => s + l.poin, 0);
+    const totalPelanggaran = pelanggaranList.reduce((s, l) => s + l.poin, 0);
+    const neto = totalKebaikan - totalPelanggaran;
+    const periode = dari && sampai ? `${dari} s/d ${sampai}` : 'Semua Periode';
+
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, BorderStyle, HeadingLevel } = await import('docx');
+
+    const makeHeaderRow = (cols: string[]) => new TableRow({
+      children: cols.map(c => new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: c, bold: true })] })],
+        shading: { fill: 'E3F2FD' },
+      })),
+    });
+
+    const makeTableRows = (rows: string[][]) => rows.map(cells => new TableRow({
+      children: cells.map(c => new TableCell({ children: [new Paragraph(c)] })),
+    }));
+
+    const tblKebaikan = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        makeHeaderRow(['No', 'Tanggal', 'Jenis Kebaikan', 'Poin', 'Pelapor', 'Keterangan']),
+        ...makeTableRows(kebaikanList.map((l, i) => [
+          String(i+1), l.tanggal.toISOString().slice(0,10),
+          l.jenisKebaikan?.nama || '', String(l.poin), l.namaPelapor, l.keterangan || '',
+        ])),
+        ...(kebaikanList.length === 0 ? [new TableRow({ children: [new TableCell({ children: [new Paragraph('Tidak ada data')], columnSpan: 6 })] })] : []),
+      ],
+    });
+
+    const tblPelanggaran = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        makeHeaderRow(['No', 'Tanggal', 'Jenis Pelanggaran', 'Poin', 'Pelapor', 'Keterangan']),
+        ...makeTableRows(pelanggaranList.map((l, i) => [
+          String(i+1), l.tanggal.toISOString().slice(0,10),
+          l.jenisPelanggaran?.nama || '', String(l.poin), l.namaPelapor, l.keterangan || '',
+        ])),
+        ...(pelanggaranList.length === 0 ? [new TableRow({ children: [new TableCell({ children: [new Paragraph('Tidak ada data')], columnSpan: 6 })] })] : []),
+      ],
+    });
+
+    const doc = new Document({
+      sections: [{
+        children: [
+          new Paragraph({ text: 'REKAPITULASI POTENSI SISWA', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Paragraph({ children: [new TextRun({ text: `Nama    : ${siswa.nama}`, break: 0 })] }),
+          new Paragraph({ children: [new TextRun({ text: `NIS     : ${siswa.nis}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Kelas   : ${siswa.kelas.nama}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Periode : ${periode}` })] }),
+          new Paragraph(''),
+          new Paragraph({ text: 'TABEL KEBAIKAN', heading: HeadingLevel.HEADING_2 }),
+          tblKebaikan,
+          new Paragraph(''),
+          new Paragraph({ text: 'TABEL PELANGGARAN', heading: HeadingLevel.HEADING_2 }),
+          tblPelanggaran,
+          new Paragraph(''),
+          new Paragraph({ text: 'REKAP AKHIR', heading: HeadingLevel.HEADING_2 }),
+          new Paragraph({ children: [new TextRun({ text: `Total Poin Kebaikan      : ${totalKebaikan}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Total Poin Pelanggaran   : ${totalPelanggaran}` })] }),
+          new Paragraph({ children: [new TextRun({ text: `Poin Neto (Baik-Langgar) : ${neto}`, bold: true })] }),
+          new Paragraph({ children: [new TextRun({ text: `Status                   : ${neto >= 0 ? 'POSITIF' : 'NEGATIF'}`, bold: true, color: neto >= 0 ? '16A34A' : 'DC2626' })] }),
+        ],
+      }],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="potensi-${siswa.nis}.docx"`);
+    res.send(buffer);
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Pengaturan Presensi — Kode Akses
 // ─────────────────────────────────────────────────────────────────────────────
 

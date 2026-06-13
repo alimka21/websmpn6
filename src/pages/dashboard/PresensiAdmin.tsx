@@ -4,7 +4,9 @@ import {
   Settings, Users, GraduationCap, Save, Trash2, Edit2, X,
   ChevronLeft, ChevronRight, Search, RefreshCw, MapPin, Clock,
   Image as ImageIcon, Download, KeyRound, Eye, EyeOff, Shuffle,
+  ClipboardList, CalendarCheck, AlertTriangle, CheckCircle, ChevronDown,
 } from 'lucide-react';
+import InputAbsensi from './guru/InputAbsensi';
 import { Button } from '../../components/ui/button';
 import api from '../../lib/api';
 
@@ -86,7 +88,7 @@ function FotoThumb({ src, label }: { src: string | null; label: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-type Tab = 'pengaturan' | 'guru' | 'siswa';
+type Tab = 'pengaturan' | 'guru' | 'siswa' | 'absensi';
 
 export default function PresensiAdmin() {
   const [tab, setTab] = useState<Tab>('guru');
@@ -458,9 +460,10 @@ export default function PresensiAdmin() {
       {/* Tabs */}
       <div className="flex p-1.5 bg-surface-container rounded-2xl w-fit">
         {([
-          { key: 'guru',        label: 'Presensi Guru',  Icon: GraduationCap },
-          { key: 'siswa',       label: 'Presensi Siswa', Icon: Users },
-          { key: 'pengaturan',  label: 'Pengaturan',     Icon: Settings },
+          { key: 'guru',        label: 'Presensi Guru',   Icon: GraduationCap },
+          { key: 'siswa',       label: 'Presensi Siswa',  Icon: Users },
+          { key: 'absensi',     label: 'Input Absensi',   Icon: ClipboardList },
+          { key: 'pengaturan',  label: 'Pengaturan',      Icon: Settings },
         ] as { key: Tab; label: string; Icon: React.ElementType }[]).map(({ key, label, Icon }) => (
           <button key={key} onClick={() => setTab(key)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === key ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}>
@@ -468,6 +471,9 @@ export default function PresensiAdmin() {
           </button>
         ))}
       </div>
+
+      {/* ── TAB: Input Absensi ── */}
+      {tab === 'absensi' && <InputAbsensi />}
 
       {/* ── TAB: Pengaturan ── */}
       {tab === 'pengaturan' && (

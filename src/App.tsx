@@ -31,6 +31,13 @@ const DokumenAgendaAdmin = lazy(() => import('./pages/dashboard/DokumenAgendaAdm
 const DokumenPublik = lazy(() => import('./pages/DokumenPublik'));
 const PresensiGuruKiosk = lazy(() => import('./pages/PresensiGuruKiosk'));
 const PresensiSiswaKiosk = lazy(() => import('./pages/PresensiSiswaKiosk'));
+const DashboardKehadiran = lazy(() => import('./pages/public-dashboard/DashboardKehadiran'));
+const DashboardPotensi   = lazy(() => import('./pages/public-dashboard/DashboardPotensi'));
+const DashboardTugas     = lazy(() => import('./pages/public-dashboard/DashboardTugas'));
+const LaporPotensi       = lazy(() => import('./pages/LaporPotensi'));
+const AdminPotensi       = lazy(() => import('./pages/dashboard/admin/AdminPotensi'));
+const InputAbsensi       = lazy(() => import('./pages/dashboard/guru/InputAbsensi'));
+const NilaiTugas         = lazy(() => import('./pages/dashboard/guru/NilaiTugas'));
 
 // Guru
 const GuruDashboard = lazy(() => import('./pages/dashboard/guru/GuruDashboard'));
@@ -93,6 +100,10 @@ export default function App() {
           <Route path="/dokumen" element={<DokumenPublik />} />
           <Route path="/presensi/guru" element={<PresensiGuruKiosk />} />
           <Route path="/presensi/siswa" element={<PresensiSiswaKiosk />} />
+          <Route path="/dashboard-publik/kehadiran" element={<DashboardKehadiran />} />
+          <Route path="/dashboard-publik/potensi"   element={<DashboardPotensi />} />
+          <Route path="/dashboard-publik/tugas"     element={<DashboardTugas />} />
+          <Route path="/lapor"                       element={<LaporPotensi />} />
           {/* ALUMNI_HIDDEN: <Route path="/alumni/daftar" element={<AlumniRegister />} /> */}
 
           {/* Public route but redirect if logged in */}
@@ -168,6 +179,11 @@ export default function App() {
                   <ActivityLog />
                 </ProtectedRoute>
               } />
+              <Route path="potensi" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <AdminPotensi />
+                </ProtectedRoute>
+              } />
             </Route>
 
             {/* GURU ROUTES (ujian/soal/rekap juga dibuka untuk SUPER_ADMIN) */}
@@ -210,6 +226,16 @@ export default function App() {
               <Route path="rekap" element={
                 <ProtectedRoute allowedRoles={['GURU', 'SUPER_ADMIN']}>
                   <RekapNilai />
+                </ProtectedRoute>
+              } />
+              <Route path="absensi" element={
+                <ProtectedRoute allowedRoles={['GURU', 'SUPER_ADMIN']}>
+                  <InputAbsensi />
+                </ProtectedRoute>
+              } />
+              <Route path="nilai-tugas" element={
+                <ProtectedRoute allowedRoles={['GURU', 'SUPER_ADMIN']}>
+                  <NilaiTugas />
                 </ProtectedRoute>
               } />
             </Route>

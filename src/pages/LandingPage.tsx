@@ -58,7 +58,8 @@ export default function LandingPage() {
   const [mobileOpen, setMobileOpen]       = useState(false);
   const [activeSection, setActiveSection] = useState('beranda');
   const [scrolled, setScrolled]           = useState(false);
-  const [presensiDropdown, setPresensiDropdown] = useState(false);
+  const [presensiDropdown, setPresensiDropdown]   = useState(false);
+  const [dashboardDropdown, setDashboardDropdown] = useState(false);
   const [aksesModal, setAksesModal]             = useState<{ open: boolean; jenis: 'guru' | 'siswa' | null }>({ open: false, jenis: null });
   const [kodeInput, setKodeInput]               = useState('');
   const [aksesLoading, setAksesLoading]         = useState(false);
@@ -173,6 +174,59 @@ export default function LandingPage() {
               </button>
             ))}
 
+            {/* Lapor */}
+            <Link
+              to="/lapor"
+              className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-4 h-4" /> Lapor
+            </Link>
+
+            {/* Dropdown Dashboard */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setDashboardDropdown(true)}
+              onMouseLeave={() => setDashboardDropdown(false)}
+            >
+              <button
+                onClick={() => setDashboardDropdown(!dashboardDropdown)}
+                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2"
+              >
+                Dashboard
+                <ChevronDown className={`w-4 h-4 transition-transform ${dashboardDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {dashboardDropdown && (
+                <div className="absolute top-full left-0 pt-2">
+                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[200px]">
+                    <Link
+                      to="/dashboard-publik/kehadiran"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors"
+                      onClick={() => setDashboardDropdown(false)}
+                    >
+                      <CalendarCheck className="w-4 h-4" />
+                      Dashboard Kehadiran
+                    </Link>
+                    <Link
+                      to="/dashboard-publik/potensi"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
+                      onClick={() => setDashboardDropdown(false)}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Dashboard Potensi
+                    </Link>
+                    <Link
+                      to="/dashboard-publik/tugas"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
+                      onClick={() => setDashboardDropdown(false)}
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      Dashboard Tugas
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Dropdown Presensi */}
             <div
               className="relative group"
@@ -248,6 +302,47 @@ export default function LandingPage() {
                 </button>
               );
             })}
+
+            {/* Dashboard Dropdown Mobile */}
+            <div className="border-t border-outline-variant/30 pt-2 mt-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant px-3 mb-1">Dashboard</p>
+              <Link
+                to="/dashboard-publik/kehadiran"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
+              >
+                <CalendarCheck className="w-4 h-4 shrink-0" />
+                Dashboard Kehadiran
+              </Link>
+              <Link
+                to="/dashboard-publik/potensi"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
+              >
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                Dashboard Potensi
+              </Link>
+              <Link
+                to="/dashboard-publik/tugas"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
+              >
+                <ClipboardList className="w-4 h-4 shrink-0" />
+                Dashboard Tugas
+              </Link>
+            </div>
+
+            {/* Lapor Mobile */}
+            <div className="border-t border-outline-variant/30 pt-2 mt-2">
+              <Link
+                to="/lapor"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
+              >
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                Lapor Potensi
+              </Link>
+            </div>
 
             {/* Presensi Dropdown Mobile */}
             <div className="border-t border-outline-variant/30 pt-2 mt-2">

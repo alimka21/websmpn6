@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   LogOut, Menu, X, LayoutDashboard, Users, FileText, Settings,
   GraduationCap, ClipboardList, PenTool, Newspaper,
-  ExternalLink, CalendarCheck, FolderOpen, Activity,
+  ExternalLink, CalendarCheck, FolderOpen, Activity, ShieldCheck, BookOpen,
 } from 'lucide-react';
 import { useAuthStore, Role } from '../../store/authStore';
 import { Button } from '../ui/button';
@@ -22,6 +22,7 @@ const navConfig: Record<Role, NavItem[]> = {
     { label: 'Presensi',         href: '/dashboard/admin/presensi',  icon: <CalendarCheck className="w-5 h-5" /> },
     { label: 'Dokumen & Agenda', href: '/dashboard/admin/konten',    icon: <FolderOpen className="w-5 h-5" /> },
     { label: 'Berita / CMS',     href: '/dashboard/admin/cms',       icon: <Newspaper className="w-5 h-5" /> },
+    { label: 'Potensi Siswa',     href: '/dashboard/admin/potensi',  icon: <ShieldCheck className="w-5 h-5" /> },
     { label: 'Pengaturan Situs', href: '/dashboard/admin/site',     icon: <Settings className="w-5 h-5" /> },
     { label: 'Log Aktivitas',    href: '/dashboard/admin/activity', icon: <Activity className="w-5 h-5" /> },
   ],
@@ -31,6 +32,8 @@ const navConfig: Record<Role, NavItem[]> = {
     { label: 'Buat Ujian',    href: '/dashboard/guru/ujian/baru', icon: <PenTool className="w-5 h-5" /> },
     { label: 'Siswa & Kelas', href: '/dashboard/guru/siswa',      icon: <Users className="w-5 h-5" /> },
     { label: 'Rekap Nilai',   href: '/dashboard/guru/rekap',      icon: <ClipboardList className="w-5 h-5" /> },
+    { label: 'Input Absensi', href: '/dashboard/guru/absensi',    icon: <CalendarCheck className="w-5 h-5" /> },
+    { label: 'Nilai & Tugas', href: '/dashboard/guru/nilai-tugas', icon: <BookOpen className="w-5 h-5" /> },
   ],
   SISWA: [
     { label: 'Dashboard',     href: '/dashboard/siswa',         icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -46,6 +49,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/admin/presensi':  'Manajemen Presensi',
   '/dashboard/admin/konten':    'Dokumen & Agenda',
   '/dashboard/admin/cms':       'Berita / CMS',
+  '/dashboard/admin/potensi':    'Potensi Siswa',
   '/dashboard/admin/site':      'Pengaturan Situs',
   '/dashboard/admin/activity':  'Log Aktivitas',
   '/dashboard/guru':            'Dashboard Guru',
@@ -53,6 +57,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/guru/ujian/baru': 'Buat Ujian Baru',
   '/dashboard/guru/siswa':      'Siswa & Kelas',
   '/dashboard/guru/rekap':      'Rekap Nilai',
+  '/dashboard/guru/absensi':    'Input Absensi Siswa',
+  '/dashboard/guru/nilai-tugas': 'Nilai & Tugas',
   '/dashboard/siswa':           'Dashboard Siswa',
   '/dashboard/siswa/ujian':     'Ujian Aktif',
   '/dashboard/siswa/riwayat':   'Riwayat Nilai',

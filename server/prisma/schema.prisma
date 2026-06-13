@@ -69,6 +69,8 @@ model Guru {
   ujian            Ujian[]
   presensiGuru     PresensiGuru[]
   guruMataPelajaran GuruMataPelajaran[]
+  absensiInput     AbsensiSiswa[]
+  kolomNilai       KolomNilai[]
 }
 
 model GuruMataPelajaran {
@@ -89,9 +91,10 @@ model Kelas {
   guruId      String
   guru        Guru   @relation(fields: [guruId], references: [id])
 
-  siswa      Siswa[]
-  guruKelas  GuruKelas[]
-  kelasUjian UjianKelas[]
+  siswa           Siswa[]
+  guruKelas       GuruKelas[]
+  kelasUjian      UjianKelas[]
+  kolomNilaiKelas KolomNilaiKelas[]
 }
 
 // Guru pengajar per kelas (many-to-many Guru ↔ Kelas).
@@ -118,8 +121,11 @@ model Siswa {
   kelasId String
   kelas   Kelas  @relation(fields: [kelasId], references: [id])
 
-  sesiUjian     SesiUjian[]
-  presensiSiswa PresensiSiswa[]
+  sesiUjian      SesiUjian[]
+  presensiSiswa  PresensiSiswa[]
+  absensi        AbsensiSiswa[]
+  laporanPotensi LaporanPotensi[]
+  nilaiSiswa     NilaiSiswa[]
 
   @@index([kelasId])
 }
@@ -138,6 +144,9 @@ model Ujian {
   acakOpsi            Boolean   @default(false) // Acak urutan opsi pilihan jawaban
   tampilkanPembahasan Boolean   @default(true) // Tampilkan kunci jawaban di halaman hasil
   tampilkanNilai      Boolean   @default(true) // Tampilkan nilai akhir di halaman hasil
+  masukkanKeDashboard Boolean   @default(false) // Toggle guru untuk masuk ke Dashboard Tugas
+  jenisNilai          String?   // UH | UTS | UAS | PR | PRAKTEK | LAINNYA
+  materiNilai         String?   // Bab/topik opsional
   createdAt           DateTime  @default(now())
 
   guruId String
@@ -283,6 +292,26 @@ model PresensiSiswa {
   @@index([siswaId])
 }
 
+// Ketidakhadiran siswa (Sakit/Izin/Alfa) yang diinput manual oleh guru atau admin.
+// Berpasangan dengan PresensiSiswa (hadir kiosk) sebagai dua sumber data kehadiran.
+model AbsensiSiswa {
+  id          String   @id @default(uuid())
+  siswaId     String
+  siswa       Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  guruId      String?
+  guru        Guru?    @relation(fields: [guruId], references: [id], onDelete: SetNull)
+  tanggal     DateTime // DATE saja (tanpa jam)
+  status      String   // SAKIT | IZIN | ALFA
+  keterangan  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([siswaId, tanggal])
+  @@index([tanggal])
+  @@index([siswaId])
+  @@index([guruId])
+}
+
 // Singleton — 1 row. Konfigurasi global presensi dari admin.
 model PengaturanPresensi {
   id                String   @id @default(uuid())
@@ -298,6 +327,105 @@ model PengaturanPresensi {
   kodeAksesSiswa    String?  // Kode akses 6 karakter untuk masuk halaman presensi siswa
 
   updatedAt         DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-008: SISTEM POTENSI SISWA
+// ─────────────────────────────────────────────────────────────────────────────
+
+model JenisKebaikan {
+  id        String   @id @default(uuid())
+  nama      String
+  poin      Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  laporan LaporanPotensi[]
+}
+
+model JenisPelanggaran {
+  id        String   @id @default(uuid())
+  nama      String
+  poin      Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  laporan LaporanPotensi[]
+}
+
+// Setiap laporan kebaikan/pelanggaran yang diajukan (publik/guru)
+model LaporanPotensi {
+  id                 String            @id @default(uuid())
+  siswaId            String
+  siswa              Siswa             @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  namaPelapor        String
+  tipe               String            // KEBAIKAN | PELANGGARAN
+  jenisKebaikanId    String?
+  jenisKebaikan      JenisKebaikan?    @relation(fields: [jenisKebaikanId], references: [id])
+  jenisPelanggaranId String?
+  jenisPelanggaran   JenisPelanggaran? @relation(fields: [jenisPelanggaranId], references: [id])
+  poin               Int               // Snapshot poin saat laporan dibuat
+  buktiUrl           String?           @db.LongText
+  keterangan         String?           @db.Text
+  tanggal            DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+
+  @@index([siswaId])
+  @@index([tipe])
+  @@index([tanggal])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQ-009: DASHBOARD TUGAS & NILAI
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Kolom nilai manual yang dibuat guru (non-ujian: ulangan lisan, praktek, PR, dst)
+model KolomNilai {
+  id            String   @id @default(uuid())
+  judul         String
+  jenis         String   // UH | UTS | UAS | PR | ULANGAN_LISAN | PRAKTEK | LAINNYA
+  materi        String   // Bab/topik — wajib diisi
+  mataPelajaran String
+  tanggal       DateTime @default(now())
+  guruId        String
+  guru          Guru     @relation(fields: [guruId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  kelasTarget KolomNilaiKelas[]
+  nilai       NilaiSiswa[]
+
+  @@index([guruId])
+}
+
+// Many-to-many KolomNilai ↔ Kelas
+model KolomNilaiKelas {
+  id           String     @id @default(uuid())
+  kolomNilaiId String
+  kolomNilai   KolomNilai @relation(fields: [kolomNilaiId], references: [id], onDelete: Cascade)
+  kelasId      String
+  kelas        Kelas      @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+
+  @@unique([kolomNilaiId, kelasId])
+}
+
+// Nilai siswa per kolom nilai manual
+model NilaiSiswa {
+  id           String     @id @default(uuid())
+  kolomNilaiId String
+  kolomNilai   KolomNilai @relation(fields: [kolomNilaiId], references: [id], onDelete: Cascade)
+  siswaId      String
+  siswa        Siswa      @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  nilai        Float?
+  keterangan   String?    @db.Text
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([kolomNilaiId, siswaId])
+  @@index([siswaId])
+  @@index([kolomNilaiId])
 }
 
 model Alumni {
