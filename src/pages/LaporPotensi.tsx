@@ -53,10 +53,10 @@ export default function LaporPotensi() {
 
   // Load data statis
   useEffect(() => {
-    api.get('/api/public/guru').then((r: any) => setGuruList(Array.isArray(r) ? r : [])).catch(() => {});
-    api.get('/api/public/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
-    api.get('/api/public/jenis-kebaikan').then((r: any) => setJenisKebaikan(Array.isArray(r) ? r : [])).catch(() => {});
-    api.get('/api/public/jenis-pelanggaran').then((r: any) => setJenisPelanggaran(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/guru').then((r: any) => setGuruList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/jenis-kebaikan').then((r: any) => setJenisKebaikan(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/jenis-pelanggaran').then((r: any) => setJenisPelanggaran(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
 
   // Load siswa saat kelas berubah
@@ -66,7 +66,7 @@ export default function LaporPotensi() {
     setSelectedSiswa(null);
     if (!kelasId) return;
     setLoadingSiswa(true);
-    api.get(`/api/public/siswa-by-kelas?kelasId=${kelasId}`)
+    api.get(`/api/siswa-by-kelas?kelasId=${kelasId}`)
       .then((r: any) => setSiswaList(Array.isArray(r) ? r : []))
       .catch(() => {})
       .finally(() => setLoadingSiswa(false));
@@ -104,7 +104,7 @@ export default function LaporPotensi() {
     const siswa = siswaList.find(s => s.id === siswaId);
     setSubmitting(true);
     try {
-      await api.post('/api/public/laporan-potensi', {
+      await api.post('/api/laporan-potensi', {
         siswaId,
         namaPelapor: guru?.nama ?? '',
         tipe,
