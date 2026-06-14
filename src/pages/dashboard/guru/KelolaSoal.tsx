@@ -5,7 +5,7 @@ import ExcelJS from 'exceljs';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
-import { ArrowLeft, Plus, Save, Trash2, Edit, CheckCircle2, Copy, XCircle, RefreshCw, FileText, Upload, Download, X } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Edit, CheckCircle2, Copy, XCircle, RefreshCw, FileText, Upload, Download, X, ImagePlus, Loader2 } from 'lucide-react';
 import api from '../../../lib/api';
 import { useSiteConfig, defaultPgOpsiCount } from '../../../hooks/useSiteConfig';
 
@@ -44,7 +44,9 @@ export default function KelolaSoal() {
   // Bulk import state
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<null | { created: number; failed: { row: number; message: string }[] }>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef    = useRef<HTMLInputElement | null>(null);
+  const imageInputRef   = useRef<HTMLInputElement | null>(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
 
   // Form state
   const [isEditing, setIsEditing] = useState(false);
@@ -417,13 +419,55 @@ export default function KelolaSoal() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="imageUrl">URL Gambar (Opsional)</Label>
-                <Input
-                  id="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://..."
+                <Label htmlFor="imageUrl">Gambar Soal (Opsional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="URL atau upload file..."
+                    className="flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploadingImg}
+                    title="Upload gambar soal"
+                    className="shrink-0 flex items-center justify-center w-9 h-9 rounded-md border border-outline-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+                  >
+                    {uploadingImg
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <ImagePlus className="w-4 h-4" />
+                    }
+                  </button>
+                </div>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    if (file.size > 3 * 1024 * 1024) { toast.error('Ukuran gambar maksimal 3MB'); return; }
+                    setUploadingImg(true);
+                    try {
+                      const fd = new FormData();
+                      fd.append('image', file);
+                      const res: any = await api.postForm('/api/guru/upload/soal', fd);
+                      setFormData(prev => ({ ...prev, imageUrl: res.url }));
+                      toast.success('Gambar berhasil diunggah');
+                    } catch {
+                      toast.error('Gagal mengunggah gambar');
+                    } finally {
+                      setUploadingImg(false);
+                    }
+                  }}
                 />
+                {formData.imageUrl && (
+                  <img src={formData.imageUrl} alt="Preview soal" className="mt-1 max-h-24 rounded border border-outline-variant object-contain" />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="poin">Bobot Poin</Label>

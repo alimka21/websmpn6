@@ -42,6 +42,8 @@ export default function LaporPotensi() {
   const [jenisId,    setJenisId]    = useState('');
   const [keterangan, setKeterangan] = useState('');
   const [buktiPreview, setBuktiPreview] = useState<string>('');
+  const [buktiUrl, setBuktiUrl]         = useState<string>('');
+  const [uploadingBukti, setUploadingBukti] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
 
@@ -78,13 +80,27 @@ export default function LaporPotensi() {
   const jenisList    = tipe === 'KEBAIKAN' ? jenisKebaikan : jenisPelanggaran;
   const selectedJenis = jenisList.find(j => j.id === jenisId);
 
-  const handleBuktiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBuktiChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.error('Ukuran foto maksimal 5MB'); return; }
+    // Tampilkan preview lokal dulu
     const reader = new FileReader();
     reader.onload = ev => setBuktiPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
+    // Upload ke server, dapatkan URL permanen
+    setUploadingBukti(true);
+    try {
+      const formData = new FormData();
+      formData.append('foto', file);
+      const res: any = await api.postForm('/api/upload/laporan-bukti', formData);
+      setBuktiUrl(res.url);
+    } catch {
+      toast.error('Gagal mengunggah foto bukti');
+      setBuktiPreview('');
+    } finally {
+      setUploadingBukti(false);
+    }
   };
 
   const validate = () => {
@@ -110,7 +126,7 @@ export default function LaporPotensi() {
         tipe,
         jenisId,
         keterangan: keterangan.trim() || undefined,
-        buktiUrl: buktiPreview || undefined,
+        buktiUrl: buktiUrl || undefined,
       });
       setSelectedSiswa(siswa ?? null);
       setSubmitted(true);
@@ -325,7 +341,7 @@ export default function LaporPotensi() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploadingBukti}
               className="w-full py-3.5 bg-primary text-white rounded-xl font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</> : 'Kirim Laporan'}

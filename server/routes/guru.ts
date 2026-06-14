@@ -2,11 +2,37 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import ExcelJS from 'exceljs';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { withCache, invalidateByPrefix } from '../lib/cache';
 import { toTitleCase } from '../lib/format';
+
+// Upload gambar soal
+const uploadsBase = path.dirname(
+  process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita')
+);
+const soalImagePath = path.join(uploadsBase, 'soal');
+const uploadBaseUrl = process.env.UPLOAD_BASE_URL || '';
+if (!fs.existsSync(soalImagePath)) fs.mkdirSync(soalImagePath, { recursive: true });
+
+const uploadSoal = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, soalImagePath),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `soal-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Format gambar harus JPEG, PNG, WEBP, atau GIF'));
+  },
+});
 
 const router = Router();
 // SUPER_ADMIN dibolehkan agar bisa mengelola ujian/soal/hasil milik
@@ -82,6 +108,18 @@ async function canAccessSoal(req: any, soalId: string): Promise<boolean> {
   });
   return !!soal && soal.ujian.guruId === scope.guruId;
 }
+
+// POST /api/guru/upload/soal — Upload gambar untuk soal ujian
+router.post('/upload/soal', uploadSoal.single('image'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({ error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File gambar tidak ditemukan' });
+    const url = `${uploadBaseUrl}/uploads/soal/${req.file.filename}`;
+    res.json({ url });
+  } catch (err) { next(err); }
+});
 
 router.get('/stats', async (req, res, next) => {
   try {

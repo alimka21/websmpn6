@@ -21,9 +21,12 @@ router.use(requireAuth, requireRole(['SUPER_ADMIN']));
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita');
 const uploadBaseUrl = process.env.UPLOAD_BASE_URL || '';
 
-// Ensure upload directories exist
-const guruFotoPath = uploadPath.replace(/berita$/, 'guru');
-for (const dir of [uploadPath, guruFotoPath]) {
+// Base uploads directory (parent of berita/)
+const uploadsBase   = path.dirname(uploadPath);
+const guruFotoPath  = path.join(uploadsBase, 'guru');
+const siteImagePath = path.join(uploadsBase, 'site');
+
+for (const dir of [uploadPath, guruFotoPath, siteImagePath]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -59,10 +62,25 @@ const uploadGuru = multer({
       cb(null, `guru-${Date.now()}${ext}`);
     },
   }),
-  limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB (sudah dikompres di frontend)
+  limits: { fileSize: 3 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true);
     else cb(new Error('Format foto harus JPEG, PNG, atau WEBP'));
+  },
+});
+
+const uploadSite = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, siteImagePath),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `site-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/x-icon', 'image/vnd.microsoft.icon'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Format gambar harus JPEG, PNG, WEBP, GIF, atau ICO'));
   },
 });
 
@@ -87,6 +105,18 @@ router.post('/upload/berita', upload.single('image'), async (req, res, next) => 
   } catch (error) {
     next(error);
   }
+});
+
+// POST /api/admin/upload/site — Upload gambar pengaturan situs (logo, favicon, hero, kepsek, profil)
+router.post('/upload/site', uploadSite.single('image'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({ error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File gambar tidak ditemukan' });
+    const url = `${uploadBaseUrl}/uploads/site/${req.file.filename}`;
+    res.json({ url });
+  } catch (err) { next(err); }
 });
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

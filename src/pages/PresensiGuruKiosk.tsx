@@ -284,18 +284,25 @@ export default function PresensiGuruKiosk() {
 
     try {
       // Capture photo from stream
-      const photo = captureFotoFromStream();
-      if (!photo) {
+      const photoDataUrl = captureFotoFromStream();
+      if (!photoDataUrl) {
         throw new Error('Gagal mengambil foto dari kamera');
       }
 
-      // Submit to API
+      // Upload foto ke server, dapatkan URL
+      const uploadRes = await fetch(photoDataUrl);
+      const blob = await uploadRes.blob();
+      const formData = new FormData();
+      formData.append('foto', blob, `presensi-${Date.now()}.jpg`);
+      const uploadResult: any = await api.postForm('/api/presensi/upload/foto', formData);
+
+      // Submit presensi dengan URL foto
       const endpoint = mode === 'datang' ? '/api/presensi/guru/datang' : '/api/presensi/guru/pulang';
       const response: any = await api.post(endpoint, {
         guruId: selectedGuru.id,
         latitude: currentLocation.lat,
         longitude: currentLocation.lng,
-        fotoBase64: photo,
+        fotoUrl: uploadResult.url,
       });
 
       const now = new Date();

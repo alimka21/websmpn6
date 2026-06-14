@@ -16,7 +16,6 @@ import { Button } from '../../components/ui/button';
 import { Input, Label } from '../../components/ui/input';
 import api from '../../lib/api';
 import { invalidateSiteConfig } from '../../hooks/useSiteConfig';
-import { fileToResizedBase64, dataUrlSizeKB } from '../../lib/imageUtils';
 
 type Config = Record<string, string | null>;
 
@@ -70,11 +69,10 @@ interface ImageFieldProps {
   hint: string;
   value: string;
   onChange: (v: string) => void;
-  maxWidth?: number;
   preview?: 'wide' | 'square' | 'photo';
 }
 
-const ImageField: React.FC<ImageFieldProps> = ({ label, hint, value, onChange, maxWidth = 800, preview = 'photo' }) => {
+const ImageField: React.FC<ImageFieldProps> = ({ label, hint, value, onChange, preview = 'photo' }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -82,18 +80,19 @@ const ImageField: React.FC<ImageFieldProps> = ({ label, hint, value, onChange, m
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File terlalu besar (maks 10MB sebelum resize)');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File terlalu besar (maks 5MB)');
       return;
     }
     setUploading(true);
     try {
-      const dataUrl = await fileToResizedBase64(file, { maxWidth, maxHeight: maxWidth });
-      const sizeKb = dataUrlSizeKB(dataUrl);
-      onChange(dataUrl);
-      toast.success(`Gambar siap (${sizeKb} KB setelah resize)`);
+      const formData = new FormData();
+      formData.append('image', file);
+      const res: any = await api.postForm('/api/admin/upload/site', formData);
+      onChange(res.url);
+      toast.success('Gambar berhasil diunggah');
     } catch (err: any) {
-      toast.error(err?.message || 'Gagal memproses gambar');
+      toast.error(err?.message || 'Gagal mengunggah gambar');
     } finally {
       setUploading(false);
     }
@@ -319,12 +318,12 @@ export default function SiteSettings() {
           <ImageField
             label="Logo" hint="Tampil di navbar & footer. Disarankan PNG transparan."
             value={get('logoUrl')} onChange={v => set('logoUrl', v)}
-            maxWidth={256} preview="square"
+            preview="square"
           />
           <ImageField
             label="Favicon" hint="Icon kecil di tab browser. PNG square (32x32 atau 64x64)."
             value={get('faviconUrl')} onChange={v => set('faviconUrl', v)}
-            maxWidth={128} preview="square"
+            preview="square"
           />
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -350,7 +349,7 @@ export default function SiteSettings() {
           label="Gambar Hero (Banner Atas Landing)"
           hint="Tampil besar di kanan judul hero. Rasio landscape (4:3 atau 16:9). Kalau kosong, fallback ke Foto Profil."
           value={get('heroImageUrl')} onChange={v => set('heroImageUrl', v)}
-          maxWidth={1200} preview="wide"
+          preview="wide"
         />
       </Section>
 
@@ -358,7 +357,7 @@ export default function SiteSettings() {
         <ImageField
           label="Foto Profil / Fasilitas" hint="Tampil di section Profil Sekolah pada landing."
           value={get('profilImageUrl')} onChange={v => set('profilImageUrl', v)}
-          maxWidth={800} preview="photo"
+          preview="photo"
         />
         <TextAreaField label="Visi" value={get('visi')} onChange={v => set('visi', v)} placeholder="Pandangan jangka panjang sekolah" rows={3} />
         <TextAreaField label="Misi" value={get('misi')} onChange={v => set('misi', v)} placeholder="Pisahkan tiap misi dengan baris baru (Enter)" rows={5} />
@@ -398,7 +397,7 @@ export default function SiteSettings() {
         <ImageField
           label="Foto Kepala Sekolah" hint="Foto resmi. Disarankan rasio persegi (1:1)."
           value={get('kepsekFotoUrl')} onChange={v => set('kepsekFotoUrl', v)}
-          maxWidth={512} preview="square"
+          preview="square"
         />
         <TextAreaField label="Teks Sambutan" value={get('kepsekSambutan')} onChange={v => set('kepsekSambutan', v)}
           placeholder="Tulis sambutan singkat untuk pengunjung situs..." rows={6} />

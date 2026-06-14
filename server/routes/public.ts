@@ -1,9 +1,45 @@
 // server/routes/public.ts
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { withCache, invalidateByPrefix } from '../lib/cache';
 
+// Upload bukti laporan potensi (publik, no auth)
+const uploadsBase   = path.dirname(process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita'));
+const laporanPath   = path.join(uploadsBase, 'laporan');
+const uploadBaseUrl = process.env.UPLOAD_BASE_URL || '';
+if (!fs.existsSync(laporanPath)) fs.mkdirSync(laporanPath, { recursive: true });
+
+const uploadLaporan = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, laporanPath),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `laporan-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Format foto harus JPEG, PNG, atau WEBP'));
+  },
+});
+
 const router = Router();
+
+// POST /api/upload/laporan-bukti — Upload foto bukti laporan potensi (publik)
+router.post('/upload/laporan-bukti', uploadLaporan.single('foto'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({ error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File foto tidak ditemukan' });
+    const url = `${uploadBaseUrl}/uploads/laporan/${req.file.filename}`;
+    res.json({ url });
+  } catch (err) { next(err); }
+});
 
 router.get('/berita', async (req, res, next) => {
   try {

@@ -1,6 +1,30 @@
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
+
+// Upload foto presensi guru (datang/pulang)
+const uploadsBase    = path.dirname(process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita'));
+const presensiPath   = path.join(uploadsBase, 'presensi');
+const uploadBaseUrl  = process.env.UPLOAD_BASE_URL || '';
+if (!fs.existsSync(presensiPath)) fs.mkdirSync(presensiPath, { recursive: true });
+
+const uploadPresensi = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, presensiPath),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `presensi-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB (sudah dikompres 640x480 JPEG 0.8)
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Format foto harus JPEG, PNG, atau WEBP'));
+  },
+});
 
 const router = Router();
 
@@ -83,6 +107,18 @@ export function startAutoCheckoutCron(): void {
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GET /api/presensi/guru-list
 // Daftar semua guru aktif + status presensi hari ini
+// POST /api/presensi/upload/foto — Upload foto presensi (publik, dipanggil sebelum datang/pulang)
+router.post('/upload/foto', uploadPresensi.single('foto'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({ error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File foto tidak ditemukan' });
+    const url = `${uploadBaseUrl}/uploads/presensi/${req.file.filename}`;
+    res.json({ url });
+  } catch (err) { next(err); }
+});
+
 // Digunakan oleh halaman kiosk untuk mengisi dropdown
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -142,21 +178,19 @@ router.get('/guru-list', async (req, res, next) => {
 
 router.post('/guru/datang', async (req, res, next) => {
   try {
-    const { guruId, latitude, longitude, fotoBase64 } = req.body;
+    const { guruId, latitude, longitude, fotoUrl } = req.body;
     if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
 
     const guru = await prisma.guru.findUnique({ where: { id: guruId } });
     if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
 
-    // WAJIB: Foto & Lokasi
-    if (!fotoBase64) {
+    if (!fotoUrl) {
       return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
     }
     if (latitude == null || longitude == null) {
       return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
     }
 
-    // Geofencing — VALIDASI KETAT
     const cfg = await prisma.pengaturanPresensi.findFirst();
     if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
       return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
@@ -188,8 +222,8 @@ router.post('/guru/datang', async (req, res, next) => {
 
     const record = await prisma.presensiGuru.upsert({
       where: { guruId_tanggal: { guruId, tanggal: today } },
-      create:  { guruId, tanggal: today, waktuDatang: new Date(), fotoDatang: fotoBase64 ?? null },
-      update:  { waktuDatang: new Date(), fotoDatang: fotoBase64 ?? null },
+      create:  { guruId, tanggal: today, waktuDatang: new Date(), fotoDatang: fotoUrl },
+      update:  { waktuDatang: new Date(), fotoDatang: fotoUrl },
     });
 
     res.json({ success: true, nama: guru.nama, waktuDatang: record.waktuDatang });
@@ -204,21 +238,19 @@ router.post('/guru/datang', async (req, res, next) => {
 
 router.post('/guru/pulang', async (req, res, next) => {
   try {
-    const { guruId, latitude, longitude, fotoBase64 } = req.body;
+    const { guruId, latitude, longitude, fotoUrl } = req.body;
     if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
 
     const guru = await prisma.guru.findUnique({ where: { id: guruId } });
     if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
 
-    // WAJIB: Foto & Lokasi
-    if (!fotoBase64) {
+    if (!fotoUrl) {
       return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
     }
     if (latitude == null || longitude == null) {
       return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
     }
 
-    // Geofencing — VALIDASI KETAT
     const cfg = await prisma.pengaturanPresensi.findFirst();
     if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
       return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
@@ -253,7 +285,7 @@ router.post('/guru/pulang', async (req, res, next) => {
 
     const record = await prisma.presensiGuru.update({
       where: { guruId_tanggal: { guruId, tanggal: today } },
-      data: { waktuPulang: new Date(), fotoPulang: fotoBase64 ?? null, autoCheckout: false },
+      data: { waktuPulang: new Date(), fotoPulang: fotoUrl, autoCheckout: false },
     });
 
     res.json({ success: true, nama: guru.nama, waktuPulang: record.waktuPulang });
