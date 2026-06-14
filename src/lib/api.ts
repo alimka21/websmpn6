@@ -146,6 +146,48 @@ async function requestBlob(
   }
 }
 
+async function requestForm<T = any>(
+  url: string,
+  method: string,
+  body: FormData,
+  timeoutMs: number = 60_000
+): Promise<T> {
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+    if (!token) {
+      try { token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.token; } catch {}
+    }
+  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${url}`, {
+      method,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body,
+      credentials: 'include',
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') throw new ApiError('Upload timeout. Coba lagi.', 408);
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = text;
+    try { msg = JSON.parse(text)?.error || text; } catch {}
+    throw new ApiError(msg || `Upload gagal (${res.status})`, res.status);
+  }
+  return res.json();
+}
+
 export const api = {
   get:      <T = any>(url: string, timeoutMs?: number) =>
     request<T>(url, { method: "GET" }, timeoutMs),
@@ -161,6 +203,8 @@ export const api = {
     requestBlob(url, { method: "GET" }, timeoutMs),
   postBlob: (url: string, body?: any, timeoutMs?: number) =>
     requestBlob(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }, timeoutMs),
+  postForm: <T = any>(url: string, body: FormData, timeoutMs?: number) =>
+    requestForm<T>(url, 'POST', body, timeoutMs),
 };
 
 export default api;

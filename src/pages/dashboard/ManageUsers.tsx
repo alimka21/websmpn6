@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Pencil, Trash2, Search, KeyRound, Users, GraduationCap, BookOpen, AlertTriangle, Download, Upload, CheckCircle2, XCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Pencil, Trash2, Search, KeyRound, Users, GraduationCap, BookOpen, AlertTriangle, Download, Upload, CheckCircle2, XCircle, Camera, X as XIcon, Loader2 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -41,10 +41,34 @@ interface GuruUser {
     nama: string;
     nip: string;
     mataPelajaran: string;
+    fotoUrl?: string | null;
     guruMataPelajaran?: { id: string; nama: string }[];
     kelas?: { id: string; nama: string }[];
     guruKelas?: { kelas: { id: string; nama: string } }[];
   };
+}
+
+// Kompres gambar portrait di client sebelum upload (max 400x600, JPEG 82%)
+async function compressPortrait(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target?.result as string; };
+    reader.onerror = reject;
+    img.onload = () => {
+      const MAX_W = 400, MAX_H = 600;
+      let { width, height } = img;
+      const ratio = Math.min(MAX_W / width, MAX_H / height, 1);
+      width  = Math.round(width  * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('Gagal kompres gambar')), 'image/jpeg', 0.82);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 interface KelasItem {
@@ -104,6 +128,13 @@ export default function ManageUsers() {
   const [guruMapelInput, setGuruMapelInput] = useState('');
   const [guruErrors, setGuruErrors] = useState<Record<string, string>>({});
   const [isSubmittingGuru, setIsSubmittingGuru] = useState(false);
+
+  // ── Foto Guru ──
+  const [guruCurrentFoto, setGuruCurrentFoto]   = useState<string | null>(null);
+  const [fotoPreview, setFotoPreview]           = useState<string | null>(null);
+  const [fotoFile, setFotoFile]                 = useState<File | null>(null);
+  const [isUploadingFoto, setIsUploadingFoto]   = useState(false);
+  const fotoInputRef                            = useRef<HTMLInputElement>(null);
 
   // ── Kelas Modal ──
   const [showKelasModal, setShowKelasModal] = useState(false);
@@ -344,19 +375,63 @@ export default function ManageUsers() {
 
   const openGuruModal = (u?: GuruUser) => {
     setGuruErrors({});
+    setFotoPreview(null);
+    setFotoFile(null);
     if (u) {
       setEditingGuruId(u.id);
       setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '' });
       const existing = u.guru.guruMataPelajaran?.map(m => m.nama) ?? (u.guru.mataPelajaran ? [u.guru.mataPelajaran] : []);
       setGuruMapelList(existing);
+      setGuruCurrentFoto(u.guru.fotoUrl ?? null);
     } else {
       setEditingGuruId(null);
       setGuruForm({ nip: '', nama: '', email: '', password: '' });
       setGuruMapelList([]);
+      setGuruCurrentFoto(null);
     }
     setGuruMapelInput('');
     setShowGuruModal(true);
   };
+
+  const handleFotoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Format foto harus JPEG, PNG, atau WEBP');
+      return;
+    }
+    setFotoFile(file);
+    const url = URL.createObjectURL(file);
+    setFotoPreview(url);
+  }, []);
+
+  const handleUploadFoto = useCallback(async (guruId: string) => {
+    if (!fotoFile) return;
+    setIsUploadingFoto(true);
+    try {
+      const compressed = await compressPortrait(fotoFile);
+      const fd = new FormData();
+      fd.append('foto', compressed, 'foto-guru.jpg');
+      const res: any = await api.postForm(`/api/admin/guru/${guruId}/foto`, fd);
+      setGuruCurrentFoto(res.url);
+      setFotoPreview(null);
+      setFotoFile(null);
+      toast.success('Foto profil berhasil diunggah');
+      fetchGuru();
+    } catch { toast.error('Gagal mengunggah foto'); }
+    finally { setIsUploadingFoto(false); }
+  }, [fotoFile]);
+
+  const handleHapusFoto = useCallback(async (guruId: string) => {
+    try {
+      await api.delete(`/api/admin/guru/${guruId}/foto`);
+      setGuruCurrentFoto(null);
+      setFotoPreview(null);
+      setFotoFile(null);
+      toast.success('Foto profil dihapus');
+      fetchGuru();
+    } catch { toast.error('Gagal menghapus foto'); }
+  }, []);
 
   const handleSaveGuru = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1021,6 +1096,72 @@ export default function ManageUsers() {
             </div>
             <form onSubmit={handleSaveGuru}>
               <div className="px-6 py-5 space-y-4">
+
+                {/* ── Foto Profil (hanya saat edit) ── */}
+                {editingGuruId && (
+                  <div className="space-y-2">
+                    <Label>Foto Profil <span className="text-outline-variant font-normal text-xs">(potrait, maks 3 MB)</span></Label>
+                    <div className="flex items-start gap-4">
+                      {/* Preview foto */}
+                      <div className="relative shrink-0">
+                        {(fotoPreview || guruCurrentFoto) ? (
+                          <img
+                            src={fotoPreview || guruCurrentFoto!}
+                            alt="Foto guru"
+                            className="w-20 h-28 object-cover rounded-xl border border-outline-variant shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-20 h-28 rounded-xl bg-surface-container border border-outline-variant flex items-center justify-center">
+                            <Camera className="w-7 h-7 text-outline/50" />
+                          </div>
+                        )}
+                        {/* Tombol hapus jika ada foto tersimpan */}
+                        {guruCurrentFoto && !fotoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => handleHapusFoto(editingGuruId)}
+                            className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-error text-white flex items-center justify-center shadow"
+                            title="Hapus foto"
+                          >
+                            <XIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Kontrol upload */}
+                      <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        <input
+                          ref={fotoInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={handleFotoChange}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fotoInputRef.current?.click()}
+                          className="px-3 py-2 rounded-lg border border-outline-variant text-sm text-on-surface hover:bg-surface-container transition-colors text-left"
+                        >
+                          {guruCurrentFoto || fotoPreview ? 'Ganti Foto' : 'Pilih Foto'}
+                        </button>
+                        {fotoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => handleUploadFoto(editingGuruId)}
+                            disabled={isUploadingFoto}
+                            className="px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60 flex items-center gap-2"
+                          >
+                            {isUploadingFoto ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Mengunggah...</> : 'Upload Foto'}
+                          </button>
+                        )}
+                        <p className="text-[11px] text-on-surface-variant leading-snug">
+                          Akan dikompres otomatis ke 400×600 px JPEG.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <Label htmlFor="g-nama">Nama Lengkap <span className="text-error">*</span></Label>
                   <Input id="g-nama" value={guruForm.nama} onChange={e => setGuruForm(f => ({ ...f, nama: e.target.value }))} placeholder="Nama Lengkap Guru" />

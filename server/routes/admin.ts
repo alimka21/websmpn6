@@ -21,9 +21,10 @@ router.use(requireAuth, requireRole(['SUPER_ADMIN']));
 const uploadPath = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita');
 const uploadBaseUrl = process.env.UPLOAD_BASE_URL || '';
 
-// Ensure upload directory exists
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
+// Ensure upload directories exist
+const guruFotoPath = uploadPath.replace(/berita$/, 'guru');
+for (const dir of [uploadPath, guruFotoPath]) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -50,6 +51,21 @@ const upload = multer({
   }
 });
 
+const uploadGuru = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, guruFotoPath),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `guru-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3 MB (sudah dikompres di frontend)
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Format foto harus JPEG, PNG, atau WEBP'));
+  },
+});
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Upload Gambar untuk Rich Text Editor
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -71,6 +87,51 @@ router.post('/upload/berita', upload.single('image'), async (req, res, next) => 
   } catch (error) {
     next(error);
   }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Upload & Hapus Foto Profil Guru
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+router.post('/guru/:guruId/foto', uploadGuru.single('foto'), async (req, res, next) => {
+  try {
+    if (!process.env.UPLOAD_PATH || !process.env.UPLOAD_BASE_URL) {
+      return res.status(500).json({ error: 'UPLOAD_PATH atau UPLOAD_BASE_URL belum dikonfigurasi' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File foto tidak ditemukan' });
+
+    const guru = await prisma.guru.findUnique({ where: { id: req.params.guruId }, select: { fotoUrl: true } });
+    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
+
+    // Hapus file lama jika ada dan tersimpan lokal
+    if (guru.fotoUrl) {
+      const oldFile = path.join(guruFotoPath, path.basename(guru.fotoUrl));
+      if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+    }
+
+    const url = `${uploadBaseUrl}/uploads/guru/${req.file.filename}`;
+    await prisma.guru.update({ where: { id: req.params.guruId }, data: { fotoUrl: url } });
+    invalidateByPrefix('pub:profil-guru');
+
+    res.json({ url });
+  } catch (error) { next(error); }
+});
+
+router.delete('/guru/:guruId/foto', async (req, res, next) => {
+  try {
+    const guru = await prisma.guru.findUnique({ where: { id: req.params.guruId }, select: { fotoUrl: true } });
+    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
+
+    if (guru.fotoUrl) {
+      const oldFile = path.join(guruFotoPath, path.basename(guru.fotoUrl));
+      if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+    }
+
+    await prisma.guru.update({ where: { id: req.params.guruId }, data: { fotoUrl: null } });
+    invalidateByPrefix('pub:profil-guru');
+
+    res.json({ success: true });
+  } catch (error) { next(error); }
 });
 
 router.get('/stats', async (req, res, next) => {
