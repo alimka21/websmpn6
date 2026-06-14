@@ -131,6 +131,7 @@ export default function ManageUsers() {
 
   // ── Foto Guru ──
   const [guruCurrentFoto, setGuruCurrentFoto]   = useState<string | null>(null);
+  const [editingGuruModelId, setEditingGuruModelId] = useState<string | null>(null);
   const [fotoPreview, setFotoPreview]           = useState<string | null>(null);
   const [fotoFile, setFotoFile]                 = useState<File | null>(null);
   const [isUploadingFoto, setIsUploadingFoto]   = useState(false);
@@ -379,12 +380,14 @@ export default function ManageUsers() {
     setFotoFile(null);
     if (u) {
       setEditingGuruId(u.id);
+      setEditingGuruModelId(u.guru.id);
       setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '' });
       const existing = u.guru.guruMataPelajaran?.map(m => m.nama) ?? (u.guru.mataPelajaran ? [u.guru.mataPelajaran] : []);
       setGuruMapelList(existing);
       setGuruCurrentFoto(u.guru.fotoUrl ?? null);
     } else {
       setEditingGuruId(null);
+      setEditingGuruModelId(null);
       setGuruForm({ nip: '', nama: '', email: '', password: '' });
       setGuruMapelList([]);
       setGuruCurrentFoto(null);
@@ -1089,13 +1092,13 @@ export default function ManageUsers() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="guru-modal-title"
-            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200"
+            className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
           >
-            <div className="px-6 pt-6 pb-4 border-b border-outline-variant">
+            <div className="px-6 pt-6 pb-4 border-b border-outline-variant shrink-0">
               <h2 id="guru-modal-title" className="text-lg font-bold text-on-surface">{editingGuruId ? 'Edit Data Guru' : 'Tambah Guru Baru'}</h2>
             </div>
-            <form onSubmit={handleSaveGuru}>
-              <div className="px-6 py-5 space-y-4">
+            <form onSubmit={handleSaveGuru} className="flex flex-col min-h-0">
+              <div className="px-6 py-5 space-y-4 overflow-y-auto">
 
                 {/* ── Foto Profil (hanya saat edit) ── */}
                 {editingGuruId && (
@@ -1119,7 +1122,7 @@ export default function ManageUsers() {
                         {guruCurrentFoto && !fotoPreview && (
                           <button
                             type="button"
-                            onClick={() => handleHapusFoto(editingGuruId)}
+                            onClick={() => editingGuruModelId && handleHapusFoto(editingGuruModelId)}
                             className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-error text-white flex items-center justify-center shadow"
                             title="Hapus foto"
                           >
@@ -1147,7 +1150,7 @@ export default function ManageUsers() {
                         {fotoPreview && (
                           <button
                             type="button"
-                            onClick={() => handleUploadFoto(editingGuruId)}
+                            onClick={() => editingGuruModelId && handleUploadFoto(editingGuruModelId)}
                             disabled={isUploadingFoto}
                             className="px-3 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-60 flex items-center gap-2"
                           >
@@ -1216,7 +1219,7 @@ export default function ManageUsers() {
                   </div>
                 )}
               </div>
-              <div className="px-6 pb-6 flex justify-end gap-3">
+              <div className="px-6 pb-6 pt-2 flex justify-end gap-3 shrink-0 border-t border-outline-variant/40">
                 <Button type="button" variant="outline" onClick={() => setShowGuruModal(false)} disabled={isSubmittingGuru}>Batal</Button>
                 <Button type="submit" disabled={isSubmittingGuru} className="bg-primary hover:bg-primary/90">
                   {isSubmittingGuru ? <><Spinner />Menyimpan...</> : 'Simpan'}
