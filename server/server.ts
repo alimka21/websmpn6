@@ -135,6 +135,10 @@ async function runInitMigration(prisma: any): Promise<void> {
           /check that .* exists/i.test(msg) ||
           /no such index/i.test(msg) ||
           /doesn'?t exist/i.test(msg) ||
+          /duplicate column name/i.test(msg) ||  // MySQL: ALTER TABLE ADD COLUMN yg sudah ada
+          /duplicate key name/i.test(msg) ||     // MySQL: CREATE INDEX yg sudah ada
+          /\b1060\b/.test(msg) ||                // MySQL error code: duplicate column
+          /\b1061\b/.test(msg) ||                // MySQL error code: duplicate key
           /\b1091\b/.test(msg)
         ) {
           continue;

@@ -1,18 +1,13 @@
 -- ============================================================
--- Migrasi: REQ-007, REQ-008, REQ-009
--- Auto-runner menangani duplikasi (Duplicate column/key name).
+-- FIX: Lanjutan migrasi REQ-007, REQ-008, REQ-009
+-- Jalankan file INI di phpMyAdmin (bukan file migration.sql utama).
+-- Kolom kodeAksesGuru/kodeAksesSiswa sudah ada → dilewati.
 -- ============================================================
 
 -- ─────────────────────────────────────────────────────────────
--- REQ-007: Absensi Manual Siswa
+-- REQ-007: Tabel AbsensiSiswa
 -- ─────────────────────────────────────────────────────────────
 
--- Tambah kolom kode akses ke PengaturanPresensi (tanpa IF NOT EXISTS — tidak didukung MySQL)
-ALTER TABLE `PengaturanPresensi`
-  ADD COLUMN `kodeAksesGuru`  VARCHAR(191) NULL,
-  ADD COLUMN `kodeAksesSiswa` VARCHAR(191) NULL;
-
--- Tabel absensi tidak hadir siswa (Sakit / Izin / Alfa) yang diinput guru
 CREATE TABLE IF NOT EXISTS `AbsensiSiswa` (
   `id`         VARCHAR(191)  NOT NULL,
   `siswaId`    VARCHAR(191)  NOT NULL,
@@ -25,9 +20,9 @@ CREATE TABLE IF NOT EXISTS `AbsensiSiswa` (
 
   PRIMARY KEY (`id`),
   UNIQUE KEY  `AbsensiSiswa_siswaId_tanggal_key` (`siswaId`, `tanggal`),
-  INDEX       `AbsensiSiswa_tanggal_idx`          (`tanggal`),
-  INDEX       `AbsensiSiswa_siswaId_idx`           (`siswaId`),
-  INDEX       `AbsensiSiswa_guruId_idx`            (`guruId`),
+  INDEX       `AbsensiSiswa_tanggal_idx`         (`tanggal`),
+  INDEX       `AbsensiSiswa_siswaId_idx`          (`siswaId`),
+  INDEX       `AbsensiSiswa_guruId_idx`           (`guruId`),
 
   CONSTRAINT `AbsensiSiswa_siswaId_fkey`
     FOREIGN KEY (`siswaId`) REFERENCES `Siswa` (`id`)
@@ -39,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `AbsensiSiswa` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- ─────────────────────────────────────────────────────────────
--- REQ-008: Sistem Potensi Siswa
+-- REQ-008: Jenis Kebaikan & Pelanggaran + Laporan Potensi
 -- ─────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS `JenisKebaikan` (
@@ -98,13 +93,6 @@ CREATE TABLE IF NOT EXISTS `LaporanPotensi` (
 -- REQ-009: Dashboard Tugas & Nilai
 -- ─────────────────────────────────────────────────────────────
 
--- Tambah kolom dashboard ke tabel Ujian
-ALTER TABLE `Ujian`
-  ADD COLUMN `masukkanKeDashboard` TINYINT(1)   NOT NULL DEFAULT 0,
-  ADD COLUMN `jenisNilai`          VARCHAR(191) NULL,
-  ADD COLUMN `materiNilai`         VARCHAR(191) NULL;
-
--- Kolom nilai manual yang dibuat guru
 CREATE TABLE IF NOT EXISTS `KolomNilai` (
   `id`            VARCHAR(191) NOT NULL,
   `judul`         VARCHAR(191) NOT NULL,
@@ -125,7 +113,6 @@ CREATE TABLE IF NOT EXISTS `KolomNilai` (
 
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Relasi banyak-ke-banyak KolomNilai ↔ Kelas
 CREATE TABLE IF NOT EXISTS `KolomNilaiKelas` (
   `id`           VARCHAR(191) NOT NULL,
   `kolomNilaiId` VARCHAR(191) NOT NULL,
@@ -143,7 +130,6 @@ CREATE TABLE IF NOT EXISTS `KolomNilaiKelas` (
 
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Nilai siswa per kolom nilai manual
 CREATE TABLE IF NOT EXISTS `NilaiSiswa` (
   `id`           VARCHAR(191) NOT NULL,
   `kolomNilaiId` VARCHAR(191) NOT NULL,
