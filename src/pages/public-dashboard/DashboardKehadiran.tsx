@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarCheck, Users, AlertTriangle, Clock, CheckCircle,
-  Download, RefreshCw, ChevronDown, Home, ShieldCheck, ClipboardList,
+  RefreshCw, ChevronDown, Home, ShieldCheck, ClipboardList,
   Search,
 } from 'lucide-react';
 import api from '../../lib/api';
@@ -99,14 +99,6 @@ export default function DashboardKehadiran() {
   }, [mode, tanggal, dari, sampai, kelasId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const handleExport = async () => {
-    const params = new URLSearchParams();
-    if (mode === 'hari')    { params.set('dari', tanggal); params.set('sampai', tanggal); }
-    if (mode === 'rentang' && dari && sampai) { params.set('dari', dari); params.set('sampai', sampai); }
-    if (kelasId) params.set('kelasId', kelasId);
-    window.open(`/api/admin/absensi/export?${params}`, '_blank');
-  };
 
   const filteredRows = rows.filter(r =>
     !search || r.nama.toLowerCase().includes(search.toLowerCase()) || r.kelas.toLowerCase().includes(search.toLowerCase())
@@ -269,13 +261,6 @@ export default function DashboardKehadiran() {
                   className="pl-9 pr-3 py-2 border border-outline-variant rounded-xl text-sm focus:border-primary outline-none bg-surface w-48"
                 />
               </div>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </button>
             </div>
           </div>
 

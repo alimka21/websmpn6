@@ -7,11 +7,13 @@ import { GraduationCap, ArrowLeft, Calendar, Share2, Link as LinkIcon, FileText,
 import { Button } from '../components/ui/button';
 import api from '../lib/api';
 import SiteFooter from '../components/SiteFooter';
+import { useSiteConfig } from '../hooks/useSiteConfig';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 export default function BeritaDetail() {
   const { slug } = useParams();
+  const cfg = useSiteConfig();
   const [berita, setBerita] = useState<any>(null);
   const [beritaLain, setBeritaLain] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function BeritaDetail() {
   }
 
   // SEO meta tags
-  const siteName = import.meta.env.VITE_SITE_NAME || 'Portal Sekolah';
+  const siteName = cfg.namaSekolah || import.meta.env.VITE_SITE_NAME || 'Portal Sekolah';
   const siteUrl = import.meta.env.VITE_APP_URL || '';
   const pageUrl = `${siteUrl}/berita/${berita.slug}`;
   const metaDescription = berita.metaDescription || berita.ringkasan || berita.judul;

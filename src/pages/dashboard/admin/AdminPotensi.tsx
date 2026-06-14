@@ -421,7 +421,7 @@ function TabExport() {
       const p = new URLSearchParams();
       if (dari)   p.set('dari', dari);
       if (sampai) p.set('sampai', sampai);
-      const r: any = await api.get(`/api/public/dashboard/potensi?${p.toString()}`);
+      const r: any = await api.get(`/api/dashboard/potensi?${p.toString()}`);
       setRekap(Array.isArray(r) ? r : []);
     } catch { toast.error('Gagal memuat data rekap'); }
     finally { setLoading(false); }
