@@ -479,6 +479,33 @@ router.get('/jenis-pelanggaran', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Daftar guru untuk dropdown form lapor
+router.get('/guru', async (_req, res, next) => {
+  try {
+    const data = await withCache('pub:guru-list', 300, () =>
+      prisma.guru.findMany({
+        select: { id: true, nama: true },
+        orderBy: { nama: 'asc' },
+      })
+    );
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
+// Siswa berdasarkan kelas untuk dropdown form lapor
+router.get('/siswa-by-kelas', async (req, res, next) => {
+  try {
+    const kelasId = (req.query.kelasId as string || '').trim();
+    if (!kelasId) return res.json([]);
+    const data = await prisma.siswa.findMany({
+      where: { kelasId },
+      select: { id: true, nama: true, nis: true },
+      orderBy: { nama: 'asc' },
+    });
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
 // Cari siswa by nama/NIS untuk form lapor
 router.get('/siswa-search', async (req, res, next) => {
   try {
@@ -562,7 +589,7 @@ router.get('/dashboard/potensi', async (req, res, next) => {
 
     const siswas = await prisma.siswa.findMany({
       where: kelasId ? { kelasId } : {},
-      select: { id: true, nama: true, kelas: { select: { nama: true } } },
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
       orderBy: { nama: 'asc' },
     });
 
@@ -574,28 +601,29 @@ router.get('/dashboard/potensi', async (req, res, next) => {
       select: { siswaId: true, tipe: true, poin: true },
     });
 
-    const acc: Record<string, { kebaikan: number; pelanggaran: number }> = {};
+    const acc: Record<string, { totalKebaikan: number; totalPelanggaran: number }> = {};
     for (const l of laporan) {
-      if (!acc[l.siswaId]) acc[l.siswaId] = { kebaikan: 0, pelanggaran: 0 };
-      if (l.tipe === 'KEBAIKAN') acc[l.siswaId].kebaikan += l.poin;
-      else acc[l.siswaId].pelanggaran += l.poin;
+      if (!acc[l.siswaId]) acc[l.siswaId] = { totalKebaikan: 0, totalPelanggaran: 0 };
+      if (l.tipe === 'KEBAIKAN') acc[l.siswaId].totalKebaikan += l.poin;
+      else acc[l.siswaId].totalPelanggaran += l.poin;
     }
 
     let rows = siswas.map(s => ({
       siswaId: s.id,
       nama: s.nama,
+      nis: s.nis,
       kelas: s.kelas.nama,
-      kebaikan: acc[s.id]?.kebaikan || 0,
-      pelanggaran: acc[s.id]?.pelanggaran || 0,
-      neto: (acc[s.id]?.kebaikan || 0) - (acc[s.id]?.pelanggaran || 0),
-    })).filter(r => r.kebaikan > 0 || r.pelanggaran > 0);
+      totalKebaikan: acc[s.id]?.totalKebaikan || 0,
+      totalPelanggaran: acc[s.id]?.totalPelanggaran || 0,
+      neto: (acc[s.id]?.totalKebaikan || 0) - (acc[s.id]?.totalPelanggaran || 0),
+    })).filter(r => r.totalKebaikan > 0 || r.totalPelanggaran > 0);
 
     if (filter === 'positif') rows = rows.filter(r => r.neto > 0);
     else if (filter === 'negatif') rows = rows.filter(r => r.neto < 0);
 
     rows.sort((a, b) => b.neto - a.neto);
 
-    res.json({ rows });
+    res.json(rows);
   } catch (err) { next(err); }
 });
 
