@@ -373,65 +373,100 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════ */}
-      <section id="beranda" className="hero-gradient pt-40 pb-24 md:pt-48 md:pb-40 text-white overflow-hidden relative">
-        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-white/15 px-4 py-2 rounded-full backdrop-blur-md border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-primary-fixed animate-pulse" />
-              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary-fixed">
-                {cfg.heroBadge || schoolName.toUpperCase()}
-              </span>
-            </div>
+      <section id="beranda" className="overflow-hidden">
 
-            {/* Heading */}
-            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
-              {cfg.heroTitle || 'Portal Akademik'}
-              <br />
-              <span className="text-amber-400">
-                {cfg.heroSubtitle || 'Digital Masa Depan'}
-              </span>
-            </h1>
+        {/* ─── Upper: light background ─── */}
+        <div className="relative pt-28 pb-16 md:pt-40 md:pb-20 bg-gradient-to-br from-surface-container-low via-surface to-surface">
+          {/* Decorative blur blobs */}
+          <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-primary/[0.06] rounded-full blur-[130px] -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/[0.05] rounded-full blur-[100px] pointer-events-none" />
 
-            {/* Description */}
-            <p className="text-lg text-white/90 max-w-lg leading-relaxed">
-              {cfg.deskripsi || 'Platform digital terintegrasi untuk seluruh ekosistem pendidikan sekolah Anda.'}
-            </p>
+          <div className="px-4 md:px-20 max-w-screen-2xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
 
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => navigate('/login')}
-                className="bg-white text-primary font-bold px-8 py-4 rounded-xl flex items-center gap-2 hover:bg-primary-fixed transition-all shadow-xl shadow-black/20 group"
-              >
-                Login Portal
-                <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => scrollTo('fitur')}
-                className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-8 py-4 rounded-xl transition-all backdrop-blur-sm"
-              >
-                Lihat Fitur
-              </button>
-            </div>
-          </div>
-
-          {/* Hero image */}
-          <div className="relative group">
-            <div className="absolute -inset-4 bg-primary-fixed/30 blur-[100px] rounded-full opacity-50" />
-            {cfg.heroImageUrl ? (
-              <img
-                src={cfg.heroImageUrl}
-                alt={schoolName}
-                className="w-full h-auto rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative z-20 border border-white/20 transition-transform duration-700 group-hover:scale-[1.01]"
-              />
-            ) : (
-              <div className="w-full aspect-video rounded-2xl bg-white/10 border border-white/20 relative z-20 flex items-center justify-center">
-                <GraduationCap className="w-24 h-24 text-white/30" />
+            {/* Left: copy */}
+            <div className="space-y-7">
+              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
+                  {cfg.heroBadge || schoolName.toUpperCase()}
+                </span>
               </div>
-            )}
+
+              <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight tracking-tight text-on-background">
+                {cfg.heroTitle || 'Portal Akademik'}
+                <br />
+                <span className="text-primary">{cfg.heroSubtitle || 'Digital Masa Depan'}</span>
+              </h1>
+
+              <p className="text-base md:text-lg text-on-surface-variant max-w-lg leading-relaxed">
+                {cfg.deskripsi || 'Platform digital terintegrasi untuk seluruh ekosistem pendidikan sekolah Anda.'}
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="bg-primary text-white font-bold px-7 py-3.5 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 group text-sm"
+                >
+                  Login Portal
+                  <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button
+                  onClick={() => scrollTo('fitur')}
+                  className="bg-surface-container border border-outline-variant text-on-surface font-bold px-7 py-3.5 rounded-xl hover:bg-surface-container-high transition-all text-sm"
+                >
+                  Jelajahi Fitur
+                </button>
+              </div>
+            </div>
+
+            {/* Right: image */}
+            <div className="relative group">
+              <div className="absolute -inset-4 bg-primary/10 blur-[80px] rounded-full opacity-60 pointer-events-none" />
+              {cfg.heroImageUrl ? (
+                <img
+                  src={cfg.heroImageUrl}
+                  alt={schoolName}
+                  className="w-full h-auto rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,40,142,0.18)] relative z-10 border border-outline-variant/30 transition-transform duration-700 group-hover:scale-[1.01]"
+                />
+              ) : (
+                <div className="w-full aspect-video rounded-2xl bg-surface-container border border-outline-variant/30 relative z-10 flex items-center justify-center">
+                  <GraduationCap className="w-20 h-20 text-outline/40" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* ─── Lower: dark navy connecting strip — 3 Inovasi ─── */}
+        <div className="bg-[#1a2744] py-10 md:py-14">
+          <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
+              {fiturItems.slice(0, 3).map((item, i) => {
+                const Icon = ICON_MAP[item.icon] || BookOpen;
+                const nums = ['01', '02', '03'];
+                return (
+                  <button
+                    key={i}
+                    onClick={() => scrollTo('fitur')}
+                    className="group flex items-start gap-5 text-left px-4 md:px-10 py-7 hover:bg-white/5 transition-colors"
+                  >
+                    <div className="w-12 h-12 bg-primary/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300">
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">{nums[i]}</span>
+                      <h3 className="text-base font-bold text-white mt-0.5 mb-1.5 group-hover:text-blue-300 transition-colors leading-snug">
+                        {item.title}
+                      </h3>
+                      <p className="text-[13px] text-white/55 leading-relaxed line-clamp-2">{item.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
       </section>
 
       {/* ══════════════════════════════════════════════════
