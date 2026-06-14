@@ -80,7 +80,7 @@ export default function LandingPage() {
     }
     setAksesLoading(true);
     try {
-      await api.post('/api/public/presensi/verify-akses', { jenis: aksesModal.jenis, kode: kodeInput });
+      await api.post('/api/presensi/verify-akses', { jenis: aksesModal.jenis, kode: kodeInput });
       sessionStorage.setItem(`presensi_${aksesModal.jenis}_ok`, '1');
       setAksesModal({ open: false, jenis: null });
       navigate(`/presensi/${aksesModal.jenis}`);
