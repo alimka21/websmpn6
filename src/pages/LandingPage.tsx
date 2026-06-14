@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   LogIn, ArrowRight, Users, GraduationCap, BookOpen, Building2,
@@ -6,6 +6,7 @@ import {
   FileText, ClipboardList, MapPin, Clock, ExternalLink, Newspaper,
   Briefcase, Menu, X, Quote, Calendar, Compass, Lightbulb,
   Home, Layers, Phone, ChevronDown, KeyRound, Loader2,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
@@ -27,7 +28,10 @@ interface Berita {
 interface DokumenItem { id: string; judul: string; linkDrive: string }
 interface AgendaItem  { id: string; judul: string; waktu: string; lokasi: string | null }
 
-interface FiturItem { icon: string; title: string; desc: string }
+interface FiturItem  { icon: string; title: string; desc: string }
+interface GuruProfil { id: string; nama: string; mataPelajaran: string; fotoUrl: string | null }
+
+const CARDS_PER_PAGE = 4;
 
 const DEFAULT_FITUR: FiturItem[] = [
   { icon: 'BookOpen',    title: 'Perpustakaan Digital',  desc: 'Akses ribuan judul buku digital dan modul pembelajaran kapanpun dan dimanapun tanpa batas fisik gedung.' },
@@ -64,6 +68,9 @@ export default function LandingPage() {
   const [kodeInput, setKodeInput]               = useState('');
   const [aksesLoading, setAksesLoading]         = useState(false);
   const kodeRef                                  = useRef<HTMLInputElement>(null);
+  const [guruProfil, setGuruProfil]   = useState<GuruProfil[]>([]);
+  const [sliderPage, setSliderPage]   = useState(0);
+  const sliderTimerRef                = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const navigate = useNavigate();
 
   const bukaModalAkses = (jenis: 'guru' | 'siswa') => {
@@ -121,7 +128,33 @@ export default function LandingPage() {
     api.get('/api/agenda?limit=5')
       .then((r: any) => setAgendaList(Array.isArray(r) ? r : []))
       .catch(() => {});
+    api.get('/api/profil-guru')
+      .then((r: any) => setGuruProfil(Array.isArray(r) ? r : []))
+      .catch(() => {});
   }, []);
+
+  const totalSliderPages = Math.max(1, Math.ceil(guruProfil.length / CARDS_PER_PAGE));
+
+  const sliderNext = useCallback(() => {
+    setSliderPage(p => (p + 1) % totalSliderPages);
+  }, [totalSliderPages]);
+
+  const sliderPrev = useCallback(() => {
+    setSliderPage(p => (p - 1 + totalSliderPages) % totalSliderPages);
+  }, [totalSliderPages]);
+
+  const sliderGoTo = (page: number) => {
+    clearInterval(sliderTimerRef.current);
+    setSliderPage(page);
+  };
+
+  useEffect(() => {
+    if (guruProfil.length <= CARDS_PER_PAGE) return;
+    sliderTimerRef.current = setInterval(sliderNext, 4000);
+    return () => clearInterval(sliderTimerRef.current);
+  }, [guruProfil.length, sliderNext]);
+
+  const visibleGuru = guruProfil.slice(sliderPage * CARDS_PER_PAGE, (sliderPage + 1) * CARDS_PER_PAGE);
 
   const fiturItems: FiturItem[] = (() => {
     try {
@@ -450,15 +483,15 @@ export default function LandingPage() {
                     onClick={() => scrollTo('fitur')}
                     className="group flex items-start gap-5 text-left px-4 md:px-10 py-7 hover:bg-white/5 transition-colors"
                   >
-                    <div className="w-12 h-12 bg-primary/40 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300">
-                      <Icon className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-primary transition-colors duration-300">
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">{nums[i]}</span>
-                      <h3 className="text-base font-bold text-white mt-0.5 mb-1.5 group-hover:text-blue-300 transition-colors leading-snug">
+                      <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/40">{nums[i]}</span>
+                      <h3 className="text-lg font-bold text-white mt-0.5 mb-1.5 group-hover:text-blue-300 transition-colors leading-snug">
                         {item.title}
                       </h3>
-                      <p className="text-[13px] text-white/55 leading-relaxed line-clamp-2">{item.desc}</p>
+                      <p className="text-[15px] text-white/60 leading-relaxed line-clamp-2">{item.desc}</p>
                     </div>
                   </button>
                 );
@@ -600,30 +633,89 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════
-          INOVASI / FITUR UNGGULAN
+          PROFIL GURU — SLIDER
       ══════════════════════════════════════════════════ */}
-      <section id="fitur" className="py-16 md:py-24 bg-surface">
-        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto space-y-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-semibold text-on-background">Inovasi Sekolah Kami</h2>
+      <section id="fitur" className="py-16 md:py-24 bg-[#1a2744] overflow-hidden">
+        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto space-y-10">
+
+          {/* Header */}
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/40 mb-2">Tim Kami</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
+                Tenaga Pendidik<br />
+                <span className="text-blue-300">Profesional</span>
+              </h2>
+            </div>
+            {/* Navigasi */}
+            {totalSliderPages > 1 && (
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => { sliderPrev(); clearInterval(sliderTimerRef.current); }}
+                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:border-white/60 hover:text-white transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => { sliderNext(); clearInterval(sliderTimerRef.current); }}
+                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:border-white/60 hover:text-white transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {fiturItems.map((item, i) => {
-              const Icon = ICON_MAP[item.icon] || BookOpen;
-              return (
-                <div key={i} className="group bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/30 card-hover shadow-sm">
-                  <div className="w-14 h-14 bg-surface-container rounded-xl flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                    <Icon className="w-6 h-6" />
+          {/* Kartu guru */}
+          {guruProfil.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-pulse h-56" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+              {visibleGuru.map((guru) => {
+                const initials = guru.nama.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+                return (
+                  <div
+                    key={guru.id}
+                    className="group bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center text-center hover:bg-white/10 hover:border-white/20 transition-all duration-300"
+                  >
+                    {/* Foto / avatar */}
+                    {guru.fotoUrl ? (
+                      <img
+                        src={guru.fotoUrl}
+                        alt={guru.nama}
+                        className="w-20 h-20 rounded-full object-cover ring-2 ring-white/20 group-hover:ring-blue-400/60 transition-all mb-4"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-extrabold text-xl ring-2 ring-white/20 group-hover:ring-blue-400/60 transition-all mb-4">
+                        {initials}
+                      </div>
+                    )}
+                    <h3 className="font-bold text-white text-sm leading-snug mb-1 line-clamp-2">{guru.nama}</h3>
+                    <p className="text-[12px] text-white/50 leading-relaxed line-clamp-2">{guru.mataPelajaran}</p>
                   </div>
-                  <h3 className="text-2xl font-semibold mb-4 text-on-background group-hover:text-primary transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-on-surface-variant leading-relaxed">{item.desc}</p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Dot indicators */}
+          {totalSliderPages > 1 && (
+            <div className="flex justify-center gap-2 pt-2">
+              {Array.from({ length: totalSliderPages }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => sliderGoTo(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === sliderPage ? 'w-8 bg-blue-300' : 'w-2 bg-white/20 hover:bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

@@ -502,6 +502,20 @@ router.get('/guru', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Profil guru untuk slider di landing page
+router.get('/profil-guru', async (_req, res, next) => {
+  try {
+    const data = await withCache('pub:profil-guru', 300, () =>
+      prisma.guru.findMany({
+        where: { user: { isActive: true } },
+        select: { id: true, nama: true, mataPelajaran: true, fotoUrl: true },
+        orderBy: { nama: 'asc' },
+      })
+    );
+    res.json(data);
+  } catch (err) { next(err); }
+});
+
 // Siswa berdasarkan kelas untuk dropdown form lapor
 router.get('/siswa-by-kelas', async (req, res, next) => {
   try {
