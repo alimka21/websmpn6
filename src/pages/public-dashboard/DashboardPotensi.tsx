@@ -104,32 +104,22 @@ export default function DashboardPotensi() {
               <ShieldCheck className="w-4 h-4 text-primary" /> Dashboard Potensi
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm">
             <Link to="/lapor" className="hidden sm:flex items-center gap-1.5 text-sm text-primary font-semibold border border-primary/30 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors">
               <ShieldCheck className="w-3.5 h-3.5" /> Lapor
             </Link>
-            <Link to="/" className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors font-medium">
+            <span className="text-outline-variant hidden sm:block">|</span>
+            <Link to="/" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
               <Home className="w-4 h-4" /> Beranda
             </Link>
-          </div>
-        </div>
-
-        {/* Mini nav */}
-        <div className="border-t border-outline-variant/20 bg-surface/50">
-          <div className="max-w-screen-xl mx-auto px-4 md:px-8 flex gap-1 overflow-x-auto py-1.5">
-            {[
-              { to: '/dashboard-publik/kehadiran', icon: CalendarCheck, label: 'Kehadiran' },
-              { to: '/dashboard-publik/potensi',   icon: ShieldCheck,   label: 'Potensi', active: true },
-              { to: '/dashboard-publik/tugas',     icon: ClipboardList, label: 'Tugas' },
-            ].map(({ to, icon: Icon, label, active }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${active ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
-              >
-                <Icon className="w-3.5 h-3.5" /> {label}
-              </Link>
-            ))}
+            <span className="text-outline-variant">|</span>
+            <Link to="/dashboard-publik/kehadiran" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
+              <CalendarCheck className="w-4 h-4" /> Kehadiran
+            </Link>
+            <span className="text-outline-variant">|</span>
+            <Link to="/dashboard-publik/tugas" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
+              <ClipboardList className="w-4 h-4" /> Tugas
+            </Link>
           </div>
         </div>
       </header>

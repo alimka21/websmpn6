@@ -116,25 +116,18 @@ export default function DashboardTugas() {
               <ClipboardList className="w-4 h-4 text-primary" /> Dashboard Tugas & Nilai
             </span>
           </div>
-          <Link to="/" className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-primary transition-colors font-medium">
-            <Home className="w-4 h-4" /> Beranda
-          </Link>
-        </div>
-
-        {/* Mini nav */}
-        <div className="border-t border-outline-variant/20 bg-surface/50">
-          <div className="max-w-screen-xl mx-auto px-4 md:px-8 flex gap-1 overflow-x-auto py-1.5">
-            {[
-              { to: '/dashboard-publik/kehadiran', icon: CalendarCheck, label: 'Kehadiran' },
-              { to: '/dashboard-publik/potensi',   icon: ShieldCheck,   label: 'Potensi' },
-              { to: '/dashboard-publik/tugas',     icon: ClipboardList, label: 'Tugas & Nilai', active: true },
-            ].map(({ to, icon: Icon, label, active }) => (
-              <Link key={to} to={to}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${active ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
-              >
-                <Icon className="w-3.5 h-3.5" /> {label}
-              </Link>
-            ))}
+          <div className="flex items-center gap-2 text-sm">
+            <Link to="/" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
+              <Home className="w-4 h-4" /> Beranda
+            </Link>
+            <span className="text-outline-variant">|</span>
+            <Link to="/dashboard-publik/kehadiran" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
+              <CalendarCheck className="w-4 h-4" /> Kehadiran
+            </Link>
+            <span className="text-outline-variant">|</span>
+            <Link to="/dashboard-publik/potensi" className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors font-medium">
+              <ShieldCheck className="w-4 h-4" /> Potensi
+            </Link>
           </div>
         </div>
       </header>
