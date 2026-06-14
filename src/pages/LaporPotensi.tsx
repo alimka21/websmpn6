@@ -53,7 +53,7 @@ export default function LaporPotensi() {
 
   // Load data statis
   useEffect(() => {
-    api.get('/api/guru').then((r: any) => setGuruList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/presensi/guru-list').then((r: any) => setGuruList(Array.isArray(r) ? r : [])).catch(() => {});
     api.get('/api/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
     api.get('/api/jenis-kebaikan').then((r: any) => setJenisKebaikan(Array.isArray(r) ? r : [])).catch(() => {});
     api.get('/api/jenis-pelanggaran').then((r: any) => setJenisPelanggaran(Array.isArray(r) ? r : [])).catch(() => {});
