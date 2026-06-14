@@ -391,10 +391,10 @@ router.get('/dashboard/kehadiran', async (req, res, next) => {
 
     const kelasWhere = kelasId ? { kelasId } : {};
 
-    // Ambil semua siswa sesuai filter kelas
+    // Ambil semua siswa sesuai filter kelas (termasuk NIS)
     const siswas = await prisma.siswa.findMany({
       where: kelasWhere,
-      select: { id: true, nama: true, kelas: { select: { nama: true } } },
+      select: { id: true, nama: true, nis: true, kelas: { select: { id: true, nama: true } } },
       orderBy: { nama: 'asc' },
     });
 
@@ -417,7 +417,7 @@ router.get('/dashboard/kehadiran', async (req, res, next) => {
           siswaId: { in: siswaIds },
           ...(tanggalFilter ? { tanggal: tanggalFilter } : {}),
         },
-        select: { siswaId: true, status: true },
+        select: { siswaId: true, status: true, guru: { select: { nama: true } } },
       }),
     ]);
 
@@ -428,11 +428,16 @@ router.get('/dashboard/kehadiran', async (req, res, next) => {
     }
 
     const absenCount: Record<string, { sakit: number; izin: number; alfa: number }> = {};
+    const guruPencatatSet: Record<string, Set<string>> = {};
     for (const a of absensiList) {
       if (!absenCount[a.siswaId]) absenCount[a.siswaId] = { sakit: 0, izin: 0, alfa: 0 };
       if (a.status === 'SAKIT') absenCount[a.siswaId].sakit++;
       else if (a.status === 'IZIN') absenCount[a.siswaId].izin++;
       else if (a.status === 'ALFA') absenCount[a.siswaId].alfa++;
+      if (a.guru?.nama) {
+        if (!guruPencatatSet[a.siswaId]) guruPencatatSet[a.siswaId] = new Set();
+        guruPencatatSet[a.siswaId].add(a.guru.nama);
+      }
     }
 
     const rows = siswas.map(s => {
@@ -440,7 +445,12 @@ router.get('/dashboard/kehadiran', async (req, res, next) => {
       const { sakit = 0, izin = 0, alfa = 0 } = absenCount[s.id] || {};
       const totalHari = hadir + sakit + izin + alfa;
       const persen = totalHari > 0 ? Math.round((hadir / totalHari) * 1000) / 10 : null;
-      return { siswaId: s.id, nama: s.nama, kelas: s.kelas.nama, hadir, sakit, izin, alfa, totalHari, persen };
+      const guruPencatat = guruPencatatSet[s.id] ? Array.from(guruPencatatSet[s.id]).join(', ') : null;
+      return {
+        siswaId: s.id, nama: s.nama, nis: s.nis,
+        kelasId: s.kelas.id, kelas: s.kelas.nama,
+        hadir, sakit, izin, alfa, totalHari, persen, guruPencatat,
+      };
     });
 
     // Hanya tampilkan siswa yang ada data (hadir atau absen > 0)
@@ -679,6 +689,7 @@ router.get('/dashboard/tugas', async (req, res, next) => {
       },
       select: {
         id: true, judul: true, jenisNilai: true, materiNilai: true, mataPelajaran: true, createdAt: true,
+        guru: { select: { nama: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -691,23 +702,26 @@ router.get('/dashboard/tugas', async (req, res, next) => {
       },
       select: {
         id: true, judul: true, jenis: true, materi: true, mataPelajaran: true, tanggal: true,
+        guru: { select: { nama: true } },
       },
       orderBy: { tanggal: 'asc' },
     });
 
     // ── 3. Gabung kolom (sorted by tanggal/createdAt asc) ──
-    type ColMeta = { id: string; colKey: string; judul: string; jenis: string; materi: string; mataPelajaran: string; sumber: 'ujian' | 'manual'; tanggal: Date };
+    type ColMeta = { id: string; colKey: string; judul: string; jenis: string; materi: string; mataPelajaran: string; guruNama: string; sumber: 'ujian' | 'manual'; tanggal: Date };
     const columns: ColMeta[] = [
       ...ujianList.map(u => ({
         id: u.id, colKey: `ujian_${u.id}`,
         judul: u.judul, jenis: u.jenisNilai || 'UH',
         materi: u.materiNilai || '', mataPelajaran: u.mataPelajaran,
+        guruNama: u.guru.nama,
         sumber: 'ujian' as const, tanggal: u.createdAt,
       })),
       ...kolomList.map(k => ({
         id: k.id, colKey: `manual_${k.id}`,
         judul: k.judul, jenis: k.jenis,
         materi: k.materi, mataPelajaran: k.mataPelajaran,
+        guruNama: k.guru.nama,
         sumber: 'manual' as const, tanggal: k.tanggal,
       })),
     ].sort((a, b) => a.tanggal.getTime() - b.tanggal.getTime());
@@ -778,7 +792,7 @@ router.get('/dashboard/tugas', async (req, res, next) => {
       : rows;
 
     res.json({
-      columns: columns.map(c => ({ colKey: c.colKey, judul: c.judul, jenis: c.jenis, materi: c.materi, mataPelajaran: c.mataPelajaran, sumber: c.sumber })),
+      columns: columns.map(c => ({ colKey: c.colKey, judul: c.judul, jenis: c.jenis, materi: c.materi, mataPelajaran: c.mataPelajaran, guruNama: c.guruNama, sumber: c.sumber })),
       rows: filtered,
     });
   } catch (err) { next(err); }
@@ -799,19 +813,19 @@ router.get('/dashboard/tugas/export-excel', async (req, res, next) => {
     // Kolom ujian
     const ujianList = await prisma.ujian.findMany({
       where: { masukkanKeDashboard: true, kelas: { some: { kelasId } }, ...(mataPelajaran ? { mataPelajaran } : {}) },
-      select: { id: true, judul: true, jenisNilai: true, materiNilai: true, mataPelajaran: true, createdAt: true },
+      select: { id: true, judul: true, jenisNilai: true, materiNilai: true, mataPelajaran: true, createdAt: true, guru: { select: { nama: true } } },
       orderBy: { createdAt: 'asc' },
     });
     const kolomList = await prisma.kolomNilai.findMany({
       where: { kelasTarget: { some: { kelasId } }, ...(mataPelajaran ? { mataPelajaran } : {}) },
-      select: { id: true, judul: true, jenis: true, materi: true, mataPelajaran: true, tanggal: true },
+      select: { id: true, judul: true, jenis: true, materi: true, mataPelajaran: true, tanggal: true, guru: { select: { nama: true } } },
       orderBy: { tanggal: 'asc' },
     });
 
-    type ColMeta = { id: string; colKey: string; judul: string; jenis: string; materi: string; sumber: 'ujian' | 'manual'; tanggal: Date };
+    type ColMeta = { id: string; colKey: string; judul: string; jenis: string; materi: string; guruNama: string; sumber: 'ujian' | 'manual'; tanggal: Date };
     const columns: ColMeta[] = [
-      ...ujianList.map(u => ({ id: u.id, colKey: `ujian_${u.id}`, judul: u.judul, jenis: u.jenisNilai || 'UH', materi: u.materiNilai || '', sumber: 'ujian' as const, tanggal: u.createdAt })),
-      ...kolomList.map(k => ({ id: k.id, colKey: `manual_${k.id}`, judul: k.judul, jenis: k.jenis, materi: k.materi, sumber: 'manual' as const, tanggal: k.tanggal })),
+      ...ujianList.map(u => ({ id: u.id, colKey: `ujian_${u.id}`, judul: u.judul, jenis: u.jenisNilai || 'UH', materi: u.materiNilai || '', guruNama: u.guru.nama, sumber: 'ujian' as const, tanggal: u.createdAt })),
+      ...kolomList.map(k => ({ id: k.id, colKey: `manual_${k.id}`, judul: k.judul, jenis: k.jenis, materi: k.materi, guruNama: k.guru.nama, sumber: 'manual' as const, tanggal: k.tanggal })),
     ].sort((a, b) => a.tanggal.getTime() - b.tanggal.getTime());
 
     const siswaList = await prisma.siswa.findMany({
@@ -855,8 +869,8 @@ router.get('/dashboard/tugas/export-excel', async (req, res, next) => {
     // Header row 1: judul kolom
     const headerRow = ['No', 'Nama Siswa', 'NIS', 'Kelas', ...columns.map(c => c.judul), 'Keterangan'];
     ws.addRow(headerRow);
-    // Header row 2: jenis • materi
-    const subRow = ['', '', '', '', ...columns.map(c => `${c.jenis}${c.materi ? ' • ' + c.materi : ''}`), ''];
+    // Header row 2: jenis • materi | guru
+    const subRow = ['', '', '', '', ...columns.map(c => `${c.jenis}${c.materi ? ' • ' + c.materi : ''} | ${c.guruNama}`), ''];
     ws.addRow(subRow);
 
     filtered.forEach((row, i) => {

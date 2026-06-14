@@ -24,6 +24,8 @@ interface SummaryData {
 interface KehadiranRow {
   siswaId: string;
   nama: string;
+  nis: string;
+  kelasId: string;
   kelas: string;
   hadir: number;
   sakit: number;
@@ -31,6 +33,7 @@ interface KehadiranRow {
   alfa: number;
   totalHari: number;
   persen: number | null;
+  guruPencatat: string | null;
 }
 
 interface KelasSummary {
@@ -307,7 +310,13 @@ export default function DashboardKehadiran() {
                   {filteredRows.map((row, idx) => (
                     <tr key={row.siswaId} className="hover:bg-surface-container/40 transition-colors">
                       <td className="px-4 py-3 text-on-surface-variant text-xs">{idx + 1}</td>
-                      <td className="px-4 py-3 font-semibold text-on-surface">{row.nama}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-on-surface">{row.nama}</p>
+                        <p className="text-xs text-on-surface-variant">{row.nis}</p>
+                        {row.guruPencatat && (
+                          <p className="text-[10px] text-on-surface-variant/60 mt-0.5">Dicatat: {row.guruPencatat}</p>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-on-surface-variant">{row.kelas}</td>
                       <td className="px-4 py-3 text-center">
                         <span className="font-semibold text-green-600">{row.hadir}</span>

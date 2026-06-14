@@ -14,7 +14,7 @@ interface KelasMeta { id: string; nama: string }
 
 interface ColMeta {
   colKey: string; judul: string; jenis: string;
-  materi: string; mataPelajaran: string; sumber: 'ujian' | 'manual';
+  materi: string; mataPelajaran: string; guruNama: string; sumber: 'ujian' | 'manual';
 }
 
 interface RowData {
@@ -270,11 +270,12 @@ export default function DashboardTugas() {
                     <th className="px-4 py-2.5 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider sticky left-10 bg-surface-container z-10 min-w-[160px]">Nama Siswa</th>
                     <th className="px-4 py-2.5 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider min-w-[80px]">Kelas</th>
                     {columns.map(col => (
-                      <th key={col.colKey} className="px-3 py-2.5 text-center min-w-[100px] border-l border-outline-variant/20">
+                      <th key={col.colKey} className="px-3 py-2.5 text-center min-w-[110px] border-l border-outline-variant/20">
                         <div className="font-bold text-on-surface text-xs leading-tight">{col.judul}</div>
                         <div className={`text-[10px] mt-0.5 font-semibold ${col.sumber === 'ujian' ? 'text-primary' : 'text-purple-600'}`}>
                           {col.sumber === 'ujian' ? '◉ Ujian' : '◎ Manual'}
                         </div>
+                        <div className="text-[10px] text-on-surface-variant/60 mt-0.5 font-normal">{col.guruNama}</div>
                       </th>
                     ))}
                     <th className="px-4 py-2.5 text-center text-xs font-bold text-on-surface-variant uppercase tracking-wider min-w-[110px]">Keterangan</th>
