@@ -586,10 +586,7 @@ export default function LandingPage() {
                   alt={schoolName}
                   className="w-full h-full min-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-6 left-6 text-white">
-                  <p className="text-sm font-bold uppercase tracking-[0.2em] opacity-90">Kampus Kami</p>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
             )}
 

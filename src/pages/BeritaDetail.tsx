@@ -146,7 +146,7 @@ export default function BeritaDetail() {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-label-sm text-on-surface-variant uppercase tracking-wider font-bold mb-6">
           <Link to="/" className="hover:text-primary transition-colors">Beranda</Link>
-          <span className="text-outline-variant">/</span>
+          <span className="text-on-surface-variant">/</span>
           <Link to="/berita" className="hover:text-primary transition-colors">Berita</Link>
         </div>
 
