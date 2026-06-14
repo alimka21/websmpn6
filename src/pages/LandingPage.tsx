@@ -635,67 +635,78 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════
           PROFIL GURU — SLIDER
       ══════════════════════════════════════════════════ */}
-      <section id="fitur" className="py-16 md:py-24 bg-[#1a2744] overflow-hidden">
-        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto space-y-10">
+      <section id="fitur" className="py-16 md:py-24 bg-surface overflow-hidden">
+        <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
 
-          {/* Header */}
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/40 mb-2">Tim Kami</p>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
-                Tenaga Pendidik<br />
-                <span className="text-blue-300">Profesional</span>
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-6 mb-10">
+            <div className="max-w-md">
+              <h2 className="text-3xl md:text-4xl font-bold text-on-background leading-tight mb-3">
+                Tenaga Pendidik Kami
               </h2>
+              <p className="text-on-surface-variant text-base leading-relaxed">
+                Dibimbing oleh guru-guru profesional yang berdedikasi tinggi untuk mencetak generasi unggul dan berkarakter.
+              </p>
             </div>
             {/* Navigasi */}
-            {totalSliderPages > 1 && (
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => { sliderPrev(); clearInterval(sliderTimerRef.current); }}
-                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:border-white/60 hover:text-white transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => { sliderNext(); clearInterval(sliderTimerRef.current); }}
-                  className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:border-white/60 hover:text-white transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-2 shrink-0 mt-1">
+              <button
+                onClick={() => { sliderPrev(); clearInterval(sliderTimerRef.current); }}
+                className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                aria-label="Sebelumnya"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => { sliderNext(); clearInterval(sliderTimerRef.current); }}
+                className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
+                aria-label="Berikutnya"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Kartu guru */}
+          {/* Kartu guru — potrait */}
           {guruProfil.length === 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-pulse h-56" />
+                <div key={i} className="animate-pulse">
+                  <div className="w-full aspect-[3/4] rounded-2xl bg-surface-container-high mb-3" />
+                  <div className="h-4 bg-surface-container-high rounded-full w-3/4 mb-2" />
+                  <div className="h-3 bg-surface-container rounded-full w-1/2" />
+                </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6">
               {visibleGuru.map((guru) => {
                 const initials = guru.nama.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
                 return (
-                  <div
-                    key={guru.id}
-                    className="group bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center text-center hover:bg-white/10 hover:border-white/20 transition-all duration-300"
-                  >
-                    {/* Foto / avatar */}
-                    {guru.fotoUrl ? (
-                      <img
-                        src={guru.fotoUrl}
-                        alt={guru.nama}
-                        className="w-20 h-20 rounded-full object-cover ring-2 ring-white/20 group-hover:ring-blue-400/60 transition-all mb-4"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center text-white font-extrabold text-xl ring-2 ring-white/20 group-hover:ring-blue-400/60 transition-all mb-4">
-                        {initials}
-                      </div>
-                    )}
-                    <h3 className="font-bold text-white text-sm leading-snug mb-1 line-clamp-2">{guru.nama}</h3>
-                    <p className="text-[12px] text-white/50 leading-relaxed line-clamp-2">{guru.mataPelajaran}</p>
+                  <div key={guru.id} className="group">
+                    {/* Foto potrait */}
+                    <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low mb-4 shadow-sm">
+                      {guru.fotoUrl ? (
+                        <img
+                          src={guru.fotoUrl}
+                          alt={guru.nama}
+                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex flex-col items-center justify-center gap-3">
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white font-extrabold text-2xl shadow-lg">
+                            {initials}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Info */}
+                    <h3 className="font-bold text-on-background text-base leading-snug mb-1 line-clamp-2">
+                      {guru.nama}
+                    </h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed line-clamp-1">
+                      {guru.mataPelajaran}
+                    </p>
                   </div>
                 );
               })}
@@ -704,13 +715,13 @@ export default function LandingPage() {
 
           {/* Dot indicators */}
           {totalSliderPages > 1 && (
-            <div className="flex justify-center gap-2 pt-2">
+            <div className="flex justify-center gap-2 mt-10">
               {Array.from({ length: totalSliderPages }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => sliderGoTo(i)}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === sliderPage ? 'w-8 bg-blue-300' : 'w-2 bg-white/20 hover:bg-white/40'
+                    i === sliderPage ? 'w-8 bg-primary' : 'w-2 bg-outline-variant hover:bg-outline'
                   }`}
                 />
               ))}
