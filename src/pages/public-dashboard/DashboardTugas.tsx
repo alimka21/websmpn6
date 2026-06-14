@@ -52,14 +52,14 @@ export default function DashboardTugas() {
   const [search, setSearch]               = useState('');
 
   useEffect(() => {
-    api.get('/api/public/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
 
   // Load mata pelajaran saat kelas berubah
   useEffect(() => {
     setMapelList([]); setMataPelajaran('');
     if (!kelasId) return;
-    api.get(`/api/public/dashboard/tugas/mata-pelajaran?kelasId=${kelasId}`)
+    api.get(`/api/dashboard/tugas/mata-pelajaran?kelasId=${kelasId}`)
       .then((r: any) => setMapelList(Array.isArray(r) ? r : []))
       .catch(() => {});
   }, [kelasId]);
@@ -71,7 +71,7 @@ export default function DashboardTugas() {
       const p = new URLSearchParams({ kelasId });
       if (mataPelajaran) p.set('mataPelajaran', mataPelajaran);
       if (filter !== 'semua') p.set('filter', filter);
-      const r: any = await api.get(`/api/public/dashboard/tugas?${p.toString()}`);
+      const r: any = await api.get(`/api/dashboard/tugas?${p.toString()}`);
       setColumns(r.columns || []);
       setRows(r.rows || []);
     } catch { setError('Gagal memuat data. Coba lagi.'); }
@@ -91,7 +91,7 @@ export default function DashboardTugas() {
       const p = new URLSearchParams({ kelasId });
       if (mataPelajaran) p.set('mataPelajaran', mataPelajaran);
       if (filter !== 'semua') p.set('filter', filter);
-      const blob = await api.getBlob(`/api/public/dashboard/tugas/export-excel?${p.toString()}`);
+      const blob = await api.getBlob(`/api/dashboard/tugas/export-excel?${p.toString()}`);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url;
       a.download = `rekap-nilai-${kelasList.find(k => k.id === kelasId)?.nama || 'kelas'}.xlsx`;

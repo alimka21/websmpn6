@@ -58,7 +58,7 @@ export default function DashboardPotensi() {
   const [search, setSearch]         = useState('');
 
   useEffect(() => {
-    api.get('/api/public/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/kelas').then((r: any) => setKelasList(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -70,7 +70,7 @@ export default function DashboardPotensi() {
       if (sampai)  params.set('sampai', sampai);
       if (kelasId) params.set('kelasId', kelasId);
       if (filter !== 'semua') params.set('filter', filter);
-      const r: any = await api.get(`/api/public/dashboard/potensi?${params.toString()}`);
+      const r: any = await api.get(`/api/dashboard/potensi?${params.toString()}`);
       setData(Array.isArray(r) ? r : []);
     } catch {
       setError('Gagal memuat data. Coba lagi.');

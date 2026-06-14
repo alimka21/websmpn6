@@ -73,7 +73,7 @@ export default function DashboardKehadiran() {
 
   // Ambil daftar kelas untuk filter
   useEffect(() => {
-    api.get('/api/public/kelas')
+    api.get('/api/kelas')
       .then((r: any) => setKelasList(Array.isArray(r) ? r : []))
       .catch(() => {});
   }, []);
@@ -86,7 +86,7 @@ export default function DashboardKehadiran() {
       if (mode === 'rentang') { params.set('dari', dari); params.set('sampai', sampai); }
       if (kelasId)            params.set('kelasId', kelasId);
 
-      const r: any = await api.get(`/api/public/dashboard/kehadiran?${params}`);
+      const r: any = await api.get(`/api/dashboard/kehadiran?${params}`);
       setSummary(r.summary);
       setRows(r.rows || []);
       setLastFetch(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
