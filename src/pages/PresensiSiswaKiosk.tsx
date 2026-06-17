@@ -118,7 +118,7 @@ export default function PresensiSiswaKiosk() {
   const handleSearch = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!nis.trim()) {
-      toast.error('Masukkan NIS terlebih dahulu');
+      toast.error('Masukkan NIS atau kode RFID terlebih dahulu');
       return;
     }
 
@@ -126,7 +126,7 @@ export default function PresensiSiswaKiosk() {
     setSiswa(null);
 
     try {
-      const data = await api.get(`/api/presensi/siswa/cari?nis=${nis.trim()}`);
+      const data = await api.get(`/api/presensi/siswa/cari?q=${encodeURIComponent(nis.trim())}`);
       setSiswa(data);
     } catch (err: any) {
       toast.error(err?.message || 'Siswa tidak ditemukan');
@@ -277,9 +277,9 @@ export default function PresensiSiswaKiosk() {
             </div>
 
             {/* Title */}
-            <h2 className="text-3xl font-bold text-[#0f172a] text-center mb-2">Scan atau Masukkan NIS</h2>
+            <h2 className="text-3xl font-bold text-[#0f172a] text-center mb-2">Scan atau Masukkan NIS / RFID</h2>
             <p className="text-sm text-[#64748b] text-center mb-8">
-              Silakan gunakan kartu pelajar Anda atau masukkan nomor induk siswa.
+              Tempelkan kartu RFID ke scanner, atau ketik NIS Anda secara manual.
             </p>
 
             {/* Input */}
@@ -291,7 +291,7 @@ export default function PresensiSiswaKiosk() {
                   value={nis}
                   onChange={(e) => setNis(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="NIS Anda..."
+                  placeholder="NIS atau Kode RFID..."
                   className="w-full px-6 py-4 text-xl text-center border-2 border-[#e2e8f0] bg-white rounded-xl focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all placeholder:text-[#c4c5d5]"
                   disabled={loading || submitting}
                 />
@@ -342,7 +342,7 @@ export default function PresensiSiswaKiosk() {
             {/* Footer Note */}
             <p className="text-xs text-center text-[#64748b] mt-6 flex items-center justify-center gap-2">
               <Clock className="w-4 h-4" />
-              Dekatkan kartu ke scanner, atau ketik NIS lalu tekan Enter
+              Tempelkan kartu RFID ke scanner, atau ketik NIS lalu tekan Enter
             </p>
           </div>
         </section>

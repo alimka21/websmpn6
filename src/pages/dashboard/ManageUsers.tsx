@@ -22,6 +22,7 @@ interface SiswaUser {
     id: string;
     nama: string;
     nis: string;
+    rfidKode?: string | null;
     kelasId: string;
     kelas: {
       id: string;
@@ -116,7 +117,7 @@ export default function ManageUsers() {
   // ── Siswa Modal ──
   const [showSiswaModal, setShowSiswaModal] = useState(false);
   const [editingSiswaId, setEditingSiswaId] = useState<string | null>(null);
-  const [siswaForm, setSiswaForm] = useState({ nis: '', nama: '', kelasId: '' });
+  const [siswaForm, setSiswaForm] = useState({ nis: '', nama: '', kelasId: '', rfidKode: '' });
   const [siswaErrors, setSiswaErrors] = useState<Record<string, string>>({});
   const [isSubmittingSiswa, setIsSubmittingSiswa] = useState(false);
 
@@ -328,10 +329,10 @@ export default function ManageUsers() {
     setSiswaErrors({});
     if (u) {
       setEditingSiswaId(u.id);
-      setSiswaForm({ nis: u.siswa.nis, nama: u.siswa.nama, kelasId: u.siswa.kelasId });
+      setSiswaForm({ nis: u.siswa.nis, nama: u.siswa.nama, kelasId: u.siswa.kelasId, rfidKode: u.siswa.rfidKode || '' });
     } else {
       setEditingSiswaId(null);
-      setSiswaForm({ nis: '', nama: '', kelasId: kelasList[0]?.id || '' });
+      setSiswaForm({ nis: '', nama: '', kelasId: kelasList[0]?.id || '', rfidKode: '' });
     }
     setShowSiswaModal(true);
   };
@@ -348,7 +349,8 @@ export default function ManageUsers() {
       setIsSubmittingSiswa(true);
       if (editingSiswaId) {
         await api.patch(`/api/admin/users/${editingSiswaId}`, {
-          nama: siswaForm.nama, nis: siswaForm.nis, kelasId: siswaForm.kelasId
+          nama: siswaForm.nama, nis: siswaForm.nis, kelasId: siswaForm.kelasId,
+          rfidKode: siswaForm.rfidKode,
         });
         toast.success('Data siswa berhasil diperbarui');
       } else {
@@ -358,7 +360,8 @@ export default function ManageUsers() {
           password: siswaForm.nis,
           nama: siswaForm.nama,
           nis: siswaForm.nis,
-          kelasId: siswaForm.kelasId
+          kelasId: siswaForm.kelasId,
+          ...(siswaForm.rfidKode ? { rfidKode: siswaForm.rfidKode } : {}),
         });
         toast.success('Siswa berhasil ditambahkan');
       }
@@ -1067,6 +1070,11 @@ export default function ManageUsers() {
                     {kelasList.map(k => <option key={k.id} value={k.id}>{k.nama} ({k.tingkat}) — {k.tahunAjaran}</option>)}
                   </Select>
                   <FieldError msg={siswaErrors.kelasId} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="s-rfid">Kode RFID <span className="text-outline-variant text-xs">(opsional)</span></Label>
+                  <Input id="s-rfid" value={siswaForm.rfidKode} onChange={e => setSiswaForm(f => ({ ...f, rfidKode: e.target.value }))} placeholder="Kode kartu RFID siswa" />
+                  <p className="text-xs text-outline-variant">Kosongkan jika belum ada kartu RFID.</p>
                 </div>
                 {!editingSiswaId && siswaForm.nis && (
                   <div className="p-3 bg-surface-container-low rounded-lg text-xs text-on-surface-variant border border-outline-variant space-y-1">

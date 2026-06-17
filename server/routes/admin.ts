@@ -212,7 +212,7 @@ router.get('/users', async (req, res, next) => {
             kelas: { select: { id: true, nama: true }, orderBy: { nama: 'asc' } },
             guruKelas: { select: { kelas: { select: { id: true, nama: true } } }, orderBy: { kelas: { nama: 'asc' } } }
           } },
-          siswa: { select: { id: true, nama: true, nis: true, kelasId: true, kelas: { select: { id: true, nama: true, tingkat: true, guru: { select: { id: true, nama: true } } } } } },
+          siswa: { select: { id: true, nama: true, nis: true, rfidKode: true, kelasId: true, kelas: { select: { id: true, nama: true, tingkat: true, guru: { select: { id: true, nama: true } } } } } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -227,7 +227,7 @@ router.get('/users', async (req, res, next) => {
 
 router.post('/users', async (req, res, next) => {
   try {
-    const { email, password, role, nama, nip, mataPelajaran, mataPelajaranList, nis, kelasId } = req.body;
+    const { email, password, role, nama, nip, mataPelajaran, mataPelajaranList, nis, rfidKode: newRfidKode, kelasId } = req.body;
 
     if (!email || !password || !role || !nama) {
       return res.status(400).json({ error: 'Data wajib tidak lengkap' });
@@ -277,7 +277,7 @@ router.post('/users', async (req, res, next) => {
             },
           },
         } : {}),
-        ...(role === 'SISWA' ? { siswa: { create: { nama: toTitleCase(nama), nis, kelasId } } } : {})
+        ...(role === 'SISWA' ? { siswa: { create: { nama: toTitleCase(nama), nis, kelasId, ...(newRfidKode ? { rfidKode: newRfidKode } : {}) } } } : {})
       }
     });
 
@@ -292,7 +292,7 @@ router.post('/users', async (req, res, next) => {
 
 router.patch('/users/:id', async (req, res, next) => {
   try {
-    const { email, isActive, nama, nis, nip, mataPelajaran, mataPelajaranList, kelasId } = req.body;
+    const { email, isActive, nama, nis, rfidKode, nip, mataPelajaran, mataPelajaranList, kelasId } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
@@ -338,7 +338,9 @@ router.patch('/users/:id', async (req, res, next) => {
           data: {
             ...(nama && { nama: toTitleCase(nama) }),
             ...(nis && { nis }),
-            ...(kelasId && { kelasId })
+            ...(kelasId && { kelasId }),
+            // rfidKode: null menghapus, string mengisi, undefined tidak mengubah
+            ...(rfidKode !== undefined && { rfidKode: rfidKode === '' ? null : rfidKode }),
           }
         });
       }
@@ -464,6 +466,7 @@ router.get('/users/import-template', async (req, res, next) => {
         { header: 'NIS',        key: 'nis',       width: 16 },
         { header: 'Nama',       key: 'nama',      width: 32 },
         { header: 'Nama Kelas', key: 'kelas',     width: 24 },
+        { header: 'Kode RFID (opsional)', key: 'rfidKode', width: 24 },
       ];
       ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       ws.getRow(1).eachCell(c => {
@@ -471,7 +474,7 @@ router.get('/users/import-template', async (req, res, next) => {
         c.alignment = { horizontal: 'center' };
       });
       // Contoh baris
-      ws.addRow({ nis: '2025010', nama: 'Contoh Nama Siswa', kelas: kelas[0]?.nama ?? 'X IPA 1' });
+      ws.addRow({ nis: '2025010', nama: 'Contoh Nama Siswa', kelas: kelas[0]?.nama ?? 'X IPA 1', rfidKode: '' });
 
       // Sheet kedua: daftar kelas yg valid
       const refSheet = wb.addWorksheet('Daftar Kelas');
@@ -540,7 +543,7 @@ router.post('/users/import', async (req, res, next) => {
       const kelasList = await prisma.kelas.findMany();
       const kelasByNama = new Map(kelasList.map(k => [k.nama.toLowerCase().trim(), k.id]));
 
-      type SiswaRow = { rowNumber: number; nis: string; nama: string; kelasId: string; email: string };
+      type SiswaRow = { rowNumber: number; nis: string; nama: string; kelasId: string; email: string; rfidKode?: string };
       const valid: SiswaRow[] = [];
 
       for (let i = 0; i < items.length; i++) {
@@ -549,6 +552,7 @@ router.post('/users/import', async (req, res, next) => {
         const nis = String(row.nis ?? '').trim();
         const nama = String(row.nama ?? '').trim();
         const kelasNama = String(row.kelas ?? '').trim();
+        const rfidKode = String(row.rfidKode ?? row['Kode RFID (opsional)'] ?? '').trim() || undefined;
 
         if (!nis || !nama || !kelasNama) {
           failed.push({ row: rowNumber, message: 'NIS, Nama, dan Nama Kelas wajib diisi' });
@@ -559,7 +563,7 @@ router.post('/users/import', async (req, res, next) => {
           failed.push({ row: rowNumber, message: `Kelas "${kelasNama}" tidak ditemukan` });
           continue;
         }
-        valid.push({ rowNumber, nis, nama, kelasId, email: `${nis}@siswa.sch.id` });
+        valid.push({ rowNumber, nis, nama, kelasId, email: `${nis}@siswa.sch.id`, rfidKode });
       }
 
       // ── Pass 2: filter yang sudah ada di DB (1 query, bukan N findUnique) ──
@@ -603,6 +607,7 @@ router.post('/users/import', async (req, res, next) => {
               nis: v.nis,
               nama: v.nama,
               kelasId: v.kelasId,
+              ...(v.rfidKode ? { rfidKode: v.rfidKode } : {}),
             }))
             .filter((s): s is { userId: string; nis: string; nama: string; kelasId: string } =>
               typeof s.userId === 'string'

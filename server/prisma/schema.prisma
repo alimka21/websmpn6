@@ -113,13 +113,14 @@ model GuruKelas {
 }
 
 model Siswa {
-  id      String @id @default(uuid())
-  userId  String @unique
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nis     String @unique
-  nama    String
-  kelasId String
-  kelas   Kelas  @relation(fields: [kelasId], references: [id])
+  id       String  @id @default(uuid())
+  userId   String  @unique
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nis      String  @unique
+  rfidKode String? @unique
+  nama     String
+  kelasId  String
+  kelas    Kelas   @relation(fields: [kelasId], references: [id])
 
   sesiUjian      SesiUjian[]
   presensiSiswa  PresensiSiswa[]

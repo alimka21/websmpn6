@@ -515,16 +515,16 @@ router.get('/guru/dashboard', async (req, res, next) => {
 
 router.get('/siswa/cari', async (req, res, next) => {
   try {
-    const nis = req.query.nis ? String(req.query.nis).trim() : '';
-    if (!nis) return res.status(400).json({ error: 'NIS wajib diisi' });
+    const q = (req.query.q || req.query.nis) ? String(req.query.q || req.query.nis).trim() : '';
+    if (!q) return res.status(400).json({ error: 'NIS atau kode RFID wajib diisi' });
 
-    const siswa = await prisma.siswa.findUnique({
-      where: { nis },
+    const siswa = await prisma.siswa.findFirst({
+      where: { OR: [{ nis: q }, { rfidKode: q }] },
       select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
     });
 
     if (!siswa) {
-      return res.status(404).json({ error: `Siswa dengan NIS "${nis}" tidak ditemukan.` });
+      return res.status(404).json({ error: `Siswa dengan NIS/RFID "${q}" tidak ditemukan.` });
     }
 
     res.json({
@@ -544,23 +544,31 @@ router.get('/siswa/cari', async (req, res, next) => {
 
 router.post('/siswa', async (req, res, next) => {
   try {
-    const { siswaId, nis } = req.body;
-    if (!siswaId && !nis) {
-      return res.status(400).json({ error: 'siswaId atau nis wajib diisi' });
+    const { siswaId, nis, rfidKode } = req.body;
+    if (!siswaId && !nis && !rfidKode) {
+      return res.status(400).json({ error: 'siswaId, nis, atau rfidKode wajib diisi' });
     }
 
-    // Lookup siswa by ID atau NIS
-    const where = siswaId ? { id: siswaId } : { nis: String(nis).trim() };
-    const siswa = await prisma.siswa.findUnique({
-      where,
-      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
-    });
+    // Lookup siswa by ID, NIS, atau RFID
+    let siswa;
+    if (siswaId) {
+      siswa = await prisma.siswa.findUnique({
+        where: { id: siswaId },
+        select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+      });
+    } else {
+      const q = nis ? String(nis).trim() : String(rfidKode).trim();
+      siswa = await prisma.siswa.findFirst({
+        where: { OR: [{ nis: q }, { rfidKode: q }] },
+        select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+      });
+    }
 
     if (!siswa) {
       return res.status(404).json({
         error: siswaId
           ? 'Siswa tidak ditemukan.'
-          : `Siswa dengan NIS "${nis}" tidak ditemukan.`,
+          : `Siswa dengan NIS/RFID "${nis || rfidKode}" tidak ditemukan.`,
       });
     }
 
