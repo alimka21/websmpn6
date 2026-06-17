@@ -2075,6 +2075,7 @@ router.get('/pengaturan-presensi/kode-akses', async (req, res, next) => {
     res.json({
       kodeAksesGuru: cfg?.kodeAksesGuru || null,
       kodeAksesSiswa: cfg?.kodeAksesSiswa || null,
+      kodeAksesLapor: cfg?.kodeAksesLapor || null,
     });
   } catch (err) {
     next(err);
@@ -2083,9 +2084,10 @@ router.get('/pengaturan-presensi/kode-akses', async (req, res, next) => {
 
 router.put('/pengaturan-presensi/kode-akses', async (req, res, next) => {
   try {
-    const { kodeAksesGuru, kodeAksesSiswa } = req.body as {
+    const { kodeAksesGuru, kodeAksesSiswa, kodeAksesLapor } = req.body as {
       kodeAksesGuru?: string;
       kodeAksesSiswa?: string;
+      kodeAksesLapor?: string;
     };
 
     const data: Record<string, string | null> = {};
@@ -2102,6 +2104,12 @@ router.put('/pengaturan-presensi/kode-akses', async (req, res, next) => {
       }
       data.kodeAksesSiswa = kodeAksesSiswa || null;
     }
+    if (kodeAksesLapor !== undefined) {
+      if (kodeAksesLapor !== null && kodeAksesLapor !== '' && kodeAksesLapor.length !== 6) {
+        return res.status(400).json({ error: 'Kode akses lapor harus tepat 6 karakter' });
+      }
+      data.kodeAksesLapor = kodeAksesLapor || null;
+    }
 
     const existing = await prisma.pengaturanPresensi.findFirst();
     if (existing) {
@@ -2114,6 +2122,59 @@ router.put('/pengaturan-presensi/kode-akses', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Logo Mitra — CRUD admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/logo-mitra', async (_req, res, next) => {
+  try {
+    const logos = await prisma.logoMitra.findMany({
+      orderBy: [{ urutan: 'asc' }, { createdAt: 'asc' }],
+    });
+    res.json(logos);
+  } catch (err) { next(err); }
+});
+
+router.post('/logo-mitra', async (req, res, next) => {
+  try {
+    const { nama, imageUrl, linkUrl, urutan } = req.body;
+    if (!nama || !imageUrl) {
+      return res.status(400).json({ error: 'Nama dan gambar wajib diisi' });
+    }
+    const logo = await prisma.logoMitra.create({
+      data: {
+        nama: String(nama).trim(),
+        imageUrl: String(imageUrl),
+        linkUrl: linkUrl ? String(linkUrl).trim() : null,
+        urutan: Number(urutan) || 0,
+      },
+    });
+    res.json(logo);
+  } catch (err) { next(err); }
+});
+
+router.patch('/logo-mitra/:id', async (req, res, next) => {
+  try {
+    const { nama, imageUrl, linkUrl, urutan, isActive } = req.body;
+    const data: Record<string, any> = {};
+    if (nama !== undefined) data.nama = String(nama).trim();
+    if (imageUrl !== undefined) data.imageUrl = String(imageUrl);
+    if (linkUrl !== undefined) data.linkUrl = linkUrl ? String(linkUrl).trim() : null;
+    if (urutan !== undefined) data.urutan = Number(urutan) || 0;
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+    const logo = await prisma.logoMitra.update({ where: { id: req.params.id }, data });
+    res.json(logo);
+  } catch (err) { next(err); }
+});
+
+router.delete('/logo-mitra/:id', async (req, res, next) => {
+  try {
+    await prisma.logoMitra.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) { next(err); }
 });
 
 export default router;

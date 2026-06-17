@@ -694,13 +694,15 @@ router.post('/presensi/verify-akses', async (req, res, next) => {
     if (!jenis || !kode) {
       return res.status(400).json({ error: 'Parameter jenis dan kode wajib diisi' });
     }
-    if (jenis !== 'guru' && jenis !== 'siswa') {
-      return res.status(400).json({ error: 'Jenis harus guru atau siswa' });
+    if (jenis !== 'guru' && jenis !== 'siswa' && jenis !== 'lapor') {
+      return res.status(400).json({ error: 'Jenis harus guru, siswa, atau lapor' });
     }
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
 
-    const kodeTarget = jenis === 'guru' ? cfg?.kodeAksesGuru : cfg?.kodeAksesSiswa;
+    const kodeTarget = jenis === 'guru' ? cfg?.kodeAksesGuru
+      : jenis === 'siswa' ? cfg?.kodeAksesSiswa
+      : cfg?.kodeAksesLapor;
 
     if (!kodeTarget) {
       return res.status(403).json({ error: 'Kode akses belum dikonfigurasi oleh admin' });
@@ -955,6 +957,20 @@ router.get('/dashboard/tugas/mata-pelajaran', async (req, res, next) => {
 
     const set = new Set([...ujianMapel.map(u => u.mataPelajaran), ...kolomMapel.map(k => k.mataPelajaran)]);
     res.json([...set].sort());
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Logo Mitra publik
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/logo-mitra', async (_req, res, next) => {
+  try {
+    const logos = await prisma.logoMitra.findMany({
+      where: { isActive: true },
+      orderBy: [{ urutan: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, nama: true, imageUrl: true, linkUrl: true, urutan: true },
+    });
+    res.json(logos);
   } catch (err) { next(err); }
 });
 

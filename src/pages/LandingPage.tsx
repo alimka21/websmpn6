@@ -64,16 +64,17 @@ export default function LandingPage() {
   const [scrolled, setScrolled]           = useState(false);
   const [presensiDropdown, setPresensiDropdown]   = useState(false);
   const [dashboardDropdown, setDashboardDropdown] = useState(false);
-  const [aksesModal, setAksesModal]             = useState<{ open: boolean; jenis: 'guru' | 'siswa' | null }>({ open: false, jenis: null });
+  const [aksesModal, setAksesModal]             = useState<{ open: boolean; jenis: 'guru' | 'siswa' | 'lapor' | null }>({ open: false, jenis: null });
   const [kodeInput, setKodeInput]               = useState('');
   const [aksesLoading, setAksesLoading]         = useState(false);
   const kodeRef                                  = useRef<HTMLInputElement>(null);
   const [guruProfil, setGuruProfil]   = useState<GuruProfil[]>([]);
   const [sliderPage, setSliderPage]   = useState(0);
   const sliderTimerRef                = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [logoMitra, setLogoMitra]     = useState<{ id: string; nama: string; imageUrl: string; linkUrl: string | null }[]>([]);
   const navigate = useNavigate();
 
-  const bukaModalAkses = (jenis: 'guru' | 'siswa') => {
+  const bukaModalAkses = (jenis: 'guru' | 'siswa' | 'lapor') => {
     setKodeInput('');
     setAksesModal({ open: true, jenis });
     setPresensiDropdown(false);
@@ -88,9 +89,15 @@ export default function LandingPage() {
     setAksesLoading(true);
     try {
       await api.post('/api/presensi/verify-akses', { jenis: aksesModal.jenis, kode: kodeInput });
-      sessionStorage.setItem(`presensi_${aksesModal.jenis}_ok`, '1');
-      setAksesModal({ open: false, jenis: null });
-      navigate(`/presensi/${aksesModal.jenis}`);
+      if (aksesModal.jenis === 'lapor') {
+        sessionStorage.setItem('lapor_ok', '1');
+        setAksesModal({ open: false, jenis: null });
+        navigate('/lapor');
+      } else {
+        sessionStorage.setItem(`presensi_${aksesModal.jenis}_ok`, '1');
+        setAksesModal({ open: false, jenis: null });
+        navigate(`/presensi/${aksesModal.jenis}`);
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Kode akses salah');
     } finally {
@@ -130,6 +137,9 @@ export default function LandingPage() {
       .catch(() => {});
     api.get('/api/profil-guru')
       .then((r: any) => setGuruProfil(Array.isArray(r) ? r : []))
+      .catch(() => {});
+    api.get('/api/logo-mitra')
+      .then((r: any) => setLogoMitra(Array.isArray(r) ? r : []))
       .catch(() => {});
   }, []);
 
@@ -188,11 +198,11 @@ export default function LandingPage() {
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
             {[
-              { label: 'Beranda', id: 'beranda' },
-              { label: 'Profil',  id: 'profil',  skip: !showProfil },
-              { label: 'Fitur',   id: 'fitur' },
-              { label: 'Berita',  id: 'berita' },
-              { label: 'Kontak',  id: 'kontak' },
+              { label: 'Beranda',     id: 'beranda' },
+              { label: 'Profil',      id: 'profil',  skip: !showProfil },
+              { label: 'Daftar Guru', id: 'profil' },
+              { label: 'Berita',      id: 'berita' },
+              { label: 'Kontak',      id: 'kontak' },
             ].filter(n => !n.skip).map(n => (
               <button
                 key={n.id}
@@ -208,12 +218,12 @@ export default function LandingPage() {
             ))}
 
             {/* Lapor */}
-            <Link
-              to="/lapor"
+            <button
+              onClick={() => bukaModalAkses('lapor')}
               className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5"
             >
               <ShieldCheck className="w-4 h-4" /> Lapor
-            </Link>
+            </button>
 
             {/* Dropdown Dashboard */}
             <div
@@ -230,29 +240,29 @@ export default function LandingPage() {
               </button>
               {dashboardDropdown && (
                 <div className="absolute top-full left-0 pt-2">
-                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[200px]">
+                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[220px]">
                     <Link
                       to="/dashboard-publik/kehadiran"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors whitespace-nowrap"
                       onClick={() => setDashboardDropdown(false)}
                     >
-                      <CalendarCheck className="w-4 h-4" />
+                      <CalendarCheck className="w-4 h-4 shrink-0" />
                       Dashboard Kehadiran
                     </Link>
                     <Link
                       to="/dashboard-publik/potensi"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 whitespace-nowrap"
                       onClick={() => setDashboardDropdown(false)}
                     >
-                      <ShieldCheck className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
                       Dashboard Potensi
                     </Link>
                     <Link
                       to="/dashboard-publik/tugas"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30"
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 whitespace-nowrap"
                       onClick={() => setDashboardDropdown(false)}
                     >
-                      <ClipboardList className="w-4 h-4" />
+                      <ClipboardList className="w-4 h-4 shrink-0" />
                       Dashboard Tugas
                     </Link>
                   </div>
@@ -314,11 +324,11 @@ export default function LandingPage() {
         {mobileOpen && (
           <div className="md:hidden bg-surface border-t border-outline-variant/30 px-4 py-4 space-y-1">
             {[
-              { label: 'Beranda', id: 'beranda',  icon: Home },
-              { label: 'Profil',  id: 'profil',   icon: Users,    skip: !showProfil },
-              { label: 'Fitur',   id: 'fitur',    icon: Layers },
-              { label: 'Berita',  id: 'berita',   icon: Newspaper },
-              { label: 'Kontak',  id: 'kontak',   icon: Phone },
+              { label: 'Beranda',     id: 'beranda',  icon: Home },
+              { label: 'Profil',      id: 'profil',   icon: Users,    skip: !showProfil },
+              { label: 'Daftar Guru', id: 'profil',   icon: GraduationCap },
+              { label: 'Berita',      id: 'berita',   icon: Newspaper },
+              { label: 'Kontak',      id: 'kontak',   icon: Phone },
             ].filter(n => !n.skip).map(n => {
               const NavIcon = n.icon;
               const isActive = activeSection === n.id;
@@ -367,14 +377,13 @@ export default function LandingPage() {
 
             {/* Lapor Mobile */}
             <div className="border-t border-outline-variant/30 pt-2 mt-2">
-              <Link
-                to="/lapor"
-                onClick={() => setMobileOpen(false)}
+              <button
+                onClick={() => { setMobileOpen(false); bukaModalAkses('lapor'); }}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 Lapor Potensi
-              </Link>
+              </button>
             </div>
 
             {/* Presensi Dropdown Mobile */}
@@ -919,6 +928,37 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Logo Mitra / Program Pendidikan ─────────────────── */}
+      {logoMitra.length > 0 && (
+        <section className="py-12 bg-surface-container-low border-t border-outline-variant/20">
+          <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
+            <p className="text-center text-xs font-extrabold tracking-[0.25em] uppercase text-on-surface-variant/60 mb-8">
+              Mitra &amp; Program Pendidikan
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+              {logoMitra.slice(0, 6).map(logo => {
+                const img = (
+                  <img
+                    key={logo.id}
+                    src={logo.imageUrl}
+                    alt={logo.nama}
+                    title={logo.nama}
+                    className="h-14 md:h-16 w-auto object-contain grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300"
+                  />
+                );
+                return logo.linkUrl ? (
+                  <a key={logo.id} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
+                    {img}
+                  </a>
+                ) : (
+                  <span key={logo.id}>{img}</span>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       <SiteFooter />
 
       {/* ══════════════════════════════════════════════════
@@ -933,9 +973,13 @@ export default function LandingPage() {
                 <KeyRound className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-on-surface">Kode Akses Presensi</h2>
+                <h2 className="text-base font-bold text-on-surface">
+                  {aksesModal.jenis === 'lapor' ? 'Kode Akses Lapor' : 'Kode Akses Presensi'}
+                </h2>
                 <p className="text-xs text-on-surface-variant">
-                  {aksesModal.jenis === 'guru' ? 'Presensi Guru' : 'Presensi Siswa'}
+                  {aksesModal.jenis === 'guru' ? 'Presensi Guru'
+                    : aksesModal.jenis === 'siswa' ? 'Presensi Siswa'
+                    : 'Lapor Potensi Siswa'}
                 </p>
               </div>
               <button

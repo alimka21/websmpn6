@@ -4,7 +4,7 @@ import {
   Settings, Users, GraduationCap, Save, Trash2, Edit2, X,
   ChevronLeft, ChevronRight, Search, RefreshCw, MapPin, Clock,
   Image as ImageIcon, Download, KeyRound, Eye, EyeOff, Shuffle,
-  ClipboardList, CalendarCheck, AlertTriangle, CheckCircle, ChevronDown,
+  ClipboardList, CalendarCheck, AlertTriangle, CheckCircle, ChevronDown, ShieldCheck,
 } from 'lucide-react';
 import InputAbsensi from './guru/InputAbsensi';
 import { Button } from '../../components/ui/button';
@@ -109,8 +109,10 @@ export default function PresensiAdmin() {
   // ── Kode Akses state ─────────────────────────────────────────────────────
   const [kodeGuru, setKodeGuru]           = useState('');
   const [kodeSiswa, setKodeSiswa]         = useState('');
+  const [kodeLapor, setKodeLapor]         = useState('');
   const [showKodeGuru, setShowKodeGuru]   = useState(false);
   const [showKodeSiswa, setShowKodeSiswa] = useState(false);
+  const [showKodeLapor, setShowKodeLapor] = useState(false);
   const [savingKode, setSavingKode]       = useState(false);
   const [loadingKode, setLoadingKode]     = useState(false);
 
@@ -212,6 +214,7 @@ export default function PresensiAdmin() {
         .then((d: any) => {
           setKodeGuru(d.kodeAksesGuru || '');
           setKodeSiswa(d.kodeAksesSiswa || '');
+          setKodeLapor(d.kodeAksesLapor || '');
         })
         .catch(() => {})
         .finally(() => setLoadingKode(false));
@@ -252,11 +255,13 @@ export default function PresensiAdmin() {
   const saveKodeAkses = async () => {
     if (kodeGuru && kodeGuru.length !== 6) { toast.error('Kode akses guru harus 6 karakter'); return; }
     if (kodeSiswa && kodeSiswa.length !== 6) { toast.error('Kode akses siswa harus 6 karakter'); return; }
+    if (kodeLapor && kodeLapor.length !== 6) { toast.error('Kode akses lapor harus 6 karakter'); return; }
     setSavingKode(true);
     try {
       await api.put('/api/admin/pengaturan-presensi/kode-akses', {
         kodeAksesGuru: kodeGuru || null,
         kodeAksesSiswa: kodeSiswa || null,
+        kodeAksesLapor: kodeLapor || null,
       });
       toast.success('Kode akses berhasil disimpan');
     } catch (err: any) {
@@ -680,6 +685,41 @@ export default function PresensiAdmin() {
                   </button>
                 </div>
                 <p className="text-xs text-on-surface-variant">Kosongkan untuk menonaktifkan proteksi presensi siswa</p>
+              </div>
+
+              {/* Kode Lapor */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" /> Kode Akses Lapor Potensi
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showKodeLapor ? 'text' : 'password'}
+                      value={kodeLapor}
+                      maxLength={6}
+                      onChange={e => setKodeLapor(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm font-mono tracking-widest focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none pr-10"
+                      placeholder="6 karakter"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKodeLapor(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
+                    >
+                      {showKodeLapor ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setKodeLapor(generateKode())}
+                    title="Generate kode acak"
+                    className="px-3 py-2.5 rounded-lg border border-outline-variant hover:bg-surface-container text-on-surface-variant transition-colors"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-on-surface-variant">Kosongkan untuk menonaktifkan proteksi halaman lapor potensi</p>
               </div>
 
               <div className="flex justify-end pt-2">

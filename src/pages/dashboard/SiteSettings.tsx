@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import {
   Save, ImageIcon, Building2, BookOpen, Phone, Share2,
   AlertTriangle, Upload, X, ImagePlus, UserSquare, Sparkles, Plus, Trash2, MapPin, BarChart3,
+  Pencil, Link as LinkIcon, Eye, EyeOff, Image as ImageI,
 } from 'lucide-react';
 
 // Whitelist ikon Lucide untuk fitur unggulan — harus sinkron dgn FITUR_ICON_MAP di LandingPage.tsx
@@ -149,11 +150,108 @@ const ImageField: React.FC<ImageFieldProps> = ({ label, hint, value, onChange, p
   );
 };
 
+interface LogoMitraItem {
+  id: string;
+  nama: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  urutan: number;
+  isActive: boolean;
+}
+
+const LOGO_EMPTY = { nama: '', imageUrl: '', linkUrl: '', urutan: 0 };
+
 export default function SiteSettings() {
   const [config, setConfig] = useState<Config | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // ── Logo Mitra state ───────────────────────────────────────────────────
+  const [logoList, setLogoList]           = useState<LogoMitraItem[]>([]);
+  const [logoLoading, setLogoLoading]     = useState(true);
+  const [logoModal, setLogoModal]         = useState(false);
+  const [logoEditing, setLogoEditing]     = useState<LogoMitraItem | null>(null);
+  const [logoForm, setLogoForm]           = useState(LOGO_EMPTY);
+  const [logoSaving, setLogoSaving]       = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoImgRef                        = useRef<HTMLInputElement | null>(null);
+
+  const fetchLogos = async () => {
+    try {
+      setLogoLoading(true);
+      const r: any = await api.get('/api/admin/logo-mitra');
+      setLogoList(Array.isArray(r) ? r : []);
+    } catch { /* noop */ } finally { setLogoLoading(false); }
+  };
+
+  useEffect(() => { fetchLogos(); }, []);
+
+  const openLogoModal = (logo?: LogoMitraItem) => {
+    setLogoEditing(logo || null);
+    setLogoForm(logo ? { nama: logo.nama, imageUrl: logo.imageUrl, linkUrl: logo.linkUrl || '', urutan: logo.urutan } : LOGO_EMPTY);
+    setLogoModal(true);
+  };
+
+  const uploadLogoImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('File terlalu besar (maks 5MB)'); return; }
+    setLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res: any = await api.postForm('/api/admin/upload/site', fd);
+      setLogoForm(f => ({ ...f, imageUrl: res.url }));
+      toast.success('Gambar berhasil diunggah');
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal mengunggah gambar');
+    } finally { setLogoUploading(false); }
+  };
+
+  const saveLogo = async () => {
+    if (!logoForm.nama.trim()) { toast.error('Nama wajib diisi'); return; }
+    if (!logoForm.imageUrl) { toast.error('Gambar wajib diunggah'); return; }
+    setLogoSaving(true);
+    try {
+      const payload = {
+        nama: logoForm.nama.trim(),
+        imageUrl: logoForm.imageUrl,
+        linkUrl: logoForm.linkUrl.trim() || null,
+        urutan: Number(logoForm.urutan) || 0,
+      };
+      if (logoEditing) {
+        await api.patch(`/api/admin/logo-mitra/${logoEditing.id}`, payload);
+        toast.success('Logo berhasil diperbarui');
+      } else {
+        await api.post('/api/admin/logo-mitra', payload);
+        toast.success('Logo berhasil ditambahkan');
+      }
+      setLogoModal(false);
+      fetchLogos();
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menyimpan logo');
+    } finally { setLogoSaving(false); }
+  };
+
+  const deleteLogo = async (id: string, nama: string) => {
+    if (!window.confirm(`Hapus logo "${nama}"?`)) return;
+    try {
+      await api.delete(`/api/admin/logo-mitra/${id}`);
+      toast.success('Logo dihapus');
+      fetchLogos();
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menghapus');
+    }
+  };
+
+  const toggleLogoActive = async (logo: LogoMitraItem) => {
+    try {
+      await api.patch(`/api/admin/logo-mitra/${logo.id}`, { isActive: !logo.isActive });
+      fetchLogos();
+    } catch { toast.error('Gagal mengubah status'); }
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -489,6 +587,143 @@ export default function SiteSettings() {
           <TextField label="TikTok" value={get('tiktok')} onChange={v => set('tiktok', v)} placeholder="https://tiktok.com/@sekolahanda" />
         </div>
       </Section>
+
+      {/* ── Logo Mitra ─────────────────────────────────────── */}
+      <Section icon={ImageI} title="Logo Mitra & Program Pendidikan" description="Tampil di landing page di bawah berita. Maksimal 6 logo aktif.">
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-on-surface-variant">{logoList.filter(l => l.isActive).length} dari 6 logo aktif</p>
+          <Button type="button" size="sm" onClick={() => openLogoModal()} disabled={logoList.length >= 10}>
+            <Plus className="w-4 h-4 mr-1.5" /> Tambah Logo
+          </Button>
+        </div>
+        {logoLoading ? (
+          <p className="text-sm text-on-surface-variant py-4 text-center">Memuat...</p>
+        ) : logoList.length === 0 ? (
+          <div className="text-center py-8 text-on-surface-variant border border-dashed border-outline-variant rounded-xl">
+            <ImageI className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">Belum ada logo. Klik "Tambah Logo" untuk menambahkan.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {logoList.map(logo => (
+              <div
+                key={logo.id}
+                className={`border rounded-xl p-3 flex flex-col gap-2 transition-opacity ${logo.isActive ? 'border-outline-variant' : 'border-outline-variant/40 opacity-50'}`}
+              >
+                <div className="h-14 flex items-center justify-center bg-surface-container rounded-lg overflow-hidden">
+                  <img src={logo.imageUrl} alt={logo.nama} className="h-12 w-full object-contain" />
+                </div>
+                <p className="text-xs font-semibold text-on-surface truncate">{logo.nama}</p>
+                {logo.linkUrl && (
+                  <p className="text-[10px] text-on-surface-variant truncate flex items-center gap-1">
+                    <LinkIcon className="w-3 h-3 shrink-0" />{logo.linkUrl}
+                  </p>
+                )}
+                <div className="flex gap-1 mt-auto">
+                  <button
+                    onClick={() => toggleLogoActive(logo)}
+                    title={logo.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs border border-outline-variant hover:bg-surface-container transition-colors"
+                  >
+                    {logo.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => openLogoModal(logo)}
+                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs border border-outline-variant hover:bg-surface-container transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => deleteLogo(logo.id, logo.nama)}
+                    className="flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs border border-error/30 text-error hover:bg-error-container transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* Modal Logo Mitra */}
+      {logoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/50 backdrop-blur-sm p-4">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl w-full max-w-md space-y-4 p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-on-surface">{logoEditing ? 'Edit Logo' : 'Tambah Logo'}</h2>
+              <button onClick={() => setLogoModal(false)} className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Nama Logo <span className="text-error">*</span></Label>
+                <input
+                  value={logoForm.nama}
+                  onChange={e => setLogoForm(f => ({ ...f, nama: e.target.value }))}
+                  placeholder="Contoh: Kemendikdasmen"
+                  className="flex w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Gambar Logo <span className="text-error">*</span></Label>
+                {logoForm.imageUrl ? (
+                  <div className="flex items-center gap-3">
+                    <div className="h-14 w-24 border border-outline-variant rounded-lg overflow-hidden flex items-center justify-center bg-surface-container">
+                      <img src={logoForm.imageUrl} alt="preview" className="h-12 w-full object-contain" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => logoImgRef.current?.click()} disabled={logoUploading}>
+                        {logoUploading ? 'Mengunggah...' : 'Ganti'}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="text-error" onClick={() => setLogoForm(f => ({ ...f, imageUrl: '' }))}>Hapus</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => logoImgRef.current?.click()} disabled={logoUploading}>
+                    <Upload className="w-4 h-4 mr-1.5" />
+                    {logoUploading ? 'Mengunggah...' : 'Upload Gambar'}
+                  </Button>
+                )}
+                <input ref={logoImgRef} type="file" accept="image/*" className="hidden" onChange={uploadLogoImage} />
+                <p className="text-xs text-on-surface-variant">PNG/SVG transparan direkomendasikan. Maks 5MB.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Link URL <span className="text-on-surface-variant text-xs">(opsional — logo bisa diklik)</span></Label>
+                <input
+                  value={logoForm.linkUrl}
+                  onChange={e => setLogoForm(f => ({ ...f, linkUrl: e.target.value }))}
+                  placeholder="https://..."
+                  className="flex w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Urutan</Label>
+                <input
+                  type="number"
+                  value={logoForm.urutan}
+                  onChange={e => setLogoForm(f => ({ ...f, urutan: Number(e.target.value) }))}
+                  min={0}
+                  className="w-24 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <p className="text-xs text-on-surface-variant">Angka kecil tampil lebih dulu.</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setLogoModal(false)} disabled={logoSaving}>Batal</Button>
+              <Button onClick={saveLogo} disabled={logoSaving}>
+                {logoSaving ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sticky save bar */}
       <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-surface-container-lowest border-t border-outline-variant px-4 py-3 shadow-lg z-30">

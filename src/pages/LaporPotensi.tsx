@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Star, AlertTriangle, Upload, X,
   CheckCircle, Home, Loader2,
@@ -23,6 +23,13 @@ interface JenisItem { id: string; nama: string; poin: number }
 export default function LaporPotensi() {
   const cfg        = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
+  const navigate   = useNavigate();
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('lapor_ok')) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   // Dropdown data
   const [guruList,  setGuruList]  = useState<GuruItem[]>([]);

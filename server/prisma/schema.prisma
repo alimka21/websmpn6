@@ -326,6 +326,7 @@ model PengaturanPresensi {
 
   kodeAksesGuru     String?  // Kode akses 6 karakter untuk masuk halaman presensi guru
   kodeAksesSiswa    String?  // Kode akses 6 karakter untuk masuk halaman presensi siswa
+  kodeAksesLapor    String?  // Kode akses 6 karakter untuk masuk halaman lapor potensi
 
   updatedAt         DateTime @updatedAt
 }
@@ -527,6 +528,20 @@ model SiteConfig {
   tiktok    String?
 
   updatedAt DateTime @updatedAt
+}
+
+// Logo mitra / program pendidikan yang ditampilkan di landing page
+model LogoMitra {
+  id        String   @id @default(uuid())
+  nama      String
+  imageUrl  String   @db.LongText
+  linkUrl   String?  @db.Text
+  urutan    Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, urutan])
 }
 
 // Dokumen sekolah yang bisa diakses publik via link Google Drive
