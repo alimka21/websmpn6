@@ -54,6 +54,22 @@ function tanggalHariIni(): Date {
   return d;
 }
 
+/** Format Date ke "HH.mm" dalam timezone WIB — dipakai untuk response kiosk.
+ *  Hostinger berjalan UTC; tanpa timeZone 07:30 WIB akan tampil "00.30". */
+function fmtWIB(d: Date): string {
+  return d.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+}
+
+/** Bangun target waktu masuk/pulang dalam WIB dari string "HH:mm".
+ *  Diperlukan agar perhitungan keterlambatan benar di server UTC. */
+function buildTargetWIB(referensi: Date, hhmm: string): Date {
+  const [jam, menit] = hhmm.split(':').map(Number);
+  // Geser ke WIB untuk ambil tanggal lokalnya
+  const wibDate = new Date(referensi.getTime() + 7 * 60 * 60 * 1000);
+  const dateStr  = wibDate.toISOString().slice(0, 10); // "YYYY-MM-DD" versi WIB
+  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00+07:00`);
+}
+
 /** Parse "HH:mm" → Date hari ini dengan jam tersebut */
 function jamKeDate(hhmm: string): Date {
   const [jam, menit] = hhmm.split(':').map(Number);
@@ -157,12 +173,8 @@ router.get('/guru-list', async (req, res, next) => {
           statusHariIni: presensi ? {
             sudahDatang: !!presensi.waktuDatang,
             sudahPulang: !!presensi.waktuPulang,
-            waktuDatang: presensi.waktuDatang
-              ? new Date(presensi.waktuDatang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-              : undefined,
-            waktuPulang: presensi.waktuPulang
-              ? new Date(presensi.waktuPulang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-              : undefined,
+            waktuDatang: presensi.waktuDatang ? fmtWIB(new Date(presensi.waktuDatang)) : undefined,
+            waktuPulang: presensi.waktuPulang ? fmtWIB(new Date(presensi.waktuPulang)) : undefined,
           } : undefined,
         };
       })
@@ -330,16 +342,10 @@ router.get('/guru/recent', async (req, res, next) => {
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        // Hitung keterlambatan
-        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
-        const targetMasuk = new Date(p.waktuDatang);
-        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
-
+        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
-
-        // Hitung total jam
         if (p.waktuPulang) {
           totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
         }
@@ -349,10 +355,10 @@ router.get('/guru/recent', async (req, res, next) => {
         id: p.id,
         nama: p.guru.nama,
         nip: p.guru.nip,
-        waktuDatang: p.waktuDatang ? p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null,
-        waktuPulang: p.waktuPulang ? p.waktuPulang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null,
-        keterlambatan, // dalam menit
-        totalJam, // dalam menit
+        waktuDatang: p.waktuDatang ? fmtWIB(p.waktuDatang) : null,
+        waktuPulang: p.waktuPulang ? fmtWIB(p.waktuPulang) : null,
+        keterlambatan,
+        totalJam,
         autoCheckout: p.autoCheckout,
       };
     });
@@ -403,10 +409,7 @@ router.get('/siswa/recent', async (req, res, next) => {
       let tepatWaktu = true;
       let keterlambatan = 0;
 
-      const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
-      const targetMasuk = new Date(p.waktuDatang);
-      targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
-
+      const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
       if (p.waktuDatang > targetMasuk) {
         tepatWaktu = false;
         keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
@@ -418,7 +421,7 @@ router.get('/siswa/recent', async (req, res, next) => {
         nis: p.siswa.nis,
         kelas: p.siswa.kelas?.nama || '-',
         kelasId: p.siswa.kelasId || '',
-        waktu: p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        waktu: fmtWIB(p.waktuDatang),
         tepatWaktu,
         keterlambatan,
       };
@@ -475,16 +478,10 @@ router.get('/guru/dashboard', async (req, res, next) => {
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        // Hitung keterlambatan
-        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
-        const targetMasuk = new Date(p.waktuDatang);
-        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
-
+        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
-
-        // Hitung total jam
         if (p.waktuPulang) {
           totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
         }
