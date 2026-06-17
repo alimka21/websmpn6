@@ -155,13 +155,15 @@ export function useAntiCheat({
     // kamera/mikrofon yang mencuri fokus sesaat lalu kembali sendiri.
     const tabSwitchTimer = { id: 0 };
     const blurTimer = { id: 0 };
+    // Catat kapan page mulai hidden — untuk tangkap kasus kembali cepat
+    // sebelum timer 150ms habis (khas iOS: buka app switcher lalu langsung balik)
+    let hiddenAt = 0;
 
     const handleVisibilityChange = () => {
       console.log('[ANTI-CHEAT] Visibility changed:', document.hidden ? 'HIDDEN' : 'VISIBLE');
       if (document.hidden) {
+        hiddenAt = Date.now();
         clearTimeout(tabSwitchTimer.id);
-        // 150ms: cukup cepat untuk tangkap gestur pindah app di HP,
-        // masih aman dari pop-up izin kamera/notif OS yang cepat kembali.
         tabSwitchTimer.id = window.setTimeout(() => {
           if (document.hidden) {
             console.log('[ANTI-CHEAT] Tab masih hidden setelah 150ms, trigger violation!');
@@ -169,8 +171,15 @@ export function useAntiCheat({
           }
         }, 150);
       } else {
-        console.log('[ANTI-CHEAT] Tab kembali visible, batalkan timer');
         clearTimeout(tabSwitchTimer.id);
+        const dur = hiddenAt > 0 ? Date.now() - hiddenAt : 0;
+        console.log(`[ANTI-CHEAT] Tab kembali visible, durasi hidden: ${dur}ms`);
+        // Tangkap kembali cepat (100–149ms): buka app switcher iOS sebentar
+        // lalu kembali. Threshold 100ms aman dari noise sistem (< 50ms).
+        if (dur >= 100) {
+          triggerViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau membuka aplikasi lain.');
+        }
+        hiddenAt = 0;
       }
     };
 
