@@ -930,12 +930,9 @@ export default function LandingPage() {
 
       {/* ── Logo Mitra / Program Pendidikan ─────────────────── */}
       {logoMitra.length > 0 && (
-        <section className="py-12 bg-surface-container-low border-t border-outline-variant/20">
+        <section className="py-10 bg-surface border-t border-outline-variant/30 border-b border-outline-variant/30">
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
-            <p className="text-center text-xs font-extrabold tracking-[0.25em] uppercase text-on-surface-variant/60 mb-8">
-              Mitra &amp; Program Pendidikan
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
               {logoMitra.slice(0, 6).map(logo => {
                 const img = (
                   <img
@@ -943,7 +940,7 @@ export default function LandingPage() {
                     src={logo.imageUrl}
                     alt={logo.nama}
                     title={logo.nama}
-                    className="h-14 md:h-16 w-auto object-contain grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300"
+                    className="h-14 md:h-16 w-auto object-contain"
                   />
                 );
                 return logo.linkUrl ? (
