@@ -42,6 +42,10 @@ export function useAntiCheat({
   // Use refs to avoid stale state in event listeners
   const countRef = useRef(0);
   const isAutoSubmittingRef = useRef(false);
+  // Dedup: satu kejadian nyata (misal: pindah app) bisa memicu beberapa event
+  // sekaligus (visibilitychange + blur). Guard ini pastikan hanya 1 pelanggaran
+  // yang terhitung per kejadian dalam window 2 detik.
+  const lastViolationTimeRef = useRef(0);
 
   // Bunyikan alarm menggunakan Web Audio API
   const playAlarm = useCallback(() => {
@@ -97,6 +101,11 @@ export function useAntiCheat({
   const triggerViolation = useCallback(async (type: ViolationType, message: string) => {
     if (isAutoSubmittingRef.current) return;
 
+    // Dedup: abaikan jika kejadian nyata baru saja tercatat (< 2 detik)
+    const now = Date.now();
+    if (now - lastViolationTimeRef.current < 2000) return;
+    lastViolationTimeRef.current = now;
+
     const v: Violation = {
       type,
       message,
@@ -151,12 +160,14 @@ export function useAntiCheat({
       console.log('[ANTI-CHEAT] Visibility changed:', document.hidden ? 'HIDDEN' : 'VISIBLE');
       if (document.hidden) {
         clearTimeout(tabSwitchTimer.id);
+        // 150ms: cukup cepat untuk tangkap gestur pindah app di HP,
+        // masih aman dari pop-up izin kamera/notif OS yang cepat kembali.
         tabSwitchTimer.id = window.setTimeout(() => {
           if (document.hidden) {
-            console.log('[ANTI-CHEAT] Tab masih hidden setelah 400ms, trigger violation!');
-            triggerViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau meminimalkan browser.');
+            console.log('[ANTI-CHEAT] Tab masih hidden setelah 150ms, trigger violation!');
+            triggerViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau membuka aplikasi lain.');
           }
-        }, 400);
+        }, 150);
       } else {
         console.log('[ANTI-CHEAT] Tab kembali visible, batalkan timer');
         clearTimeout(tabSwitchTimer.id);
@@ -172,16 +183,16 @@ export function useAntiCheat({
     };
 
     const handleWindowBlur = () => {
-      const isFull = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
-      if (!isFull) {
-        clearTimeout(blurTimer.id);
-        blurTimer.id = window.setTimeout(() => {
-          const stillFull = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
-          if (!stillFull) {
-            triggerViolation('WINDOW_BLUR', 'Aplikasi kehilangan fokus. Dilarang membuka aplikasi lain.');
-          }
-        }, 300);
-      }
+      clearTimeout(blurTimer.id);
+      // Cek document.hidden setelah 150ms — ini yang membedakan:
+      //   - Tap address bar / notif center peek → blur tapi hidden tetap false → aman
+      //   - Buka app lain / lock screen → blur DAN hidden jadi true → pelanggaran
+      // Berlaku di semua device: Android (fullscreen maupun tidak) dan iOS.
+      blurTimer.id = window.setTimeout(() => {
+        if (document.hidden) {
+          triggerViolation('WINDOW_BLUR', 'Aplikasi kehilangan fokus. Dilarang membuka aplikasi lain.');
+        }
+      }, 150);
     };
 
     const handleWindowFocus = () => {
@@ -211,18 +222,21 @@ export function useAntiCheat({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     console.log('[ANTI-CHEAT] ✓ visibilitychange listener terpasang');
 
-    // Fullscreen + blur detection — SKIP di iOS karena:
-    //  - fullscreenchange tidak akan fire (Fullscreen API tidak ada)
-    //  - window blur false positive saat tap address bar / notif center
+    // Fullscreen detection — hanya di device yang support Fullscreen API
     if (isFullscreenSupported) {
       document.addEventListener('fullscreenchange', handleFullscreenChange);
       document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-      window.addEventListener('blur', handleWindowBlur);
-      window.addEventListener('focus', handleWindowFocus);
-      console.log('[ANTI-CHEAT] ✓ fullscreen & blur listeners terpasang');
+      console.log('[ANTI-CHEAT] ✓ fullscreen listeners terpasang');
     } else {
-      console.log('[ANTI-CHEAT] ⊗ Fullscreen tidak didukung (iOS/browser tidak kompatibel)');
+      console.log('[ANTI-CHEAT] ⊗ Fullscreen API tidak didukung (iOS)');
     }
+
+    // Blur/focus detection — AKTIF di semua device termasuk iOS.
+    // handleWindowBlur kini pakai cek document.hidden bukan !isFull,
+    // sehingga aman dari false positive address bar / notif center di HP.
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    console.log('[ANTI-CHEAT] ✓ blur/focus listeners terpasang (semua device)');
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
@@ -242,9 +256,9 @@ export function useAntiCheat({
       if (isFullscreenSupported) {
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
         document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-        window.removeEventListener('blur', handleWindowBlur);
-        window.removeEventListener('focus', handleWindowFocus);
       }
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
