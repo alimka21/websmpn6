@@ -212,7 +212,7 @@ function TabJenis({ tipe }: { tipe: 'kebaikan' | 'pelanggaran' }) {
                   <td className="px-4 py-3 text-center">
                     <span className={`font-bold ${tipe === 'kebaikan' ? 'text-green-700' : 'text-red-700'}`}>{item.poin}</span>
                   </td>
-                  <td className="px-4 py-3 text-center text-on-surface-variant">{item._count.laporan}</td>
+                  <td className="px-4 py-3 text-center text-on-surface-variant">{item._count?.laporan ?? 0}</td>
                   <td className="px-4 py-3 text-center">
                     {item.isActive
                       ? <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-xs font-semibold"><Check className="w-3 h-3" /> Aktif</span>

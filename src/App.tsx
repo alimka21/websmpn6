@@ -36,6 +36,7 @@ const DashboardPotensi   = lazy(() => import('./pages/public-dashboard/Dashboard
 const DashboardTugas     = lazy(() => import('./pages/public-dashboard/DashboardTugas'));
 const LaporPotensi       = lazy(() => import('./pages/LaporPotensi'));
 const AdminPotensi       = lazy(() => import('./pages/dashboard/admin/AdminPotensi'));
+const AdminNilaiTugas   = lazy(() => import('./pages/dashboard/admin/AdminNilaiTugas'));
 const InputAbsensi       = lazy(() => import('./pages/dashboard/guru/InputAbsensi'));
 const NilaiTugas         = lazy(() => import('./pages/dashboard/guru/NilaiTugas'));
 
@@ -182,6 +183,11 @@ export default function App() {
               <Route path="potensi" element={
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
                   <AdminPotensi />
+                </ProtectedRoute>
+              } />
+              <Route path="nilai-tugas" element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <AdminNilaiTugas />
                 </ProtectedRoute>
               } />
             </Route>

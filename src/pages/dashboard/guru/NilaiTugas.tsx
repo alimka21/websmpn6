@@ -248,7 +248,7 @@ function TabDaftar({ kelasList, onInputNilai }: {
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold">
-                        {item._count.nilai} siswa
+                        {item._count?.nilai ?? 0} siswa
                       </span>
                     </td>
                     <td className="px-4 py-3">

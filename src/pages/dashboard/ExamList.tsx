@@ -259,10 +259,10 @@ export default function ExamList() {
                           {formatDate(sesi.selesaiAt || sesi.mulaiAt)}
                         </td>
                         <td className="px-4 py-3 font-medium text-on-surface">
-                          {sesi.ujian.judul}
+                          {sesi.ujian?.judul}
                         </td>
                         <td className="px-4 py-3 text-on-surface-variant">
-                          {sesi.ujian.mataPelajaran}
+                          {sesi.ujian?.mataPelajaran}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Badge

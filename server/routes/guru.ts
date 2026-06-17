@@ -1540,6 +1540,7 @@ router.get('/kolom-nilai', async (req, res, next) => {
       include: {
         kelasTarget: { include: { kelas: { select: { id: true, nama: true } } } },
         _count: { select: { nilai: true } },
+        ...(scope.isAdmin ? { guru: { select: { nama: true, nip: true } } } : {}),
       },
       orderBy: { tanggal: 'desc' },
     });

@@ -1011,7 +1011,7 @@ export default function ManageUsers() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface-container font-semibold text-on-surface text-sm">{k._count.siswa}</span>
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface-container font-semibold text-on-surface text-sm">{k._count?.siswa ?? 0}</span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-center gap-1">
@@ -1282,7 +1282,7 @@ export default function ManageUsers() {
                   <Label htmlFor="k-guru">Wali Kelas <span className="text-error">*</span></Label>
                   <Select id="k-guru" value={kelasForm.guruId} onChange={e => setKelasForm(f => ({ ...f, guruId: e.target.value }))}>
                     <option value="">-- Pilih Guru --</option>
-                    {guruList.map(u => <option key={u.guru.id} value={u.guru.id}>{u.guru.nama} — {u.guru.mataPelajaran}</option>)}
+                    {guruList.filter(u => u.guru).map(u => <option key={u.guru!.id} value={u.guru!.id}>{u.guru!.nama} — {u.guru!.mataPelajaran}</option>)}
                   </Select>
                   <FieldError msg={kelasErrors.guruId} />
                 </div>
@@ -1292,8 +1292,8 @@ export default function ManageUsers() {
                   <div className="border border-outline-variant rounded-lg max-h-44 overflow-y-auto divide-y divide-outline-variant/40">
                     {guruList.length === 0 ? (
                       <p className="px-3 py-2 text-xs text-on-surface-variant">Belum ada guru.</p>
-                    ) : guruList.map(u => {
-                      const gid = u.guru.id;
+                    ) : guruList.filter(u => u.guru).map(u => {
+                      const gid = u.guru!.id;
                       const isWali = gid === kelasForm.guruId;
                       const checked = isWali || kelasTeacherIds.includes(gid);
                       return (
@@ -1309,8 +1309,8 @@ export default function ManageUsers() {
                               );
                             }}
                           />
-                          <span className="flex-1 font-medium">{u.guru.nama}</span>
-                          <span className="text-xs text-on-surface-variant">{u.guru.mataPelajaran}</span>
+                          <span className="flex-1 font-medium">{u.guru!.nama}</span>
+                          <span className="text-xs text-on-surface-variant">{u.guru!.mataPelajaran}</span>
                           {isWali && <span className="text-xs text-primary font-semibold">Wali</span>}
                         </label>
                       );
@@ -1570,13 +1570,13 @@ export default function ManageUsers() {
                           <p className="text-xs text-on-surface-variant mb-2 font-medium">Kelas Mengajar:</p>
                           <div className="space-y-2">
                             {selectedGuruForKelas.guru.guruKelas.map(gk => (
-                              <div key={gk.kelas.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg border border-outline-variant">
+                              <div key={gk.kelas?.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg border border-outline-variant">
                                 <div className="flex items-center gap-2">
                                   <BookOpen className="w-4 h-4 text-secondary" />
-                                  <span className="font-medium text-on-surface">{gk.kelas.nama}</span>
+                                  <span className="font-medium text-on-surface">{gk.kelas?.nama}</span>
                                 </div>
                                 <button
-                                  onClick={() => handleRemoveKelasFromGuru(gk.kelas.id)}
+                                  onClick={() => handleRemoveKelasFromGuru(gk.kelas?.id ?? '')}
                                   className="px-3 py-1 text-xs font-medium text-error hover:bg-error-container rounded-lg transition-colors"
                                 >
                                   Hapus

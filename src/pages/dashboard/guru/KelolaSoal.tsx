@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
@@ -32,6 +32,9 @@ const makeDefaultOpsi = (count: number): OpsiInput[] =>
 export default function KelolaSoal() {
   const { id: ujianId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo: string = (location.state as any)?.returnTo ?? '/dashboard/guru/ujian';
+  const returnLabel: string = (location.state as any)?.returnLabel ?? 'Ujian';
 
   const siteConfig = useSiteConfig();
   const pgOpsiCount = defaultPgOpsiCount(siteConfig.jenjang); // 4 atau 5
@@ -257,7 +260,7 @@ export default function KelolaSoal() {
           <p className="text-sm text-on-surface-variant mt-1">{errorMsg}</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => navigate('/dashboard/guru/ujian')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate(returnTo)} className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Kembali
           </Button>
           <Button onClick={fetchData} className="gap-2">
@@ -362,12 +365,12 @@ export default function KelolaSoal() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/guru/ujian')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(returnTo)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
           <div className="text-sm text-on-surface-variant font-medium">
-            <span className="hover:text-on-surface cursor-pointer" onClick={() => navigate('/dashboard/guru/ujian')}>Ujian</span>
+            <span className="hover:text-on-surface cursor-pointer" onClick={() => navigate(returnTo)}>{returnLabel}</span>
             <span className="mx-1.5">/</span>
             <span className="text-on-surface">{ujian?.judul || 'Loading...'}</span>
           </div>

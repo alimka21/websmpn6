@@ -361,7 +361,7 @@ export default function DaftarUjian() {
                           {hasParticipants(ujian) && (
                             <div className="flex items-center gap-1 mt-1.5 text-xs text-outline-variant">
                               <Users className="w-3 h-3" />
-                              {ujian._count.sesiUjian} peserta
+                              {ujian._count?.sesiUjian ?? 0} peserta
                             </div>
                           )}
                         </td>
@@ -654,7 +654,7 @@ export default function DaftarUjian() {
                 <div className="bg-error-container border border-error/20 rounded-lg p-3 text-sm text-error flex gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>
-                    Ujian ini sudah dikerjakan oleh <strong>{deletingUjian._count.sesiUjian} siswa</strong> dan tidak dapat dihapus. Hubungi Administrator jika perlu menghapus paksa.
+                    Ujian ini sudah dikerjakan oleh <strong>{deletingUjian._count?.sesiUjian ?? 0} siswa</strong> dan tidak dapat dihapus. Hubungi Administrator jika perlu menghapus paksa.
                   </span>
                 </div>
               ) : (

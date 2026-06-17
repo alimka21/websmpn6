@@ -206,15 +206,15 @@ export default function AdminUjianList() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
-                            {u.kelas.length === 0 ? (
+                            {(u.kelas?.length ?? 0) === 0 ? (
                               <span className="text-outline-variant text-xs">—</span>
                             ) : (
                               u.kelas.map(uk => (
                                 <span
-                                  key={uk.kelas.id}
+                                  key={uk.kelas?.id}
                                   className="inline-flex items-center rounded-full bg-primary-container/15 text-primary px-2 py-0.5 text-xs font-medium"
                                 >
-                                  {uk.kelas.nama}
+                                  {uk.kelas?.nama}
                                 </span>
                               ))
                             )}
@@ -223,13 +223,13 @@ export default function AdminUjianList() {
                         <td className="px-4 py-3 text-center text-on-surface-variant">
                           <span className="inline-flex items-center gap-1">
                             <ClipboardList className="w-3.5 h-3.5" />
-                            {u._count.soal}
+                            {u._count?.soal ?? 0}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {u._count.sesiUjian > 0 ? (
+                          {(u._count?.sesiUjian ?? 0) > 0 ? (
                             <span className="inline-flex items-center rounded-full bg-secondary-container/40 text-on-secondary-container px-2 py-0.5 text-xs font-bold">
-                              {u._count.sesiUjian}
+                              {u._count?.sesiUjian}
                             </span>
                           ) : (
                             <span className="text-outline-variant text-xs">0</span>
@@ -247,7 +247,7 @@ export default function AdminUjianList() {
                           <div className="flex gap-1 justify-end">
                             <Button
                               variant="ghost" size="sm"
-                              onClick={() => navigate(`/dashboard/guru/ujian/${u.id}/soal`)}
+                              onClick={() => navigate(`/dashboard/guru/ujian/${u.id}/soal`, { state: { returnTo: '/dashboard/admin/ujian', returnLabel: 'Kelola Ujian' } })}
                               className="h-8 px-2"
                               aria-label={`Kelola soal ujian ${u.judul}`}
                               title="Kelola Soal"
@@ -309,11 +309,11 @@ export default function AdminUjianList() {
               <p className="text-sm text-on-surface-variant mt-2">
                 <strong className="text-on-surface">{deleteConfirm.judul}</strong>
               </p>
-              {deleteConfirm._count.sesiUjian > 0 && (
+              {(deleteConfirm._count?.sesiUjian ?? 0) > 0 && (
                 <div className="mt-3 flex items-start gap-2 text-xs text-error bg-error-container/50 border border-error/20 rounded-lg px-3 py-2 text-left">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
-                    <strong>{deleteConfirm._count.sesiUjian} sesi siswa</strong> akan ikut terhapus beserta seluruh jawaban dan nilai.
+                    <strong>{deleteConfirm._count?.sesiUjian} sesi siswa</strong> akan ikut terhapus beserta seluruh jawaban dan nilai.
                   </span>
                 </div>
               )}
