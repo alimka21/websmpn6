@@ -930,7 +930,7 @@ export default function LandingPage() {
 
       {/* ── Logo Mitra / Program Pendidikan ─────────────────── */}
       {logoMitra.length > 0 && (
-        <section className="py-10 bg-surface border-t border-outline-variant/30 border-b border-outline-variant/30">
+        <section className="pt-10 pb-14 bg-surface border-t border-outline-variant/30 border-b border-outline-variant/30">
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
               {logoMitra.slice(0, 6).map(logo => {
