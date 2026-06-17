@@ -352,7 +352,7 @@ function TabRekap() {
                       <p className="font-semibold text-on-surface">{row.siswa.nama}</p>
                       <p className="text-xs text-on-surface-variant">{row.siswa.nis}</p>
                     </td>
-                    <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{row.siswa.kelas.nama}</td>
+                    <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{row.siswa?.kelas?.nama || '—'}</td>
                     <td className="px-4 py-3">
                       {row.tipe === 'KEBAIKAN'
                         ? <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold"><Star className="w-3 h-3" /> Kebaikan</span>

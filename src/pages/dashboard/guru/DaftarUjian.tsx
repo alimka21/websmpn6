@@ -351,7 +351,7 @@ export default function DaftarUjian() {
                             <span className="text-xs text-on-surface-variant">&bull; {ujian.mataPelajaran}</span>
                           </div>
                           <div className="text-xs text-on-surface-variant">
-                            Kelas: {ujian.kelas.map((k: any) => k.kelas.nama).join(', ') || '-'}
+                            Kelas: {ujian.kelas?.map((k: any) => k.kelas?.nama).filter(Boolean).join(', ') || '-'}
                           </div>
                           {ujian.isOwner === false && ujian.guru && (
                             <div className="text-xs text-on-surface-variant mt-0.5">

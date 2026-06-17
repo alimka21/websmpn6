@@ -127,17 +127,31 @@ export function useAntiCheat({
       onViolation(v, currentCount);
     }
 
-    // Kirim ke server
-    try {
-      if (sessionId) {
+    // Kirim ke server — simpan ke antrian localStorage SEBELUM POST.
+    // iOS Safari membekukan network request saat page ada di background
+    // (app switcher / lock screen), sehingga POST bisa gagal diam-diam.
+    // Antrian akan di-flush saat page kembali fokus via handleWindowFocus.
+    if (sessionId) {
+      const queueKey = `vq_${sessionId}`;
+      const queue: Array<{ tipe: string; pesan: string }> = JSON.parse(localStorage.getItem(queueKey) || '[]');
+      queue.push({ tipe: type, pesan: message });
+      localStorage.setItem(queueKey, JSON.stringify(queue));
+
+      try {
         console.log(`[ANTI-CHEAT] Mengirim ke server... sessionId=${sessionId}`);
         const response = await api.post(`/api/siswa/sesi/${sessionId}/violation`, { tipe: type, pesan: message });
         console.log('[ANTI-CHEAT] Berhasil tercatat di server:', response);
-      } else {
-        console.error('[ANTI-CHEAT] sessionId kosong, tidak bisa mencatat ke server!');
+        // POST berhasil → hapus dari antrian
+        const updated: typeof queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
+        const idx = updated.findIndex(x => x.tipe === type && x.pesan === message);
+        if (idx !== -1) updated.splice(idx, 1);
+        if (updated.length === 0) localStorage.removeItem(queueKey);
+        else localStorage.setItem(queueKey, JSON.stringify(updated));
+      } catch (error) {
+        console.error('[ANTI-CHEAT] POST gagal, pelanggaran masuk antrian untuk dikirim ulang saat fokus kembali:', error);
       }
-    } catch (error) {
-      console.error("[ANTI-CHEAT] GAGAL mencatat pelanggaran ke server:", error);
+    } else {
+      console.error('[ANTI-CHEAT] sessionId kosong, tidak bisa mencatat ke server!');
     }
 
     if (currentCount >= maxViolations) {
@@ -148,6 +162,34 @@ export function useAntiCheat({
       }, 2000);
     }
   }, [sessionId, maxViolations, onViolation, onAutoSubmit, playAlarm]);
+
+  // Kirim ulang pelanggaran yang gagal tersimpan saat page background.
+  // Dipanggil saat page kembali fokus dan saat hook pertama kali mount.
+  const flushViolationQueue = useCallback(async () => {
+    if (!sessionId) return;
+    const queueKey = `vq_${sessionId}`;
+    const raw = localStorage.getItem(queueKey);
+    if (!raw) return;
+    const queue: Array<{ tipe: string; pesan: string }> = JSON.parse(raw);
+    if (!queue.length) return;
+
+    console.log(`[ANTI-CHEAT] Flush ${queue.length} pelanggaran dari antrian lokal...`);
+    const remaining: typeof queue = [];
+    for (const item of queue) {
+      try {
+        await api.post(`/api/siswa/sesi/${sessionId}/violation`, item);
+      } catch {
+        remaining.push(item);
+      }
+    }
+    if (remaining.length === 0) {
+      localStorage.removeItem(queueKey);
+      console.log('[ANTI-CHEAT] Semua pelanggaran berhasil dikirim ulang.');
+    } else {
+      localStorage.setItem(queueKey, JSON.stringify(remaining));
+      console.log(`[ANTI-CHEAT] ${remaining.length} pelanggaran masih gagal.`);
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     // Debounce timer refs — batalkan jika fokus/tab kembali dalam grace period.
@@ -206,6 +248,8 @@ export function useAntiCheat({
 
     const handleWindowFocus = () => {
       clearTimeout(blurTimer.id);
+      // Kirim ulang pelanggaran yang gagal saat page background (iOS network freeze)
+      flushViolationQueue();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -258,6 +302,9 @@ export function useAntiCheat({
       setIsFullscreen(!!document.fullscreenElement || !!(document as any).webkitFullscreenElement);
     }
 
+    // Flush antrian saat pertama mount — tangani sisa dari reload/navigasi sebelumnya
+    flushViolationQueue();
+
     return () => {
       clearTimeout(tabSwitchTimer.id);
       clearTimeout(blurTimer.id);
@@ -271,7 +318,7 @@ export function useAntiCheat({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [triggerViolation]);
+  }, [triggerViolation, flushViolationQueue]);
 
   const requestFullscreen = async () => {
     console.log('[ANTI-CHEAT] requestFullscreen dipanggil');

@@ -90,7 +90,7 @@ export default function ExamList() {
     return 'text-error font-bold bg-error-container';
   };
 
-  const mapelList = Array.from(new Set(riwayat.map(s => s.ujian.mataPelajaran))).sort();
+  const mapelList = Array.from(new Set(riwayat.map(s => s.ujian?.mataPelajaran).filter(Boolean))).sort();
 
   const handleSortRiwayat = (field: 'selesaiAt' | 'nilaiAkhir') => {
     if (sortField === field) {
@@ -102,7 +102,7 @@ export default function ExamList() {
   };
 
   const filteredRiwayat = riwayat
-    .filter(s => !filterMapel || s.ujian.mataPelajaran === filterMapel)
+    .filter(s => !filterMapel || s.ujian?.mataPelajaran === filterMapel)
     .sort((a, b) => {
       const mul = sortDir === 'asc' ? 1 : -1;
       if (sortField === 'nilaiAkhir') {

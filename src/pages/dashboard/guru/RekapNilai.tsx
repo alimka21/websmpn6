@@ -17,6 +17,7 @@ export default function RekapNilai() {
   const [rekapData, setRekapData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState<'xlsx' | 'pdf' | null>(null);
+  const [filterKelas, setFilterKelas] = useState<string>('');
 
   // Sort
   const [sortField, setSortField] = useState<string>('nilaiAkhir');
@@ -77,6 +78,7 @@ export default function RekapNilai() {
     try {
       setIsLoading(true);
       setRekapData(null);
+      setFilterKelas('');
       const res = await api.get(`/api/guru/ujian/${selectedUjian}/hasil`);
       setRekapData(res);
     } catch (error: any) {
@@ -97,14 +99,30 @@ export default function RekapNilai() {
 
   const sortedData = Array.isArray(rekapData) ? [...rekapData].sort((a, b) => {
     const mul = sortDir === 'asc' ? 1 : -1;
-    if (sortField === 'nama') return (a.siswa.nama as string).localeCompare(b.siswa.nama) * mul;
-    if (sortField === 'kelas') return ((a.siswa.kelas?.nama ?? '') as string).localeCompare(b.siswa.kelas?.nama ?? '') * mul;
+    if (sortField === 'nama') return ((a.siswa?.nama ?? '') as string).localeCompare(b.siswa?.nama ?? '') * mul;
+    if (sortField === 'kelas') return ((a.siswa?.kelas?.nama ?? '') as string).localeCompare(b.siswa?.kelas?.nama ?? '') * mul;
     if (sortField === 'status') return (a.status as string).localeCompare(b.status) * mul;
     // nilaiAkhir: null goes last
     const va = a.nilaiAkhir ?? (sortDir === 'asc' ? Infinity : -Infinity);
     const vb = b.nilaiAkhir ?? (sortDir === 'asc' ? Infinity : -Infinity);
     return (va - vb) * mul;
   }) : [];
+
+  // Daftar kelas unik dari data ujian (untuk filter dropdown)
+  const kelasList = useMemo(() => {
+    if (!Array.isArray(rekapData)) return [];
+    const map = new Map<string, { id: string; nama: string }>();
+    for (const s of rekapData) {
+      if (s.siswa?.kelas?.id) map.set(s.siswa.kelas.id, { id: s.siswa.kelas.id, nama: s.siswa.kelas.nama });
+    }
+    return [...map.values()].sort((a, b) => a.nama.localeCompare(b.nama));
+  }, [rekapData]);
+
+  // Data yang ditampilkan di tabel — hasil sort + filter kelas
+  const displayData = useMemo(
+    () => filterKelas ? sortedData.filter((s: any) => s.siswa?.kelas?.id === filterKelas) : sortedData,
+    [sortedData, filterKelas]
+  );
 
   const getToken = () => {
     let token = localStorage.getItem('token');
@@ -188,11 +206,11 @@ export default function RekapNilai() {
     return sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />;
   };
 
-  // Stats
+  // Stats — berbasis displayData agar mencerminkan filter kelas aktif
   const stats = useMemo(() => {
     const result = { peserta: 0, rataRata: 0, tertinggi: 0, terendah: 0 };
-    if (!Array.isArray(rekapData) || rekapData.length === 0) return result;
-    const selesai = rekapData.filter((s: any) => (s.status === 'SELESAI' || s.status === 'AUTO_SUBMIT') && s.nilaiAkhir !== null);
+    if (!displayData.length) return result;
+    const selesai = displayData.filter((s: any) => (s.status === 'SELESAI' || s.status === 'AUTO_SUBMIT') && s.nilaiAkhir !== null);
     result.peserta = selesai.length;
     if (selesai.length > 0) {
       const sum = selesai.reduce((a: number, b: any) => a + b.nilaiAkhir, 0);
@@ -201,7 +219,7 @@ export default function RekapNilai() {
       result.terendah = Math.min(...selesai.map((s: any) => s.nilaiAkhir));
     }
     return result;
-  }, [rekapData]);
+  }, [displayData]);
 
   return (
     <div className="space-y-6">
@@ -326,15 +344,27 @@ export default function RekapNilai() {
         <div className="px-6 py-5 border-b border-outline-variant">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-xl font-semibold text-on-surface">Filter Ujian</h2>
-            <div className="w-full sm:w-96">
-              <Select value={selectedUjian} onChange={e => setSelectedUjian(e.target.value)} disabled={ujianList.length === 0}>
-                {ujianList.length === 0 && <option value="">Belum ada ujian terlaksana</option>}
-                {ujianList.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.judul} — {u.mataPelajaran} ({new Date(u.tanggalMulai).toLocaleDateString('id-ID')})
-                  </option>
-                ))}
-              </Select>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="w-full sm:w-96">
+                <Select value={selectedUjian} onChange={e => setSelectedUjian(e.target.value)} disabled={ujianList.length === 0}>
+                  {ujianList.length === 0 && <option value="">Belum ada ujian terlaksana</option>}
+                  {ujianList.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.judul} — {u.mataPelajaran} ({new Date(u.tanggalMulai).toLocaleDateString('id-ID')})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              {kelasList.length > 1 && (
+                <div className="w-full sm:w-44">
+                  <Select value={filterKelas} onChange={e => setFilterKelas(e.target.value)}>
+                    <option value="">Semua Kelas</option>
+                    {kelasList.map(k => (
+                      <option key={k.id} value={k.id}>{k.nama}</option>
+                    ))}
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -399,7 +429,7 @@ export default function RekapNilai() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/40">
-                    {sortedData.map((sesi: any, index: number) => (
+                    {displayData.map((sesi: any, index: number) => (
                       <tr key={sesi.sesiId ?? sesi.siswa.id} className="hover:bg-surface-container-low/70 transition-colors">
                         <td className="px-4 py-3 text-center text-on-surface-variant">{index + 1}</td>
                         <td className="px-4 py-3">

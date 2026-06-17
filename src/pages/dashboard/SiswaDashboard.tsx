@@ -171,7 +171,7 @@ export default function SiswaDashboard() {
                     className="flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors border border-transparent hover:border-outline-variant"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-on-surface truncate">{sesi.ujian.judul}</p>
+                      <p className="font-medium text-on-surface truncate">{sesi.ujian?.judul || '-'}</p>
                       <p className="text-xs text-on-surface-variant">
                         {new Date(sesi.selesaiAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>

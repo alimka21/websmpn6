@@ -267,7 +267,8 @@ export default function ManageUsers() {
       await fetchGuru(); // Reload data
       // Update selected guru
       const updated = await api.get(`/api/admin/users?role=GURU`);
-      const updatedGuru = updated.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
+      const updatedList: GuruUser[] = Array.isArray(updated) ? updated : (updated?.data ?? []);
+      const updatedGuru = updatedList.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
       if (updatedGuru) setSelectedGuruForKelas(updatedGuru);
     } catch (e: any) {
       toast.error(e.message || 'Gagal menambahkan kelas');
@@ -283,7 +284,8 @@ export default function ManageUsers() {
       await fetchGuru();
       // Update selected guru
       const updated = await api.get(`/api/admin/users?role=GURU`);
-      const updatedGuru = updated.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
+      const updatedList: GuruUser[] = Array.isArray(updated) ? updated : (updated?.data ?? []);
+      const updatedGuru = updatedList.find((u: GuruUser) => u.id === selectedGuruForKelas.id);
       if (updatedGuru) setSelectedGuruForKelas(updatedGuru);
     } catch (e: any) {
       toast.error(e.message || 'Gagal menghapus kelas');

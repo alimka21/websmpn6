@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Users, GraduationCap, FileText, Newspaper, Shield,
-  Settings, ArrowRight, RefreshCw, Activity, History, Star,
+  Settings, ArrowRight, RefreshCw, Activity, History, Star, ClipboardList,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { toast } from 'sonner';
@@ -238,6 +238,13 @@ export default function AdminDashboard() {
             desc="Kelola jenis kebaikan, pelanggaran, dan rekap laporan"
             href="/dashboard/admin/potensi"
             accent="error"
+          />
+          <QuickLinkCard
+            icon={ClipboardList}
+            title="Manajemen Ujian"
+            desc="Pantau daftar ujian dan tugas dari semua guru"
+            href="/dashboard/admin/ujian"
+            accent="secondary"
           />
         </div>
       </div>

@@ -89,9 +89,9 @@ async function canAccessUjian(req: any, ujianId: string, mode: 'read' | 'write' 
   });
   if (!ujian) return false;
   if (ujian.guruId === scope.guruId) return true;
-  // Wali kelas: baca-saja semua ujian di kelas wali-nya
-  if (mode === 'read' && scope.waliKelasIds.length > 0) {
-    return ujian.kelas.some(k => scope.waliKelasIds.includes(k.kelasId));
+  // Guru berkaitan (wali kelas + guru pengajar): baca-saja ujian di kelas yang dia terlibat
+  if (mode === 'read' && scope.teachingKelasIds.length > 0) {
+    return ujian.kelas.some(k => scope.teachingKelasIds.includes(k.kelasId));
   }
   return false;
 }

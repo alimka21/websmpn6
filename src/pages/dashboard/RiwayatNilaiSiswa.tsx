@@ -77,8 +77,8 @@ export default function RiwayatNilaiSiswa() {
                 <tbody className="divide-y divide-outline-variant/40">
                   {riwayat.map((item) => (
                     <tr key={item.id} className="hover:bg-surface-container-low/50 transition-colors group">
-                      <td className="px-5 py-4 text-sm font-medium text-on-surface">{item.ujian.judul}</td>
-                      <td className="px-5 py-4 text-sm text-on-surface-variant">{item.ujian.mataPelajaran || '-'}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-on-surface">{item.ujian?.judul || '-'}</td>
+                      <td className="px-5 py-4 text-sm text-on-surface-variant">{item.ujian?.mataPelajaran || '-'}</td>
                       <td className="px-5 py-4 text-sm text-on-surface-variant">{formatDate(item.selesaiAt)}</td>
                       <td className="px-5 py-4">
                         <Badge variant={item.status === 'SELESAI' ? 'default' : 'secondary'}>
