@@ -87,6 +87,22 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     });
   }
 
+  // Prisma P2025 — record not found (mis. delete() tanpa record yang cocok)
+  if (err?.code === 'P2025' || (msg.includes('No record was found for a delete') || msg.includes('did not find a record') || msg.includes('expected one record to be affected'))) {
+    return res.status(404).json({ error: 'Data tidak ditemukan atau sudah dihapus sebelumnya.' });
+  }
+
+  // Prisma P2003 — FK constraint (record masih direferensi tabel lain)
+  if (err?.code === 'P2003') {
+    return res.status(400).json({ error: 'Tidak dapat dihapus karena masih ada data terkait yang bergantung pada record ini.' });
+  }
+
+  // Prisma P2002 — unique constraint violation
+  if (err?.code === 'P2002') {
+    const field = err?.meta?.target;
+    return res.status(400).json({ error: field ? `Nilai "${field}" sudah digunakan, gunakan nilai yang berbeda.` : 'Data duplikat — nilai sudah ada.' });
+  }
+
   console.error('[SERVER ERROR]', err);
   res.status(err.status || 500).json({ error: err.message || 'Terjadi kesalahan pada server.' });
 };

@@ -391,14 +391,18 @@ router.delete('/users/:id', async (req, res, next) => {
 
         await tx.presensiGuru.deleteMany({ where: { guruId } });
 
-        // Hapus kelas kosong (tanpa siswa) — cascade DB: guruKelas, ujianKelas
+        // Hapus kelas kosong (tanpa siswa) — cascade DB: guruKelas, ujianKelas, kolomNilaiKelas
         await tx.kelas.deleteMany({ where: { guruId } });
 
         // Hapus semua ujian guru — cascade DB (onDelete: Cascade): sesiUjian → jawaban/pelanggaran,
         // soal → opsi/jawaban, ujianKelas
         await tx.ujian.deleteMany({ where: { guruId } });
 
-        // Hapus user (cascade DB: guru → guruKelas, guruMataPelajaran)
+        // Hapus kolom nilai + cascade NilaiSiswa dan KolomNilaiKelas
+        // (KolomNilai.guruId tidak punya onDelete: Cascade di schema — harus manual)
+        await tx.kolomNilai.deleteMany({ where: { guruId } });
+
+        // Hapus user (cascade DB: guru → guruKelas, guruMataPelajaran, presensiGuru)
         await tx.user.delete({ where: { id: req.params.id } });
       });
     } else {
@@ -816,11 +820,21 @@ router.patch('/kelas/:id', async (req, res, next) => {
 
 router.delete('/kelas/:id', async (req, res, next) => {
   try {
+    const kelas = await prisma.kelas.findUnique({ where: { id: req.params.id } });
+    if (!kelas) return res.status(404).json({ error: 'Kelas tidak ditemukan atau sudah dihapus.' });
+
     const jumlahSiswa = await prisma.siswa.count({ where: { kelasId: req.params.id } });
     if (jumlahSiswa > 0) {
-      return res.status(400).json({ error: `Tidak bisa menghapus kelas yang masih memiliki ${jumlahSiswa} siswa` });
+      return res.status(400).json({ error: `Tidak bisa menghapus kelas yang masih memiliki ${jumlahSiswa} siswa. Pindahkan siswa ke kelas lain terlebih dahulu.` });
     }
-    await prisma.kelas.delete({ where: { id: req.params.id } });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.guruKelas.deleteMany({ where: { kelasId: req.params.id } });
+      await tx.kolomNilaiKelas.deleteMany({ where: { kelasId: req.params.id } });
+      await tx.ujianKelas.deleteMany({ where: { kelasId: req.params.id } });
+      await tx.kelas.delete({ where: { id: req.params.id } });
+    });
+
     invalidateByPrefix('guru:kelas:');
     invalidateByPrefix('guru:stats:');
     res.json({ success: true });
