@@ -291,8 +291,15 @@ const authLimiter = rateLimit({
   message: { error: "Terlalu banyak percobaan login. Coba lagi dalam 15 menit." },
   standardHeaders: true,
   legacyHeaders: false,
-  // Pre-login req.userId undefined → fallback ke IP (brute force protection)
-  keyGenerator: (req) => req.userId || ipKeyGenerator(req.ip || '0.0.0.0'),
+  // Key per identifier (email/NIS) + role, bukan per IP.
+  // Tanpa ini: 40 siswa login dari NAT sekolah yang sama → IP bucket habis → admin ikut terblokir.
+  // Dengan ini: tiap akun punya bucket sendiri — brute force terlindungi per akun, bukan per IP.
+  keyGenerator: (req) => {
+    const id = (req.body?.identifier || '').toString().toLowerCase().trim();
+    const role = (req.body?.role || '').toString().toUpperCase().trim();
+    if (id && role) return `${role}:${id}`;
+    return ipKeyGenerator(req.ip || '0.0.0.0');
+  },
 });
 app.use("/api/auth/login", authLimiter);
 
