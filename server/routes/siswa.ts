@@ -172,9 +172,9 @@ router.get('/sesi/:sessionId', async (req, res, next) => {
           ujian: {
             include: {
               soal: {
-                orderBy: { nomor: 'asc' },
+                orderBy: [{ nomor: 'asc' }, { id: 'asc' }],
                 include: {
-                  opsi: { orderBy: { urutan: 'asc' }, select: { id: true, teks: true, imageUrl: true, urutan: true } }
+                  opsi: { orderBy: [{ urutan: 'asc' }, { id: 'asc' }], select: { id: true, teks: true, imageUrl: true, urutan: true } }
                 }
               }
             }

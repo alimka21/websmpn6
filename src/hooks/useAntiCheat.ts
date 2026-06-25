@@ -13,7 +13,7 @@ const isIOS = typeof navigator !== 'undefined'
 const isFullscreenSupported = !isIOS && typeof document !== 'undefined'
   && !!document.documentElement.requestFullscreen;
 
-export type ViolationType = 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR' | 'DEVTOOLS';
+export type ViolationType = 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR' | 'DEVTOOLS' | 'SCREENSHOT_ATTEMPT';
 
 export interface Violation {
   type: ViolationType;
@@ -253,16 +253,53 @@ export function useAntiCheat({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Blokir pintasan devtools dan view source
-      const isF12 = e.key === 'F12';
-      const isDevToolsShortcuts = e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'U'].includes(e.key.toUpperCase());
-      const isViewSource = e.ctrlKey && e.key.toUpperCase() === 'U';
+      const key = e.key.toUpperCase();
+      const ctrl = e.ctrlKey;
+      const meta = e.metaKey;
+      const shift = e.shiftKey;
+      const ctrlOrMeta = ctrl || meta;
 
-      if (isF12 || isDevToolsShortcuts || isViewSource) {
+      // ── DevTools ──────────────────────────────────────────
+      const isF12 = e.key === 'F12';
+      const isDevTools = ctrl && shift && ['I', 'J', 'C'].includes(key);
+      const isViewSource = ctrl && key === 'U';
+      if (isF12 || isDevTools || isViewSource) {
         e.preventDefault();
-        triggerViolation('DEVTOOLS', 'Mencoba membuka alat pengembang (Developer Tools) atau Inspect Element.');
+        triggerViolation('DEVTOOLS', 'Mencoba membuka alat pengembang (Developer Tools).');
+        return;
+      }
+
+      // ── Screenshot & screen-capture shortcuts ────────────
+      // PrintScreen (Windows/Linux)
+      const isPrintScreen = e.key === 'PrintScreen';
+      // Ctrl+P / Cmd+P (cetak ke PDF)
+      const isPrint = ctrlOrMeta && key === 'P';
+      // Ctrl+S / Cmd+S (simpan halaman)
+      const isSave = ctrlOrMeta && key === 'S';
+      // Ctrl+Shift+S / Cmd+Shift+S (simpan sebagai / beberapa snipping tool)
+      const isShiftSave = ctrlOrMeta && shift && key === 'S';
+      // Mac: Cmd+Shift+3 / 4 / 5 (screenshot)
+      const isMacScreenshot = meta && shift && ['3', '4', '5'].includes(e.key);
+      // Ctrl+Shift+P (beberapa launcher AI)
+      const isCtrlShiftP = ctrl && shift && key === 'P';
+
+      if (isPrintScreen || isPrint || isSave || isShiftSave || isMacScreenshot || isCtrlShiftP) {
+        e.preventDefault();
+        triggerViolation('SCREENSHOT_ATTEMPT', 'Terdeteksi percobaan tangkap layar atau menyimpan halaman ujian.');
+        return;
+      }
+
+      // ── Blokir diam-diam (tanpa violation — terlalu banyak false positive) ──
+      // Ctrl+A (select all), Ctrl+C (copy), Ctrl+X (cut), Ctrl+V (paste ke field text)
+      // Ekstensi AI umumnya menyalin teks terseleksi sebelum mengirim ke server.
+      if (ctrlOrMeta && ['A', 'C', 'X'].includes(key)) {
+        e.preventDefault();
       }
     };
+
+    const handleCopy = (e: ClipboardEvent) => { e.preventDefault(); };
+    const handleCut  = (e: ClipboardEvent) => { e.preventDefault(); };
+    const handleSelectStart = (e: Event) => { e.preventDefault(); };
 
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -293,7 +330,10 @@ export function useAntiCheat({
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
-    console.log('[ANTI-CHEAT] ✓ keyboard & contextmenu listeners terpasang');
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('cut', handleCut);
+    document.addEventListener('selectstart', handleSelectStart);
+    console.log('[ANTI-CHEAT] ✓ keyboard, contextmenu, copy/cut/select listeners terpasang');
 
     // Initial state — di non-iOS baca dari DOM. Di iOS biarkan false
     // sampai siswa tap "Mulai Ujian" yg call requestFullscreen() (yg
@@ -317,6 +357,9 @@ export function useAntiCheat({
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('cut', handleCut);
+      document.removeEventListener('selectstart', handleSelectStart);
     };
   }, [triggerViolation, flushViolationQueue]);
 

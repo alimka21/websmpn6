@@ -84,19 +84,73 @@ export default function TakeExam() {
         }
         setSessionData(res);
 
+        // Seeded Fisher-Yates — deterministik dari sessionId
         const seedStr = String(sessionId || '');
         let seed = 0;
         for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
         const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0x100000000; };
-        const shuffle = <T,>(arr: T[]): T[] => {
+        const seededShuffle = <T,>(arr: T[]): T[] => {
           const a = arr.slice();
           for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
           return a;
         };
 
-        let soal = res.ujian.soal || [];
-        if (res.ujian.acak) soal = shuffle(soal);
-        if (res.ujian.acakOpsi) soal = soal.map((s: any) => ({ ...s, opsi: shuffle(s.opsi || []) }));
+        let soal: any[] = res.ujian.soal || [];
+
+        // ── Acak soal ──────────────────────────────────────────────────────────
+        // Urutan SELALU dibaca dari localStorage terlebih dahulu.
+        // Ini menjamin urutan stabil walau halaman di-refresh / koneksi putus.
+        if (res.ujian.acak) {
+          const orderKey = `exam_soal_order_${sessionId}`;
+          const storedOrder = localStorage.getItem(orderKey);
+          if (storedOrder) {
+            try {
+              const ids: string[] = JSON.parse(storedOrder);
+              const map = new Map(soal.map((s: any) => [s.id, s]));
+              const reordered = ids.map(id => map.get(id)).filter(Boolean) as any[];
+              // Soal baru (tidak ada di stored order) ditambahkan di akhir
+              const known = new Set(ids);
+              const extra = soal.filter((s: any) => !known.has(s.id));
+              soal = [...reordered, ...extra];
+            } catch {
+              soal = seededShuffle(soal);
+              try { localStorage.setItem(orderKey, JSON.stringify(soal.map((s: any) => s.id))); } catch { /* ignore */ }
+            }
+          } else {
+            soal = seededShuffle(soal);
+            try { localStorage.setItem(orderKey, JSON.stringify(soal.map((s: any) => s.id))); } catch { /* ignore */ }
+          }
+        }
+
+        // ── Acak opsi ──────────────────────────────────────────────────────────
+        if (res.ujian.acakOpsi) {
+          const opsiKey = `exam_opsi_order_${sessionId}`;
+          let storedOpsi: Record<string, string[]> = {};
+          try {
+            const raw = localStorage.getItem(opsiKey);
+            if (raw) storedOpsi = JSON.parse(raw);
+          } catch { storedOpsi = {}; }
+
+          let changed = false;
+          soal = soal.map((s: any) => {
+            if (!s.opsi?.length) return s;
+            const stored = storedOpsi[s.id];
+            if (stored?.length) {
+              const map = new Map(s.opsi.map((o: any) => [o.id, o]));
+              const reordered = stored.map((id: string) => map.get(id)).filter(Boolean);
+              return { ...s, opsi: reordered };
+            } else {
+              const shuffled = seededShuffle(s.opsi);
+              storedOpsi[s.id] = shuffled.map((o: any) => o.id);
+              changed = true;
+              return { ...s, opsi: shuffled };
+            }
+          });
+          if (changed) {
+            try { localStorage.setItem(opsiKey, JSON.stringify(storedOpsi)); } catch { /* ignore */ }
+          }
+        }
+
         setSoalList(soal);
 
         const storedAns = localStorage.getItem(`exam_ans_${sessionId}`);
@@ -108,7 +162,7 @@ export default function TakeExam() {
       } catch (err: any) {
         if (err?.status === 404 || /tidak ditemukan|akses ditolak/i.test(err?.message || '')) {
           try {
-            ['ans', 'text', 'flags', 'timer'].forEach(k => localStorage.removeItem(`exam_${k}_${sessionId}`));
+            ['ans', 'text', 'flags', 'timer', 'soal_order', 'opsi_order'].forEach(k => localStorage.removeItem(`exam_${k}_${sessionId}`));
           } catch { /* ignore */ }
           toast.info('Sesi ujian Anda di-reset oleh admin/guru. Silakan mulai lagi dari daftar ujian.');
           navigate('/dashboard/siswa/ujian', { replace: true });
@@ -219,7 +273,7 @@ export default function TakeExam() {
       } catch (flushErr) { console.error('[submit] Flush gagal:', flushErr); }
 
       await api.post(`/api/siswa/sesi/${sessionId}/submit?reason=${reason}`);
-      ['timer', 'ans', 'text', 'flags'].forEach(k => localStorage.removeItem(`exam_${k}_${sessionId}`));
+      ['timer', 'ans', 'text', 'flags', 'soal_order', 'opsi_order'].forEach(k => localStorage.removeItem(`exam_${k}_${sessionId}`));
       if (document.fullscreenElement) await document.exitFullscreen().catch(console.error);
       navigate(`/dashboard/siswa/hasil/${sessionId}`, { replace: true });
     } catch (err: any) {
@@ -426,8 +480,27 @@ export default function TakeExam() {
       <div className="flex-1 flex min-h-0 overflow-hidden">
 
         {/* MAIN — Question Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-3xl mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+          {/* Watermark diagonal — identitas siswa tercetak di layar sehingga
+              screenshot apapun yang dikirim ke AI tetap membawa nama+NIS siswa */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden select-none z-10"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+                `<svg xmlns='http://www.w3.org/2000/svg' width='340' height='200'>` +
+                `<text x='50%' y='45%' text-anchor='middle' dominant-baseline='middle' ` +
+                `font-family='sans-serif' font-size='13' fill='rgba(0,0,0,0.055)' ` +
+                `transform='rotate(-30,170,100)'>${sessionData.siswa?.nama || ''}</text>` +
+                `<text x='50%' y='62%' text-anchor='middle' dominant-baseline='middle' ` +
+                `font-family='sans-serif' font-size='11' fill='rgba(0,0,0,0.045)' ` +
+                `transform='rotate(-30,170,100)'>NIS: ${sessionData.siswa?.nis || ''}</text>` +
+                `</svg>`
+              )}")`,
+              backgroundRepeat: 'repeat',
+            }}
+          />
+          <div className="max-w-3xl mx-auto space-y-6 relative z-0">
 
             {/* Pills row: Question counter + mobile nav trigger + Timer */}
             <div className="flex items-center justify-between gap-3">

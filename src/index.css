@@ -269,3 +269,8 @@
 .ProseMirror {
   min-height: 200px;
 }
+
+/* Blokir semua output print di halaman ujian */
+@media print {
+  body { display: none !important; }
+}
