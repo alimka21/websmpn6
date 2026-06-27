@@ -1202,9 +1202,12 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Hasil Ujian');
 
-      ws.columns = [{ width: 5 }, { width: 14 }, { width: 30 }, { width: 14 }, { width: 10 }, { width: 16 }, { width: 13 }];
+      ws.columns = [
+        { width: 5 }, { width: 14 }, { width: 30 }, { width: 14 },
+        { width: 10 }, { width: 16 }, { width: 13 }, { width: 11 }, { width: 11 },
+      ];
 
-      ws.mergeCells('A1:G1');
+      ws.mergeCells('A1:I1');
       const titleCell = ws.getCell('A1');
       titleCell.value = `REKAP NILAI UJIAN`;
       titleCell.font = { bold: true, size: 14 };
@@ -1215,10 +1218,19 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       ws.addRow(['Mata Pelajaran', ujian.mataPelajaran]);
       ws.addRow(['Kelas', kelasNama]);
       ws.addRow(['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID')]);
-      ws.addRow(['Durasi', `${ujian.durasi} menit`]);
+      ws.addRow(['Durasi Ujian', `${ujian.durasi} menit`]);
       ws.addRow([]);
 
-      const hRow = ws.addRow(['No', 'NIS', 'Nama Siswa', 'Kelas', 'Nilai', 'Status', 'Pelanggaran']);
+      const fmtTime = (dt: Date | null | undefined) => {
+        if (!dt) return '-';
+        return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      };
+      const durasiMnt = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
+        if (!mulai || !selesai) return '-';
+        return `${Math.round((new Date(selesai).getTime() - new Date(mulai).getTime()) / 60000)} mnt`;
+      };
+
+      const hRow = ws.addRow(['No', 'NIS', 'Nama Siswa', 'Kelas', 'Nilai', 'Status', 'Pelanggaran', 'Mulai', 'Selesai', 'Durasi']);
       hRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       hRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
@@ -1229,13 +1241,16 @@ router.get('/ujian/:id/export', async (req, res, next) => {
         const sesi = s.sesiUjian[0];
         const row = ws.addRow([
           idx + 1, s.nis, s.nama, s.kelas?.nama ?? '-',
-          sesi?.nilaiAkhir ?? '-', statusLabel(sesi), sesi?.pelanggaran?.length ?? 0
+          sesi?.nilaiAkhir ?? '-', statusLabel(sesi), sesi?.pelanggaran?.length ?? 0,
+          fmtTime(sesi?.mulaiAt), fmtTime(sesi?.selesaiAt), durasiMnt(sesi?.mulaiAt, sesi?.selesaiAt),
         ]);
         const nilai = sesi?.nilaiAkhir;
         if (nilai !== null && nilai !== undefined) {
           const scoreCell = row.getCell(5);
           scoreCell.font = { bold: true, color: { argb: nilai >= 75 ? 'FF16A34A' : nilai >= 60 ? 'FFCA8A04' : 'FFDC2626' } };
         }
+        // Kolom waktu rata tengah
+        [8, 9, 10].forEach(c => { row.getCell(c).alignment = { horizontal: 'center' }; });
       });
 
       ws.addRow([]);
@@ -1256,7 +1271,8 @@ router.get('/ujian/:id/export', async (req, res, next) => {
     if (format === 'pdf') {
       const PDFDocument = (await import('pdfkit')).default;
       const chunks: Buffer[] = [];
-      const doc = new PDFDocument({ size: 'A4', margin: 45 });
+      // Landscape agar 10 kolom muat tanpa terpotong
+      const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 40 });
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
@@ -1267,99 +1283,113 @@ router.get('/ujian/:id/export', async (req, res, next) => {
         res.send(buf);
       });
 
-      // Header
-      doc.rect(45, 40, 505, 70).fill('#1D4ED8');
-      doc.fillColor('#FFFFFF').fontSize(16).font('Helvetica-Bold').text('REKAP NILAI UJIAN', 45, 52, { width: 505, align: 'center' });
-      doc.fontSize(10).font('Helvetica').text(ujian.judul, 45, 74, { width: 505, align: 'center' });
-      doc.fillColor('#000000');
-      doc.y = 125;
+      // Landscape A4: 841.89 × 595.28 pt; usable width = 841.89 − 2×40 = 761.89
+      const LM = 40;
+      const PW = 762;
 
-      // Info
-      doc.fontSize(9).font('Helvetica');
-      const infoLeft = [
-        ['Mata Pelajaran', ujian.mataPelajaran],
-        ['Kelas', kelasNama || '-'],
-      ];
+      // Header banner
+      doc.rect(LM, 30, PW, 58).fill('#1D4ED8');
+      doc.fillColor('#FFFFFF').fontSize(15).font('Helvetica-Bold')
+        .text('REKAP NILAI UJIAN', LM, 40, { width: PW, align: 'center' });
+      doc.fontSize(9).font('Helvetica')
+        .text(ujian.judul, LM, 60, { width: PW, align: 'center' });
+      doc.fillColor('#000000');
+
+      // Info block (2 kolom)
+      const infoLeft  = [['Mata Pelajaran', ujian.mataPelajaran], ['Kelas', kelasNama || '-']];
       const infoRight = [
         ['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID')],
-        ['Durasi', `${ujian.durasi} menit`],
+        ['Durasi Ujian', `${ujian.durasi} menit`],
       ];
-      let iy = doc.y;
+      const iy = 101;
+      doc.fontSize(8.5);
       infoLeft.forEach(([k, v], i) => {
-        doc.font('Helvetica-Bold').text(k, 45, iy + i * 16, { continued: true });
+        doc.font('Helvetica-Bold').text(k, LM, iy + i * 14, { continued: true });
         doc.font('Helvetica').text(`: ${v}`);
       });
       infoRight.forEach(([k, v], i) => {
-        doc.font('Helvetica-Bold').text(k, 320, iy + i * 16, { continued: true });
+        doc.font('Helvetica-Bold').text(k, LM + 400, iy + i * 14, { continued: true });
         doc.font('Helvetica').text(`: ${v}`);
       });
-      doc.y = iy + infoLeft.length * 16 + 12;
 
-      // Table header
-      const colX = [45, 75, 120, 300, 370, 420, 490];
-      const colW = [28, 44, 178, 68, 48, 68, 55];
-      const headers2 = ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Nilai', 'Status', 'Pelanggar.'];
-      const th = doc.y;
-      doc.rect(45, th, 510, 16).fill('#E2E8F0');
-      doc.fillColor('#1E293B').font('Helvetica-Bold').fontSize(8);
-      headers2.forEach((h, i) => doc.text(h, colX[i], th + 4, { width: colW[i], align: i >= 4 ? 'center' : 'left' }));
-      doc.fillColor('#000000').font('Helvetica').fontSize(8);
+      // Helper waktu
+      const fmtT = (dt: Date | null | undefined) => {
+        if (!dt) return '-';
+        return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      };
+      const durasiT = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
+        if (!mulai || !selesai) return '-';
+        return `${Math.round((new Date(selesai).getTime() - new Date(mulai).getTime()) / 60000)} mnt`;
+      };
 
-      let y2 = th + 18;
+      // Kolom: No | NIS | Nama | Kelas | Nilai | Status | Mulai | Selesai | Durasi | Pelanggar
+      const colX = [LM, LM+25, LM+75, LM+235, LM+305, LM+345, LM+415, LM+470, LM+528, LM+578];
+      const colW = [24,  48,    158,    68,      38,      68,      53,     56,      48,     50  ];
+      const hdrs = ['No', 'NIS', 'Nama Siswa', 'Kelas', 'Nilai', 'Status', 'Mulai', 'Selesai', 'Durasi', 'Pelanggar.'];
+      const centerCols = new Set([0, 4, 5, 6, 7, 8, 9]);
+
+      const drawHeader = (y: number) => {
+        doc.rect(LM, y, PW, 15).fill('#E2E8F0');
+        doc.fillColor('#1E293B').font('Helvetica-Bold').fontSize(7.5);
+        hdrs.forEach((h, i) => doc.text(h, colX[i], y + 4, { width: colW[i], align: centerCols.has(i) ? 'center' : 'left' }));
+        doc.fillColor('#000000').font('Helvetica').fontSize(7.5);
+      };
+
+      let y2 = iy + infoLeft.length * 14 + 10;
+      drawHeader(y2);
+      y2 += 17;
+
       siswaList.forEach((s, idx) => {
-        if (y2 > 740) {
+        if (y2 > 520) {
           doc.addPage();
-          y2 = 45;
-          doc.rect(45, y2, 510, 16).fill('#E2E8F0');
-          doc.fillColor('#1E293B').font('Helvetica-Bold').fontSize(8);
-          headers2.forEach((h, i) => doc.text(h, colX[i], y2 + 4, { width: colW[i], align: i >= 4 ? 'center' : 'left' }));
-          doc.fillColor('#000000').font('Helvetica').fontSize(8);
-          y2 += 18;
+          y2 = 40;
+          drawHeader(y2);
+          y2 += 17;
         }
-        if (idx % 2 === 0) doc.rect(45, y2, 510, 14).fill('#F8FAFC');
+        if (idx % 2 === 0) doc.rect(LM, y2, PW, 13).fill('#F8FAFC');
         const sesi = s.sesiUjian[0];
-        doc.fillColor('#000000');
-        doc.text(String(idx + 1), colX[0], y2 + 3, { width: colW[0], align: 'center' });
-        doc.text(s.nis || '-', colX[1], y2 + 3, { width: colW[1] });
-        doc.text(s.nama.slice(0, 30), colX[2], y2 + 3, { width: colW[2] });
-        doc.text(s.kelas?.nama ?? '-', colX[3], y2 + 3, { width: colW[3] });
-        const nilaiStr = sesi?.nilaiAkhir != null ? String(sesi.nilaiAkhir) : '-';
         const n = sesi?.nilaiAkhir;
+        doc.fillColor('#000000');
+        doc.text(String(idx + 1),            colX[0], y2 + 3, { width: colW[0], align: 'center' });
+        doc.text(s.nis || '-',               colX[1], y2 + 3, { width: colW[1] });
+        doc.text(s.nama.slice(0, 28),        colX[2], y2 + 3, { width: colW[2] });
+        doc.text(s.kelas?.nama ?? '-',       colX[3], y2 + 3, { width: colW[3] });
         doc.fillColor(n != null ? (n >= 75 ? '#16A34A' : n >= 60 ? '#CA8A04' : '#DC2626') : '#64748B');
-        doc.font('Helvetica-Bold').text(nilaiStr, colX[4], y2 + 3, { width: colW[4], align: 'center' });
+        doc.font('Helvetica-Bold').text(n != null ? String(n) : '-', colX[4], y2 + 3, { width: colW[4], align: 'center' });
         doc.fillColor('#000000').font('Helvetica');
-        doc.text(statusLabel(sesi), colX[5], y2 + 3, { width: colW[5], align: 'center' });
-        doc.text(String(sesi?.pelanggaran?.length ?? 0), colX[6], y2 + 3, { width: colW[6], align: 'center' });
-        y2 += 14;
+        doc.text(statusLabel(sesi),                            colX[5], y2 + 3, { width: colW[5], align: 'center' });
+        doc.text(fmtT(sesi?.mulaiAt),                          colX[6], y2 + 3, { width: colW[6], align: 'center' });
+        doc.text(fmtT(sesi?.selesaiAt),                        colX[7], y2 + 3, { width: colW[7], align: 'center' });
+        doc.text(durasiT(sesi?.mulaiAt, sesi?.selesaiAt),      colX[8], y2 + 3, { width: colW[8], align: 'center' });
+        doc.text(String(sesi?.pelanggaran?.length ?? 0),       colX[9], y2 + 3, { width: colW[9], align: 'center' });
+        y2 += 13;
       });
 
       // Statistik
-      y2 += 16;
-      if (y2 > 700) { doc.addPage(); y2 = 45; }
-      doc.rect(45, y2, 200, 16).fill('#1D4ED8');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9).text('STATISTIK', 50, y2 + 4);
-      y2 += 18;
+      y2 += 14;
+      if (y2 > 500) { doc.addPage(); y2 = 40; }
+      doc.rect(LM, y2, 200, 15).fill('#1D4ED8');
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8.5).text('STATISTIK', LM + 5, y2 + 4);
+      y2 += 17;
       const stats2 = [
         ['Peserta Selesai', `${selesaiList.length} siswa`],
         ['Rata-rata Kelas', String(rataRata)],
         ['Nilai Tertinggi', String(tertinggi)],
         ['Nilai Terendah', String(terendah)],
       ];
-      doc.fillColor('#000000').font('Helvetica').fontSize(9);
+      doc.fillColor('#000000').font('Helvetica').fontSize(8.5);
       stats2.forEach(([k, v]) => {
-        doc.font('Helvetica-Bold').text(k, 50, y2, { continued: true });
+        doc.font('Helvetica-Bold').text(k, LM + 5, y2, { continued: true });
         doc.font('Helvetica').text(` : ${v}`);
-        y2 += 14;
+        y2 += 13;
       });
 
-      // Tanda tangan placeholder
-      if (y2 < 680) {
-        y2 = Math.max(y2 + 20, 660);
-        doc.fontSize(9).font('Helvetica').text('Mengetahui,', 380, y2);
-        doc.text('Guru Mata Pelajaran', 380, y2 + 12);
-        doc.moveTo(380, y2 + 60).lineTo(510, y2 + 60).stroke('#94A3B8');
-        doc.text('(___________________)', 380, y2 + 64);
-      }
+      // Tanda tangan
+      const sigY = Math.max(y2 + 20, 510);
+      doc.fontSize(8.5).font('Helvetica').text('Mengetahui,', LM + 560, sigY);
+      doc.text('Guru Mata Pelajaran', LM + 560, sigY + 12);
+      doc.moveTo(LM + 560, sigY + 55).lineTo(LM + 720, sigY + 55).stroke('#94A3B8');
+      doc.text('(___________________)', LM + 560, sigY + 58);
 
       doc.end();
       return;

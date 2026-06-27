@@ -13,7 +13,13 @@ const isIOS = typeof navigator !== 'undefined'
 const isFullscreenSupported = !isIOS && typeof document !== 'undefined'
   && !!document.documentElement.requestFullscreen;
 
-export type ViolationType = 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR' | 'DEVTOOLS' | 'SCREENSHOT_ATTEMPT';
+export type ViolationType = 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR' | 'DEVTOOLS' | 'SCREENSHOT_ATTEMPT' | 'PASTE_DETECTED';
+
+// Cooldown per-tipe di luar komponen agar stabil dan tidak re-create tiap render
+const VIOLATION_COOLDOWN: Record<ViolationType, number> = {
+  TAB_SWITCH: 2000, FULLSCREEN_EXIT: 2000, WINDOW_BLUR: 2000,
+  DEVTOOLS: 5000, SCREENSHOT_ATTEMPT: 2000, PASTE_DETECTED: 4000,
+};
 
 export interface Violation {
   type: ViolationType;
@@ -42,10 +48,8 @@ export function useAntiCheat({
   // Use refs to avoid stale state in event listeners
   const countRef = useRef(0);
   const isAutoSubmittingRef = useRef(false);
-  // Dedup: satu kejadian nyata (misal: pindah app) bisa memicu beberapa event
-  // sekaligus (visibilitychange + blur). Guard ini pastikan hanya 1 pelanggaran
-  // yang terhitung per kejadian dalam window 2 detik.
-  const lastViolationTimeRef = useRef(0);
+  // Dedup per-tipe: setiap jenis pelanggaran punya cooldown sendiri.
+  const lastViolationTimeRef = useRef<Record<string, number>>({});
 
   // Bunyikan alarm menggunakan Web Audio API
   const playAlarm = useCallback(() => {
@@ -101,10 +105,10 @@ export function useAntiCheat({
   const triggerViolation = useCallback(async (type: ViolationType, message: string) => {
     if (isAutoSubmittingRef.current) return;
 
-    // Dedup: abaikan jika kejadian nyata baru saja tercatat (< 2 detik)
+    // Dedup per-tipe: abaikan jika tipe yang sama baru saja tercatat
     const now = Date.now();
-    if (now - lastViolationTimeRef.current < 2000) return;
-    lastViolationTimeRef.current = now;
+    if (now - (lastViolationTimeRef.current[type] ?? 0) < VIOLATION_COOLDOWN[type]) return;
+    lastViolationTimeRef.current[type] = now;
 
     const v: Violation = {
       type,
@@ -411,6 +415,30 @@ export function useAntiCheat({
     }
   };
 
+  // Deteksi DevTools yang sudah terbuka (via perbedaan ukuran window vs viewport).
+  // Mendeteksi: Chrome DevTools docked, browser inspector, ekstensi AI yang pakai panel.
+  // Threshold 200px aman dari perbedaan normal (scrollbar, taskbar, notch).
+  useEffect(() => {
+    const checkDevToolsSize = () => {
+      if (isAutoSubmittingRef.current) return;
+      const widthDiff  = window.outerWidth  - window.innerWidth;
+      const heightDiff = window.outerHeight - window.innerHeight;
+      if (widthDiff > 200 || heightDiff > 200) {
+        triggerViolation('DEVTOOLS', 'Terdeteksi Developer Tools atau panel AI terbuka di browser.');
+      }
+    };
+    const id = setInterval(checkDevToolsSize, 2000);
+    return () => clearInterval(id);
+  }, [triggerViolation]);
+
+  // Dipanggil langsung oleh TakeExam saat paste terdeteksi di textarea jawaban.
+  const reportPaste = useCallback(() => {
+    triggerViolation(
+      'PASTE_DETECTED',
+      'Terdeteksi tempel (paste) teks ke kolom jawaban. Dilarang menyalin jawaban dari AI atau sumber lain.'
+    );
+  }, [triggerViolation]);
+
   const dismissWarning = () => {
     setIsWarningVisible(false);
   };
@@ -424,6 +452,7 @@ export function useAntiCheat({
     latestViolation,
     requestFullscreen,
     dismissWarning,
+    reportPaste,
     maxViolations
   };
 }

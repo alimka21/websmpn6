@@ -88,6 +88,16 @@ export default function RekapNilai() {
     }
   };
 
+  const durasiMenit = (mulaiAt: string | null, selesaiAt: string | null): number | null => {
+    if (!mulaiAt || !selesaiAt) return null;
+    return Math.round((new Date(selesaiAt).getTime() - new Date(mulaiAt).getTime()) / 60000);
+  };
+
+  const fmtWaktu = (dt: string | null) => {
+    if (!dt) return '—';
+    return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -99,12 +109,20 @@ export default function RekapNilai() {
 
   const sortedData = Array.isArray(rekapData) ? [...rekapData].sort((a, b) => {
     const mul = sortDir === 'asc' ? 1 : -1;
+    const INF = sortDir === 'asc' ? Infinity : -Infinity;
     if (sortField === 'nama') return ((a.siswa?.nama ?? '') as string).localeCompare(b.siswa?.nama ?? '') * mul;
     if (sortField === 'kelas') return ((a.siswa?.kelas?.nama ?? '') as string).localeCompare(b.siswa?.kelas?.nama ?? '') * mul;
     if (sortField === 'status') return (a.status as string).localeCompare(b.status) * mul;
+    if (sortField === 'mulaiAt') return ((a.mulaiAt ? new Date(a.mulaiAt).getTime() : INF) - (b.mulaiAt ? new Date(b.mulaiAt).getTime() : INF)) * mul;
+    if (sortField === 'selesaiAt') return ((a.selesaiAt ? new Date(a.selesaiAt).getTime() : INF) - (b.selesaiAt ? new Date(b.selesaiAt).getTime() : INF)) * mul;
+    if (sortField === 'durasi') {
+      const da = durasiMenit(a.mulaiAt, a.selesaiAt) ?? INF;
+      const db = durasiMenit(b.mulaiAt, b.selesaiAt) ?? INF;
+      return (da - db) * mul;
+    }
     // nilaiAkhir: null goes last
-    const va = a.nilaiAkhir ?? (sortDir === 'asc' ? Infinity : -Infinity);
-    const vb = b.nilaiAkhir ?? (sortDir === 'asc' ? Infinity : -Infinity);
+    const va = a.nilaiAkhir ?? INF;
+    const vb = b.nilaiAkhir ?? INF;
     return (va - vb) * mul;
   }) : [];
 
@@ -412,10 +430,13 @@ export default function RekapNilai() {
                         { field: 'kelas', label: 'Kelas' },
                         { field: 'nilaiAkhir', label: 'Nilai Akhir' },
                         { field: 'status', label: 'Status' },
+                        { field: 'mulaiAt', label: 'Mulai' },
+                        { field: 'selesaiAt', label: 'Selesai' },
+                        { field: 'durasi', label: 'Durasi' },
                       ].map(col => (
                         <th
                           key={col.field}
-                          className={`px-4 py-3 font-semibold cursor-pointer select-none hover:bg-surface-container transition-colors ${col.field === 'nilaiAkhir' || col.field === 'status' ? 'text-center' : ''}`}
+                          className={`px-4 py-3 font-semibold cursor-pointer select-none hover:bg-surface-container transition-colors whitespace-nowrap ${['nilaiAkhir', 'status', 'mulaiAt', 'selesaiAt', 'durasi'].includes(col.field) ? 'text-center' : ''}`}
                           onClick={() => handleSort(col.field)}
                         >
                           <span className="inline-flex items-center gap-1">
@@ -453,14 +474,21 @@ export default function RekapNilai() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            {statusBadge(sesi.status, sesi.submitReason)}
-                            {sesi.selesaiAt && (
-                              <p className="text-[10px] text-outline-variant uppercase">
-                                {new Date(sesi.selesaiAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            )}
-                          </div>
+                          {statusBadge(sesi.status, sesi.submitReason)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm text-on-surface-variant tabular-nums">
+                          {fmtWaktu(sesi.mulaiAt)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm text-on-surface-variant tabular-nums">
+                          {fmtWaktu(sesi.selesaiAt)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm tabular-nums">
+                          {(() => {
+                            const d = durasiMenit(sesi.mulaiAt, sesi.selesaiAt);
+                            return d !== null
+                              ? <span className="font-medium text-on-surface">{d} <span className="text-xs text-on-surface-variant font-normal">mnt</span></span>
+                              : <span className="text-outline-variant">—</span>;
+                          })()}
                         </td>
                         <td className="px-4 py-4 text-center">
                           {sesi.pelanggaran?.length > 0 ? (
@@ -503,7 +531,7 @@ export default function RekapNilai() {
                     ))}
                     {rekapData.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-10 text-center text-on-surface-variant">
+                        <td colSpan={10} className="px-4 py-10 text-center text-on-surface-variant">
                           Belum ada peserta yang mengikuti ujian ini.
                         </td>
                       </tr>

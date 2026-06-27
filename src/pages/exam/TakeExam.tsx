@@ -177,7 +177,7 @@ export default function TakeExam() {
     if (sessionId) fetchSession();
   }, [sessionId, navigate]);
 
-  const { violationCount, isFullscreen, isFullscreenSupported, isWarningVisible, latestViolation, requestFullscreen, dismissWarning, maxViolations } = useAntiCheat({
+  const { violationCount, isFullscreen, isFullscreenSupported, isWarningVisible, latestViolation, requestFullscreen, dismissWarning, reportPaste, maxViolations } = useAntiCheat({
     sessionId: sessionId || '',
     maxViolations: 3,
     onAutoSubmit: () => submitExam('auto_cheat'),
@@ -489,12 +489,15 @@ export default function TakeExam() {
             style={{
               backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
                 `<svg xmlns='http://www.w3.org/2000/svg' width='340' height='200'>` +
-                `<text x='50%' y='45%' text-anchor='middle' dominant-baseline='middle' ` +
-                `font-family='sans-serif' font-size='13' fill='rgba(0,0,0,0.055)' ` +
+                `<text x='50%' y='35%' text-anchor='middle' dominant-baseline='middle' ` +
+                `font-family='sans-serif' font-size='14' font-weight='bold' fill='rgba(0,0,0,0.10)' ` +
                 `transform='rotate(-30,170,100)'>${sessionData.siswa?.nama || ''}</text>` +
-                `<text x='50%' y='62%' text-anchor='middle' dominant-baseline='middle' ` +
-                `font-family='sans-serif' font-size='11' fill='rgba(0,0,0,0.045)' ` +
+                `<text x='50%' y='52%' text-anchor='middle' dominant-baseline='middle' ` +
+                `font-family='sans-serif' font-size='12' fill='rgba(0,0,0,0.09)' ` +
                 `transform='rotate(-30,170,100)'>NIS: ${sessionData.siswa?.nis || ''}</text>` +
+                `<text x='50%' y='67%' text-anchor='middle' dominant-baseline='middle' ` +
+                `font-family='sans-serif' font-size='10' fill='rgba(0,0,0,0.07)' ` +
+                `transform='rotate(-30,170,100)'>${sessionData.sesi?.id?.slice(0, 8) || ''}</text>` +
                 `</svg>`
               )}")`,
               backgroundRepeat: 'repeat',
@@ -564,6 +567,7 @@ export default function TakeExam() {
                     : 'Tulis jawaban singkat Anda di sini...'}
                   value={textAnswers[currentSoal.id] || ''}
                   onChange={e => handleTextChange(currentSoal.id, e.target.value)}
+                  onPaste={e => { e.preventDefault(); reportPaste(); }}
                 />
                 <p className="text-xs text-on-surface-variant text-right">
                   {(textAnswers[currentSoal.id] || '').length} karakter
