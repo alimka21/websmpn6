@@ -595,8 +595,11 @@ router.post('/ujian/:id/soal', async (req, res, next) => {
     const { teks, imageUrl, tipe, opsi, poin } = req.body;
 
     if (!teks?.trim()) return res.status(400).json({ error: "Teks soal tidak boleh kosong" });
-    if (!opsi || opsi.length < 2) return res.status(400).json({ error: "Minimal 2 opsi jawaban" });
-    if (!opsi.some((o: any) => o.benar)) return res.status(400).json({ error: "Pilih minimal satu jawaban benar" });
+    const isUraian = tipe === 'URAIAN_SINGKAT' || tipe === 'ESAI';
+    if (!isUraian) {
+      if (!opsi || opsi.length < 2) return res.status(400).json({ error: "Minimal 2 opsi jawaban" });
+      if (!opsi.some((o: any) => o.benar)) return res.status(400).json({ error: "Pilih minimal satu jawaban benar" });
+    }
 
     const count = await prisma.soal.count({ where: { ujianId: req.params.id } });
     const soal = await prisma.soal.create({
