@@ -517,9 +517,7 @@ router.delete('/ujian/:id', async (req, res, next) => {
 
 router.post('/ujian/:id/duplikat', async (req, res, next) => {
   try {
-    const guru = await prisma.guru.findUnique({ where: { userId: (req.user as any).userId } });
-    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
-
+    const scope = await resolveScope(req);
     if (!(await canAccessUjian(req, req.params.id))) {
       return res.status(404).json({ error: 'Ujian tidak ditemukan' });
     }
@@ -531,6 +529,10 @@ router.post('/ujian/:id/duplikat', async (req, res, next) => {
       }
     });
     if (!source) return res.status(404).json({ error: 'Ujian tidak ditemukan' });
+
+    // Admin pakai guruId milik ujian asli; guru pakai id-nya sendiri
+    const targetGuruId = scope.isAdmin ? source.guruId : scope.guruId;
+    if (!targetGuruId) return res.status(404).json({ error: 'Guru tidak ditemukan' });
 
     const copy = await prisma.$transaction(async (tx) => {
       return tx.ujian.create({
@@ -545,7 +547,7 @@ router.post('/ujian/:id/duplikat', async (req, res, next) => {
           acakOpsi: source.acakOpsi,
           tampilkanPembahasan: source.tampilkanPembahasan,
           tampilkanNilai: source.tampilkanNilai,
-          guruId: guru.id,
+          guruId: targetGuruId,
           kelas: { create: source.kelas.map(k => ({ kelasId: k.kelasId })) },
           soal: {
             create: source.soal.map(s => ({
@@ -568,7 +570,7 @@ router.post('/ujian/:id/duplikat', async (req, res, next) => {
       });
     });
 
-    invalidateByPrefix(`guru:stats:${guru.id}`);
+    invalidateByPrefix(`guru:stats:${targetGuruId}`);
     invalidateByPrefix('admin:stats');
     res.json(copy);
   } catch(error) { next(error); }
@@ -1064,7 +1066,7 @@ router.get('/ujian/:id/koreksi', async (req, res, next) => {
         status: { in: ['SELESAI', 'AUTO_SUBMIT'] },
       },
       include: {
-        siswa: { select: { id: true, nama: true, nis: true }, include: { kelas: { select: { nama: true } } } },
+        siswa: { select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } } },
         jawaban: {
           where: { soalId: { in: soalUraian.map(s => s.id) } },
           select: { id: true, soalId: true, jawabanTeks: true, nilaiUraian: true, catatanGuru: true },
