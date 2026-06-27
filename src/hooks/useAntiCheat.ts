@@ -13,13 +13,32 @@ const isIOS = typeof navigator !== 'undefined'
 const isFullscreenSupported = !isIOS && typeof document !== 'undefined'
   && !!document.documentElement.requestFullscreen;
 
-export type ViolationType = 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR' | 'DEVTOOLS' | 'SCREENSHOT_ATTEMPT' | 'PASTE_DETECTED';
+export type ViolationType =
+  | 'TAB_SWITCH' | 'FULLSCREEN_EXIT' | 'WINDOW_BLUR'
+  | 'DEVTOOLS' | 'SCREENSHOT_ATTEMPT' | 'PASTE_DETECTED'
+  | 'AI_EXTENSION';
 
 // Cooldown per-tipe di luar komponen agar stabil dan tidak re-create tiap render
 const VIOLATION_COOLDOWN: Record<ViolationType, number> = {
   TAB_SWITCH: 2000, FULLSCREEN_EXIT: 2000, WINDOW_BLUR: 2000,
   DEVTOOLS: 5000, SCREENSHOT_ATTEMPT: 2000, PASTE_DETECTED: 4000,
+  AI_EXTENSION: 8000, // cooldown panjang — ekstensi biasanya persisten
 };
+
+// Selektor DOM yang diinjek ekstensi AI populer di Chrome/Firefox.
+// MutationObserver cek element ini saat ditambahkan ke body.
+const AI_EXT_SELECTORS = [
+  '#monica-ai-root', '#monica-ai', '.monica-ai-root',
+  '#sider-bubble', '#sider-panel', '#sider-extension-root',
+  '.merlin-extension-root', '#merlin-root', '#merlin-overlay',
+  '#chatgpt-chrome-plugin', '#chatgpt-extension-root',
+  '[id*="immersive-translate"]',
+  '#copilot-root', '#copilot-extension', '#bing-chat-root',
+  '.kimi-plugin-root', '[id*="kimi-extension"]',
+  '#perplexity-companion', '#haptik-xdk',
+  '[data-extension-id]',
+];
+const AI_EXT_ID_RE = /monica|sider.{0,10}ext|merlin.{0,10}ext|chatgpt.{0,10}ext|copilot.{0,10}ext|kimi.{0,10}ext|gemini.{0,10}ext|gpt.{0,5}ext|ai.{0,5}assistant/i;
 
 export interface Violation {
   type: ViolationType;
@@ -431,6 +450,69 @@ export function useAntiCheat({
     return () => clearInterval(id);
   }, [triggerViolation]);
 
+  // ── Deteksi ekstensi AI via MutationObserver + periodic scan ────────────────
+  // Ekstensi populer (Monica, Sider, Merlin, Copilot, dll) meng-inject element
+  // ke document.body. MutationObserver menangkap penambahan itu secara real-time;
+  // periodic scan menangkap ekstensi yang sudah ada saat halaman pertama kali load.
+  // Hanya watch childList di body (bukan subtree) agar tidak berat — ekstensi
+  // hampir selalu inject langsung ke body, bukan ke dalam React component tree.
+  useEffect(() => {
+    if (isAutoSubmittingRef.current) return;
+
+    const checkElement = (el: Element) => {
+      if (isAutoSubmittingRef.current) return;
+      const id  = el.id ?? '';
+      const cls = typeof el.className === 'string' ? el.className : '';
+      const isKnownExt = AI_EXT_SELECTORS.some(sel => { try { return el.matches(sel); } catch { return false; } });
+      const isExtId    = AI_EXT_ID_RE.test(id) || AI_EXT_ID_RE.test(cls);
+      const isExtAttr  = el.hasAttribute('data-extension-id') || el.hasAttribute('crx-extension-id');
+      // Cross-origin iframe yang bukan milik halaman ini sering dipakai ekstensi AI
+      const isExtFrame = el.tagName === 'IFRAME' &&
+        !!(el as HTMLIFrameElement).src &&
+        !(el as HTMLIFrameElement).src.startsWith(window.location.origin) &&
+        !(el as HTMLIFrameElement).src.startsWith('about:');
+      if (isKnownExt || isExtId || isExtAttr || isExtFrame) {
+        triggerViolation('AI_EXTENSION',
+          `Terdeteksi ekstensi AI aktif di browser (${id || cls.slice(0, 40) || el.tagName}). Nonaktifkan semua ekstensi sebelum ujian.`
+        );
+      }
+    };
+
+    const scanAll = () => {
+      if (isAutoSubmittingRef.current) return;
+      document.body.children && Array.from(document.body.children).forEach(checkElement);
+      // Cek selektor yang mungkin tersembunyi lebih dalam
+      AI_EXT_SELECTORS.forEach(sel => {
+        const found = document.querySelector(sel);
+        if (found) {
+          triggerViolation('AI_EXTENSION',
+            'Terdeteksi ekstensi AI aktif di browser. Nonaktifkan semua ekstensi sebelum mengerjakan ujian.'
+          );
+        }
+      });
+    };
+
+    const observer = new MutationObserver(mutations => {
+      if (isAutoSubmittingRef.current) return;
+      mutations.forEach(m => m.addedNodes.forEach(n => { if (n instanceof Element) checkElement(n); }));
+    });
+
+    // Hanya watch direct children body — lebih ringan dari subtree
+    observer.observe(document.body, { childList: true });
+    scanAll(); // cek kondisi awal saat hook mount
+
+    const scanId = setInterval(scanAll, 5000);
+    return () => { observer.disconnect(); clearInterval(scanId); };
+  }, [triggerViolation]);
+
+  // Dipanggil TakeExam saat event.isTrusted === false — input dari ekstensi/script luar
+  const reportUntrustedInput = useCallback((context: string) => {
+    triggerViolation(
+      'AI_EXTENSION',
+      `Terdeteksi input otomatis dari ekstensi atau skrip AI (${context}). Dilarang menggunakan alat bantu AI selama ujian.`
+    );
+  }, [triggerViolation]);
+
   // Dipanggil langsung oleh TakeExam saat paste terdeteksi di textarea jawaban.
   const reportPaste = useCallback(() => {
     triggerViolation(
@@ -453,6 +535,7 @@ export function useAntiCheat({
     requestFullscreen,
     dismissWarning,
     reportPaste,
+    reportUntrustedInput,
     maxViolations
   };
 }
