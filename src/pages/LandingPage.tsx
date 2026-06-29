@@ -4,17 +4,28 @@ import {
   LogIn, ArrowRight, Users, GraduationCap, BookOpen, Building2,
   Eye, Target, CheckCircle, CalendarCheck, ShieldCheck,
   FileText, ClipboardList, MapPin, Clock, ExternalLink, Newspaper,
-  Briefcase, Menu, X, Quote, Calendar, Compass, Lightbulb,
+  Briefcase, Menu, Quote, Calendar, Compass, Lightbulb,
   Home, Layers, Phone, ChevronDown, KeyRound, Loader2,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '../components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '../components/ui/sheet';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator,
+} from '../components/ui/dropdown-menu';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import { Skeleton } from '../components/ui/skeleton';
 import SiteFooter from '../components/SiteFooter';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
 
-// ── Icon map untuk fiturUnggulan dari siteConfig ────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
   FileText, CalendarCheck, GraduationCap, ClipboardList, Newspaper,
   ShieldCheck, Users, BookOpen, Briefcase, Target, Compass, Lightbulb,
@@ -55,29 +66,27 @@ const formatTanggal = (iso: string | null) => {
 };
 
 export default function LandingPage() {
-  const [beritaList, setBeritaList]     = useState<Berita[]>([]);
+  const [beritaList, setBeritaList]         = useState<Berita[]>([]);
   const [isLoadingBerita, setIsLoadingBerita] = useState(true);
-  const [dokumenList, setDokumenList]   = useState<DokumenItem[]>([]);
-  const [agendaList, setAgendaList]     = useState<AgendaItem[]>([]);
-  const [mobileOpen, setMobileOpen]       = useState(false);
-  const [activeSection, setActiveSection] = useState('beranda');
-  const [scrolled, setScrolled]           = useState(false);
-  const [presensiDropdown, setPresensiDropdown]   = useState(false);
-  const [dashboardDropdown, setDashboardDropdown] = useState(false);
-  const [aksesModal, setAksesModal]             = useState<{ open: boolean; jenis: 'guru' | 'siswa' | 'lapor' | null }>({ open: false, jenis: null });
-  const [kodeInput, setKodeInput]               = useState('');
-  const [aksesLoading, setAksesLoading]         = useState(false);
-  const kodeRef                                  = useRef<HTMLInputElement>(null);
-  const [guruProfil, setGuruProfil]   = useState<GuruProfil[]>([]);
-  const [sliderPage, setSliderPage]   = useState(0);
-  const sliderTimerRef                = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const [logoMitra, setLogoMitra]     = useState<{ id: string; nama: string; imageUrl: string; linkUrl: string | null }[]>([]);
+  const [dokumenList, setDokumenList]        = useState<DokumenItem[]>([]);
+  const [agendaList, setAgendaList]          = useState<AgendaItem[]>([]);
+  const [mobileOpen, setMobileOpen]          = useState(false);
+  const [activeSection, setActiveSection]    = useState('beranda');
+  const [scrolled, setScrolled]              = useState(false);
+  const [aksesModal, setAksesModal]          = useState<{ open: boolean; jenis: 'guru' | 'siswa' | 'lapor' | null }>({ open: false, jenis: null });
+  const [kodeInput, setKodeInput]            = useState('');
+  const [aksesLoading, setAksesLoading]      = useState(false);
+  const kodeRef                              = useRef<HTMLInputElement>(null);
+  const [guruProfil, setGuruProfil]          = useState<GuruProfil[]>([]);
+  const [sliderPage, setSliderPage]          = useState(0);
+  const sliderTimerRef                       = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [logoMitra, setLogoMitra]            = useState<{ id: string; nama: string; imageUrl: string; linkUrl: string | null }[]>([]);
   const navigate = useNavigate();
 
   const bukaModalAkses = (jenis: 'guru' | 'siswa' | 'lapor') => {
     setKodeInput('');
     setAksesModal({ open: true, jenis });
-    setPresensiDropdown(false);
+    setMobileOpen(false);
     setTimeout(() => kodeRef.current?.focus(), 100);
   };
 
@@ -104,20 +113,17 @@ export default function LandingPage() {
       setAksesLoading(false);
     }
   };
-  const cfg       = useSiteConfig();
+
+  const cfg        = useSiteConfig();
   const schoolName = cfg.namaSekolah || 'Portal Sekolah';
 
-  // Scroll tracking — active section + navbar shadow
   useEffect(() => {
     const SECTIONS = ['kontak', 'berita', 'fitur', 'profil', 'beranda'];
     const onScroll = () => {
       setScrolled(window.scrollY > 20);
       for (const id of SECTIONS) {
         const el = document.getElementById(id);
-        if (el && window.scrollY >= el.offsetTop - 120) {
-          setActiveSection(id);
-          break;
-        }
+        if (el && window.scrollY >= el.offsetTop - 120) { setActiveSection(id); break; }
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -129,18 +135,10 @@ export default function LandingPage() {
       .then((r: any) => setBeritaList(r.data || r.items || (Array.isArray(r) ? r : [])))
       .catch(() => {})
       .finally(() => setIsLoadingBerita(false));
-    api.get('/api/dokumen?limit=5')
-      .then((r: any) => setDokumenList(Array.isArray(r) ? r : []))
-      .catch(() => {});
-    api.get('/api/agenda?limit=5')
-      .then((r: any) => setAgendaList(Array.isArray(r) ? r : []))
-      .catch(() => {});
-    api.get('/api/profil-guru')
-      .then((r: any) => setGuruProfil(Array.isArray(r) ? r : []))
-      .catch(() => {});
-    api.get('/api/logo-mitra')
-      .then((r: any) => setLogoMitra(Array.isArray(r) ? r : []))
-      .catch(() => {});
+    api.get('/api/dokumen?limit=5').then((r: any) => setDokumenList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/agenda?limit=5').then((r: any) => setAgendaList(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/profil-guru').then((r: any) => setGuruProfil(Array.isArray(r) ? r : [])).catch(() => {});
+    api.get('/api/logo-mitra').then((r: any) => setLogoMitra(Array.isArray(r) ? r : [])).catch(() => {});
   }, []);
 
   const totalSliderPages = Math.max(1, Math.ceil(guruProfil.length / CARDS_PER_PAGE));
@@ -153,10 +151,7 @@ export default function LandingPage() {
     setSliderPage(p => (p - 1 + totalSliderPages) % totalSliderPages);
   }, [totalSliderPages]);
 
-  const sliderGoTo = (page: number) => {
-    clearInterval(sliderTimerRef.current);
-    setSliderPage(page);
-  };
+  const sliderGoTo = (page: number) => { clearInterval(sliderTimerRef.current); setSliderPage(page); };
 
   useEffect(() => {
     if (guruProfil.length <= CARDS_PER_PAGE) return;
@@ -182,16 +177,13 @@ export default function LandingPage() {
   return (
     <div className="bg-background text-on-background antialiased">
 
-      {/* ══════════════════════════════════════════════════
-          NAVBAR
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ NAVBAR ══════════ */}
       <header className={`fixed top-0 w-full z-50 border-b border-outline-variant/30 glass-header transition-shadow duration-300 ${scrolled ? 'shadow-md shadow-black/5' : ''}`}>
         <div className="flex justify-between items-center w-full px-4 md:px-20 py-4 max-w-screen-2xl mx-auto">
+
           {/* Brand */}
           <div className="flex items-center gap-2.5">
-            {cfg.logoUrl && (
-              <img src={cfg.logoUrl} alt={schoolName} className="w-8 h-8 rounded-lg object-contain" />
-            )}
+            {cfg.logoUrl && <img src={cfg.logoUrl} alt={schoolName} className="w-8 h-8 rounded-lg object-contain" />}
             <span className="text-xl font-extrabold text-primary tracking-tight">{schoolName}</span>
           </div>
 
@@ -199,13 +191,13 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8">
             {[
               { label: 'Beranda',     id: 'beranda' },
-              { label: 'Profil',      id: 'profil',  skip: !showProfil },
+              { label: 'Profil',      id: 'profil', skip: !showProfil },
               { label: 'Daftar Guru', id: 'profil' },
               { label: 'Berita',      id: 'berita' },
               { label: 'Kontak',      id: 'kontak' },
             ].filter(n => !n.skip).map(n => (
               <button
-                key={n.id}
+                key={n.label}
                 onClick={() => scrollTo(n.id)}
                 className={`text-sm font-semibold transition-colors relative pb-1 ${
                   activeSection === n.id
@@ -225,85 +217,51 @@ export default function LandingPage() {
               <ShieldCheck className="w-4 h-4" /> Lapor
             </button>
 
-            {/* Dropdown Dashboard */}
-            <div
-              className="relative group"
-              onMouseEnter={() => setDashboardDropdown(true)}
-              onMouseLeave={() => setDashboardDropdown(false)}
-            >
-              <button
-                onClick={() => setDashboardDropdown(!dashboardDropdown)}
-                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2"
-              >
-                Dashboard
-                <ChevronDown className={`w-4 h-4 transition-transform ${dashboardDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              {dashboardDropdown && (
-                <div className="absolute top-full left-0 pt-2">
-                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[220px]">
-                    <Link
-                      to="/dashboard-publik/kehadiran"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors whitespace-nowrap"
-                      onClick={() => setDashboardDropdown(false)}
-                    >
-                      <CalendarCheck className="w-4 h-4 shrink-0" />
-                      Dashboard Kehadiran
-                    </Link>
-                    <Link
-                      to="/dashboard-publik/potensi"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 whitespace-nowrap"
-                      onClick={() => setDashboardDropdown(false)}
-                    >
-                      <ShieldCheck className="w-4 h-4 shrink-0" />
-                      Dashboard Potensi
-                    </Link>
-                    <Link
-                      to="/dashboard-publik/tugas"
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 whitespace-nowrap"
-                      onClick={() => setDashboardDropdown(false)}
-                    >
-                      <ClipboardList className="w-4 h-4 shrink-0" />
-                      Dashboard Tugas
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* ── Dropdown Dashboard ── */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2 focus:outline-none">
+                  Dashboard <ChevronDown className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[220px] rounded-xl">
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard-publik/kehadiran" className="flex items-center gap-3 font-semibold">
+                    <CalendarCheck className="w-4 h-4 shrink-0" /> Dashboard Kehadiran
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard-publik/potensi" className="flex items-center gap-3 font-semibold">
+                    <ShieldCheck className="w-4 h-4 shrink-0" /> Dashboard Potensi
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard-publik/tugas" className="flex items-center gap-3 font-semibold">
+                    <ClipboardList className="w-4 h-4 shrink-0" /> Dashboard Tugas
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            {/* Dropdown Presensi */}
-            <div
-              className="relative group"
-              onMouseEnter={() => setPresensiDropdown(true)}
-              onMouseLeave={() => setPresensiDropdown(false)}
-            >
-              <button
-                onClick={() => setPresensiDropdown(!presensiDropdown)}
-                className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2"
-              >
-                Presensi
-                <ChevronDown className={`w-4 h-4 transition-transform ${presensiDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              {presensiDropdown && (
-                <div className="absolute top-full left-0 pt-2">
-                  <div className="bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant overflow-hidden min-w-[180px]">
-                    <button
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors w-full text-left"
-                      onClick={() => bukaModalAkses('guru')}
-                    >
-                      <GraduationCap className="w-4 h-4" />
-                      Presensi Guru
-                    </button>
-                    <button
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors border-t border-outline-variant/30 w-full text-left"
-                      onClick={() => bukaModalAkses('siswa')}
-                    >
-                      <Users className="w-4 h-4" />
-                      Presensi Siswa
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* ── Dropdown Presensi ── */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-2 focus:outline-none">
+                  Presensi <ChevronDown className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[180px] rounded-xl">
+                <DropdownMenuItem onSelect={() => bukaModalAkses('guru')} className="flex items-center gap-3 font-semibold cursor-pointer">
+                  <GraduationCap className="w-4 h-4" /> Presensi Guru
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => bukaModalAkses('siswa')} className="flex items-center gap-3 font-semibold cursor-pointer">
+                  <Users className="w-4 h-4" /> Presensi Siswa
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -312,120 +270,107 @@ export default function LandingPage() {
             </Button>
             <button
               className="md:hidden p-2 rounded-lg text-on-surface-variant"
-              onClick={() => setMobileOpen(o => !o)}
-              aria-label="Toggle menu"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Buka menu"
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              <Menu className="w-5 h-5" />
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-surface border-t border-outline-variant/30 px-4 py-4 space-y-1">
+      {/* ══════════ MOBILE MENU → Sheet ══════════ */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-[300px] p-0 flex flex-col bg-surface" showCloseButton>
+          <SheetHeader className="px-5 pt-5 pb-4 border-b border-outline-variant/30">
+            <SheetTitle className="text-primary font-extrabold tracking-tight text-lg flex items-center gap-2">
+              {cfg.logoUrl && <img src={cfg.logoUrl} alt={schoolName} className="w-6 h-6 rounded object-contain" />}
+              {schoolName}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
             {[
               { label: 'Beranda',     id: 'beranda',  icon: Home },
-              { label: 'Profil',      id: 'profil',   icon: Users,    skip: !showProfil },
+              { label: 'Profil',      id: 'profil',   icon: Users,         skip: !showProfil },
               { label: 'Daftar Guru', id: 'profil',   icon: GraduationCap },
               { label: 'Berita',      id: 'berita',   icon: Newspaper },
               { label: 'Kontak',      id: 'kontak',   icon: Phone },
             ].filter(n => !n.skip).map(n => {
               const NavIcon = n.icon;
-              const isActive = activeSection === n.id;
               return (
                 <button
-                  key={n.id}
+                  key={n.label}
                   onClick={() => { scrollTo(n.id); setMobileOpen(false); }}
                   className={`flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors ${
-                    isActive ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
+                    activeSection === n.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
                   }`}
                 >
-                  <NavIcon className="w-4 h-4 shrink-0" />
-                  {n.label}
+                  <NavIcon className="w-4 h-4 shrink-0" /> {n.label}
                 </button>
               );
             })}
 
-            {/* Dashboard Dropdown Mobile */}
-            <div className="border-t border-outline-variant/30 pt-2 mt-2">
+            <div className="border-t border-outline-variant/30 pt-3 mt-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant px-3 mb-1">Dashboard</p>
-              <Link
-                to="/dashboard-publik/kehadiran"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
-              >
-                <CalendarCheck className="w-4 h-4 shrink-0" />
-                Dashboard Kehadiran
-              </Link>
-              <Link
-                to="/dashboard-publik/potensi"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
-              >
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                Dashboard Potensi
-              </Link>
-              <Link
-                to="/dashboard-publik/tugas"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
-              >
-                <ClipboardList className="w-4 h-4 shrink-0" />
-                Dashboard Tugas
-              </Link>
+              {[
+                { to: '/dashboard-publik/kehadiran', icon: CalendarCheck, label: 'Dashboard Kehadiran' },
+                { to: '/dashboard-publik/potensi',   icon: ShieldCheck,   label: 'Dashboard Potensi' },
+                { to: '/dashboard-publik/tugas',     icon: ClipboardList, label: 'Dashboard Tugas' },
+              ].map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to} to={to}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 w-full text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
+                >
+                  <Icon className="w-4 h-4 shrink-0" /> {label}
+                </Link>
+              ))}
             </div>
 
-            {/* Lapor Mobile */}
-            <div className="border-t border-outline-variant/30 pt-2 mt-2">
+            <div className="border-t border-outline-variant/30 pt-3 mt-3">
               <button
-                onClick={() => { setMobileOpen(false); bukaModalAkses('lapor'); }}
+                onClick={() => bukaModalAkses('lapor')}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                Lapor Potensi
+                <ShieldCheck className="w-4 h-4 shrink-0" /> Lapor Potensi
               </button>
             </div>
 
-            {/* Presensi Dropdown Mobile */}
-            <div className="border-t border-outline-variant/30 pt-2 mt-2">
+            <div className="border-t border-outline-variant/30 pt-3 mt-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant px-3 mb-1">Presensi</p>
               <button
-                onClick={() => { setMobileOpen(false); bukaModalAkses('guru'); }}
+                onClick={() => bukaModalAkses('guru')}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
-                <GraduationCap className="w-4 h-4 shrink-0" />
-                Presensi Guru
+                <GraduationCap className="w-4 h-4 shrink-0" /> Presensi Guru
               </button>
               <button
-                onClick={() => { setMobileOpen(false); bukaModalAkses('siswa'); }}
+                onClick={() => bukaModalAkses('siswa')}
                 className="flex items-center gap-3 w-full text-left text-sm font-semibold py-2.5 px-3 rounded-lg transition-colors text-on-surface-variant hover:text-primary hover:bg-surface-container"
               >
-                <Users className="w-4 h-4 shrink-0" />
-                Presensi Siswa
+                <Users className="w-4 h-4 shrink-0" /> Presensi Siswa
               </button>
             </div>
+          </div>
 
-            <Button onClick={() => navigate('/login')} className="w-full mt-3 gap-2">
+          <div className="px-4 pb-5 pt-3 border-t border-outline-variant/30">
+            <Button onClick={() => { setMobileOpen(false); navigate('/login'); }} className="w-full gap-2">
               <LogIn className="w-4 h-4" /> Login Portal
             </Button>
           </div>
-        )}
-      </header>
+        </SheetContent>
+      </Sheet>
 
-      {/* ══════════════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ HERO ══════════ */}
       <section id="beranda" className="overflow-hidden">
-
-        {/* ─── Upper: light background ─── */}
         <div className="relative pt-28 pb-16 md:pt-40 md:pb-20 bg-gradient-to-br from-surface-container-low via-surface to-surface">
-          {/* Decorative blur blobs */}
           <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-primary/[0.06] rounded-full blur-[130px] -translate-y-1/3 translate-x-1/3 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/[0.05] rounded-full blur-[100px] pointer-events-none" />
 
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
-
-            {/* Left: copy */}
             <div className="space-y-7">
               <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 px-4 py-2 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -433,24 +378,20 @@ export default function LandingPage() {
                   {cfg.heroBadge || schoolName.toUpperCase()}
                 </span>
               </div>
-
               <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold leading-tight tracking-tight text-on-background">
                 {cfg.heroTitle || 'Portal Akademik'}
                 <br />
                 <span className="text-primary">{cfg.heroSubtitle || 'Digital Masa Depan'}</span>
               </h1>
-
               <p className="text-base md:text-lg text-on-surface-variant max-w-lg leading-relaxed">
                 {cfg.deskripsi || 'Platform digital terintegrasi untuk seluruh ekosistem pendidikan sekolah Anda.'}
               </p>
-
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => navigate('/login')}
                   className="bg-primary text-white font-bold px-7 py-3.5 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 group text-sm"
                 >
-                  Login Portal
-                  <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  Login Portal <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
                   onClick={() => scrollTo('fitur')}
@@ -461,13 +402,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right: image */}
             <div className="relative group">
               <div className="absolute -inset-4 bg-primary/10 blur-[80px] rounded-full opacity-60 pointer-events-none" />
               {cfg.heroImageUrl ? (
                 <img
-                  src={cfg.heroImageUrl}
-                  alt={schoolName}
+                  src={cfg.heroImageUrl} alt={schoolName}
                   className="w-full h-auto rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,40,142,0.18)] relative z-10 border border-outline-variant/30 transition-transform duration-700 group-hover:scale-[1.01]"
                 />
               ) : (
@@ -479,13 +418,11 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ─── Lower: dark navy connecting strip — 3 Inovasi ─── */}
         <div className="bg-[#1a2744] py-10 md:py-14">
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
               {fiturItems.slice(0, 3).map((item, i) => {
                 const Icon = ICON_MAP[item.icon] || BookOpen;
-                const nums = ['01', '02', '03'];
                 return (
                   <button
                     key={i}
@@ -496,10 +433,8 @@ export default function LandingPage() {
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/40">{nums[i]}</span>
-                      <h3 className="text-lg font-bold text-white mt-0.5 mb-1.5 group-hover:text-blue-300 transition-colors leading-snug">
-                        {item.title}
-                      </h3>
+                      <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/40">{['01','02','03'][i]}</span>
+                      <h3 className="text-lg font-bold text-white mt-0.5 mb-1.5 group-hover:text-blue-300 transition-colors leading-snug">{item.title}</h3>
                       <p className="text-[15px] text-white/60 leading-relaxed line-clamp-2">{item.desc}</p>
                     </div>
                   </button>
@@ -508,31 +443,21 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-
       </section>
 
-      {/* ══════════════════════════════════════════════════
-          SAMBUTAN & STATISTIK
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ SAMBUTAN & STATISTIK ══════════ */}
       <section id="profil" className="py-16 md:py-24 bg-surface-container-low">
         <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-semibold text-on-background">Sambutan & Data Sekolah</h2>
           </div>
-
           <div className="grid lg:grid-cols-12 gap-6 items-stretch">
-            {/* Sambutan */}
             <div className="lg:col-span-8 bg-surface-container-lowest rounded-2xl p-8 md:p-12 shadow-sm border border-outline-variant/30 card-hover">
               <div className="grid md:grid-cols-12 gap-8 items-start">
-                {/* Foto kepsek */}
                 <div className="md:col-span-4 text-center">
                   <div className="relative inline-block mb-6">
                     {cfg.kepsekFotoUrl ? (
-                      <img
-                        src={cfg.kepsekFotoUrl}
-                        alt={cfg.kepsekNama || 'Kepala Sekolah'}
-                        className="w-48 h-60 object-cover rounded-xl shadow-lg border-2 border-white mx-auto"
-                      />
+                      <img src={cfg.kepsekFotoUrl} alt={cfg.kepsekNama || 'Kepala Sekolah'} className="w-48 h-60 object-cover rounded-xl shadow-lg border-2 border-white mx-auto" />
                     ) : (
                       <div className="w-48 h-60 bg-surface-container rounded-xl border-2 border-white mx-auto flex items-center justify-center">
                         <Users className="w-16 h-16 text-outline" />
@@ -545,14 +470,10 @@ export default function LandingPage() {
                   {cfg.kepsekNama && (
                     <>
                       <h3 className="text-xl font-semibold text-primary tracking-tight">{cfg.kepsekNama}</h3>
-                      <p className="text-on-surface-variant font-bold uppercase tracking-wider text-[11px] mt-1">
-                        {cfg.kepsekJabatan || 'Kepala Sekolah'}
-                      </p>
+                      <p className="text-on-surface-variant font-bold uppercase tracking-wider text-[11px] mt-1">{cfg.kepsekJabatan || 'Kepala Sekolah'}</p>
                     </>
                   )}
                 </div>
-
-                {/* Teks sambutan */}
                 <div className="md:col-span-8 space-y-6">
                   <p className="text-on-surface italic leading-relaxed text-lg">
                     "{cfg.kepsekSambutan || `Selamat datang di portal resmi ${schoolName}. Kami berkomitmen untuk menyediakan pendidikan yang berfokus pada keahlian teknis sekaligus membangun karakter dan literasi digital yang kokoh bagi seluruh siswa kami.`}"
@@ -568,7 +489,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Stat cards */}
             <div className="lg:col-span-4 grid grid-cols-2 gap-4">
               {[
                 { icon: Users,         value: cfg.statSiswaValue  || '—', label: cfg.statSiswaLabel  || 'Siswa Aktif' },
@@ -585,23 +505,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Visi & Misi */}
           <div className="grid lg:grid-cols-2 gap-8 mt-12 items-start">
-            {/* Kiri: Foto Sekolah */}
             {cfg.profilImageUrl && (
               <div className="relative group overflow-hidden rounded-2xl shadow-lg border border-outline-variant/30 h-full">
-                <img
-                  src={cfg.profilImageUrl}
-                  alt={schoolName}
-                  className="w-full h-full min-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105"
-                />
+                <img src={cfg.profilImageUrl} alt={schoolName} className="w-full h-full min-h-[500px] object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
             )}
-
-            {/* Kanan: Visi & Misi */}
             <div className="space-y-6">
-              {/* Visi */}
               {cfg.visi && (
                 <div className="bg-surface-container-lowest p-8 md:p-10 rounded-2xl shadow-sm border border-outline-variant/30 card-hover space-y-4">
                   <div className="flex items-center gap-4 mb-2">
@@ -613,8 +524,6 @@ export default function LandingPage() {
                   <p className="text-on-surface-variant leading-relaxed text-lg">{cfg.visi}</p>
                 </div>
               )}
-
-              {/* Misi */}
               {misiLines.length > 0 && (
                 <div className="bg-surface-container-lowest p-8 md:p-10 rounded-2xl shadow-sm border border-outline-variant/30 card-hover flex flex-col">
                   <div className="flex items-center gap-4 mb-6">
@@ -638,23 +547,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════
-          PROFIL GURU — SLIDER
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ PROFIL GURU — SLIDER ══════════ */}
       <section id="fitur" className="py-16 md:py-24 bg-surface overflow-hidden">
         <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
-
-          {/* Header row */}
           <div className="flex items-start justify-between gap-6 mb-10">
             <div className="max-w-md">
-              <h2 className="text-3xl md:text-4xl font-bold text-on-background leading-tight mb-3">
-                Tenaga Pendidik Kami
-              </h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-on-background leading-tight mb-3">Tenaga Pendidik Kami</h2>
               <p className="text-on-surface-variant text-base leading-relaxed">
                 Dibimbing oleh guru-guru profesional yang berdedikasi tinggi untuk mencetak generasi unggul dan berkarakter.
               </p>
             </div>
-            {/* Navigasi */}
             <div className="flex items-center gap-2 shrink-0 mt-1">
               <button
                 onClick={() => { sliderPrev(); clearInterval(sliderTimerRef.current); }}
@@ -673,14 +575,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Kartu guru — potrait */}
+          {/* ── Guru cards: Skeleton saat loading, Avatar saat ada data ── */}
           {guruProfil.length === 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5 md:gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="w-full aspect-[3/4] rounded-2xl bg-surface-container-high mb-3" />
-                  <div className="h-4 bg-surface-container-high rounded-full w-3/4 mb-2" />
-                  <div className="h-3 bg-surface-container rounded-full w-1/2" />
+                <div key={i} className="space-y-3">
+                  <Skeleton className="w-full aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="h-4 w-3/4 rounded-full" />
+                  <Skeleton className="h-3 w-1/2 rounded-full" />
                 </div>
               ))}
             </div>
@@ -690,45 +592,34 @@ export default function LandingPage() {
                 const initials = guru.nama.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
                 return (
                   <div key={guru.id} className="group">
-                    {/* Foto potrait */}
-                    <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low mb-4 shadow-sm">
-                      {guru.fotoUrl ? (
-                        <img
-                          src={guru.fotoUrl}
+                    <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden mb-4 shadow-sm">
+                      <Avatar className="w-full h-full rounded-none">
+                        <AvatarImage
+                          src={guru.fotoUrl ?? undefined}
                           alt={guru.nama}
                           className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                         />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex flex-col items-center justify-center gap-3">
+                        <AvatarFallback className="w-full h-full rounded-none bg-gradient-to-br from-primary/10 to-primary/20">
                           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white font-extrabold text-2xl shadow-lg">
                             {initials}
                           </div>
-                        </div>
-                      )}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                    {/* Info */}
-                    <h3 className="font-bold text-on-background text-base leading-snug mb-1 line-clamp-2">
-                      {guru.nama}
-                    </h3>
-                    <p className="text-on-surface-variant text-sm leading-relaxed line-clamp-1">
-                      {guru.mataPelajaran}
-                    </p>
+                    <h3 className="font-bold text-on-background text-base leading-snug mb-1 line-clamp-2">{guru.nama}</h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed line-clamp-1">{guru.mataPelajaran}</p>
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* Dot indicators */}
           {totalSliderPages > 1 && (
             <div className="flex justify-center gap-2 mt-10">
               {Array.from({ length: totalSliderPages }).map((_, i) => (
                 <button
-                  key={i}
-                  onClick={() => sliderGoTo(i)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === sliderPage ? 'w-8 bg-primary' : 'w-2 bg-outline-variant hover:bg-outline'
-                  }`}
+                  key={i} onClick={() => sliderGoTo(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === sliderPage ? 'w-8 bg-primary' : 'w-2 bg-outline-variant hover:bg-outline'}`}
                 />
               ))}
             </div>
@@ -736,26 +627,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════
-          DOKUMEN & AGENDA
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ DOKUMEN & AGENDA ══════════ */}
       {(dokumenList.length > 0 || agendaList.length > 0) && (
         <section className="py-16 md:py-24 bg-surface-container-low">
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12">
-
-              {/* Dokumen Sekolah */}
               {dokumenList.length > 0 && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
-                      <FileText className="w-7 h-7 text-primary" />
-                      Dokumen Sekolah
+                      <FileText className="w-7 h-7 text-primary" /> Dokumen Sekolah
                     </h2>
-                    <Link
-                      to="/dokumen"
-                      className="text-sm font-semibold text-primary hover:underline flex items-center gap-1"
-                    >
+                    <Link to="/dokumen" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
                       Lihat Semua <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -770,11 +653,7 @@ export default function LandingPage() {
                       ];
                       const c = colors[idx % colors.length];
                       return (
-                        <a
-                          key={doc.id}
-                          href={doc.linkDrive}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <a key={doc.id} href={doc.linkDrive} target="_blank" rel="noopener noreferrer"
                           className="group flex items-center gap-4 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl card-hover shadow-sm"
                         >
                           <div className={`w-12 h-12 rounded-lg ${c.bg} ${c.text} flex items-center justify-center ${c.hover} group-hover:text-white transition-all shrink-0`}>
@@ -793,20 +672,17 @@ export default function LandingPage() {
                   </div>
                 </div>
               )}
-
-              {/* Agenda Sekolah */}
               {agendaList.length > 0 && (
                 <div className="space-y-6">
                   <h2 className="text-3xl font-semibold text-on-background flex items-center gap-3">
-                    <Calendar className="w-7 h-7 text-primary" />
-                    Agenda Sekolah
+                    <Calendar className="w-7 h-7 text-primary" /> Agenda Sekolah
                   </h2>
                   <div className="space-y-4">
                     {agendaList.map(item => {
-                      const d = new Date(item.waktu);
+                      const d    = new Date(item.waktu);
                       const bulan = d.toLocaleDateString('id-ID', { month: 'short' });
-                      const tgl   = d.getDate();
-                      const jam   = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                      const tgl  = d.getDate();
+                      const jam  = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                       return (
                         <div key={item.id} className="flex items-center gap-6 p-5 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl card-hover shadow-sm group">
                           <div className="flex flex-col items-center justify-center min-w-[60px] h-[60px] bg-primary/5 rounded-xl text-primary font-bold shrink-0">
@@ -817,9 +693,7 @@ export default function LandingPage() {
                             <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors truncate">{item.judul}</h4>
                             <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-on-surface-variant">
                               <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {jam}</span>
-                              {item.lokasi && (
-                                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {item.lokasi}</span>
-                              )}
+                              {item.lokasi && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {item.lokasi}</span>}
                             </div>
                           </div>
                         </div>
@@ -828,15 +702,12 @@ export default function LandingPage() {
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════
-          BERITA SEKOLAH
-      ══════════════════════════════════════════════════ */}
+      {/* ══════════ BERITA SEKOLAH ══════════ */}
       <section id="berita" className="py-16 md:py-24 bg-surface">
         <div className="px-4 md:px-20 max-w-screen-2xl mx-auto space-y-12">
           <div className="flex justify-between items-end border-b border-outline-variant/30 pb-6">
@@ -844,25 +715,23 @@ export default function LandingPage() {
               <span className="text-primary font-extrabold tracking-[0.2em] text-xs uppercase">INFORMASI TERKINI</span>
               <h2 className="text-3xl font-semibold text-on-background">Berita Sekolah</h2>
             </div>
-            <Link
-              to="/berita"
-              className="text-primary font-bold text-xs flex items-center gap-2 border-b-2 border-transparent hover:border-primary transition-all pb-1 uppercase tracking-wider group"
-            >
+            <Link to="/berita" className="text-primary font-bold text-xs flex items-center gap-2 border-b-2 border-transparent hover:border-primary transition-all pb-1 uppercase tracking-wider group">
               LIHAT SEMUA BERITA <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
+          {/* ── Skeleton berita ── */}
           {isLoadingBerita ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm animate-pulse">
-                  <div className="h-56 bg-surface-container rounded-t-2xl" />
+                <div key={i} className="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+                  <Skeleton className="h-56 rounded-none" />
                   <div className="p-8 space-y-3">
-                    <div className="h-3 bg-surface-container rounded w-1/2" />
-                    <div className="h-5 bg-surface-container rounded" />
-                    <div className="h-5 bg-surface-container rounded w-3/4" />
-                    <div className="h-3 bg-surface-container rounded" />
-                    <div className="h-3 bg-surface-container rounded w-5/6" />
+                    <Skeleton className="h-3 w-1/2 rounded-full" />
+                    <Skeleton className="h-5 rounded" />
+                    <Skeleton className="h-5 w-3/4 rounded" />
+                    <Skeleton className="h-3 rounded" />
+                    <Skeleton className="h-3 w-5/6 rounded" />
                   </div>
                 </div>
               ))}
@@ -882,11 +751,7 @@ export default function LandingPage() {
                 >
                   <div className="h-56 overflow-hidden relative bg-surface-container">
                     {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.judul}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
+                      <img src={item.imageUrl} alt={item.judul} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Newspaper className="w-12 h-12 text-outline" />
@@ -907,19 +772,9 @@ export default function LandingPage() {
                         <Clock className="w-3.5 h-3.5" /> {formatTanggal(item.publishedAt)}
                       </div>
                     </div>
-                    <h3 className="text-xl font-semibold leading-tight text-on-background group-hover:text-primary transition-colors line-clamp-2">
-                      {item.judul}
-                    </h3>
-                    {item.ringkasan && (
-                      <p className="text-on-surface-variant line-clamp-3 leading-relaxed text-sm">
-                        {item.ringkasan}
-                      </p>
-                    )}
-                    {(item as any).penulis && (
-                      <p className="text-xs text-on-surface-variant">
-                        Oleh {(item as any).penulis}
-                      </p>
-                    )}
+                    <h3 className="text-xl font-semibold leading-tight text-on-background group-hover:text-primary transition-colors line-clamp-2">{item.judul}</h3>
+                    {item.ringkasan && <p className="text-on-surface-variant line-clamp-3 leading-relaxed text-sm">{item.ringkasan}</p>}
+                    {(item as any).penulis && <p className="text-xs text-on-surface-variant">Oleh {(item as any).penulis}</p>}
                   </div>
                 </Link>
               ))}
@@ -928,28 +783,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Logo Mitra / Program Pendidikan ─────────────────── */}
+      {/* ══════════ LOGO MITRA ══════════ */}
       {logoMitra.length > 0 && (
         <section className="pt-10 pb-14 bg-surface border-t border-outline-variant/30 border-b border-outline-variant/30">
           <div className="px-4 md:px-20 max-w-screen-2xl mx-auto">
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
               {logoMitra.slice(0, 6).map(logo => {
-                const img = (
-                  <img
-                    key={logo.id}
-                    src={logo.imageUrl}
-                    alt={logo.nama}
-                    title={logo.nama}
-                    className="h-14 md:h-16 w-auto object-contain"
-                  />
-                );
-                return logo.linkUrl ? (
-                  <a key={logo.id} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">
-                    {img}
-                  </a>
-                ) : (
-                  <span key={logo.id}>{img}</span>
-                );
+                const img = <img key={logo.id} src={logo.imageUrl} alt={logo.nama} title={logo.nama} className="h-14 md:h-16 w-auto object-contain" />;
+                return logo.linkUrl
+                  ? <a key={logo.id} href={logo.linkUrl} target="_blank" rel="noopener noreferrer">{img}</a>
+                  : <span key={logo.id}>{img}</span>;
               })}
             </div>
           </div>
@@ -958,72 +801,67 @@ export default function LandingPage() {
 
       <SiteFooter />
 
-      {/* ══════════════════════════════════════════════════
-          MODAL KODE AKSES PRESENSI
-      ══════════════════════════════════════════════════ */}
-      {aksesModal.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
-            {/* Header */}
+      {/* ══════════ MODAL KODE AKSES → Shadcn Dialog ══════════ */}
+      <Dialog
+        open={aksesModal.open}
+        onOpenChange={(open) => !open && setAksesModal({ open: false, jenis: null })}
+      >
+        <DialogContent className="max-w-sm rounded-2xl p-6 gap-0" showCloseButton={false}>
+          <DialogHeader className="mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <KeyRound className="w-5 h-5 text-primary" />
               </div>
-              <div>
-                <h2 className="text-base font-bold text-on-surface">
+              <div className="flex-1">
+                <DialogTitle className="text-base text-left">
                   {aksesModal.jenis === 'lapor' ? 'Kode Akses Lapor' : 'Kode Akses Presensi'}
-                </h2>
-                <p className="text-xs text-on-surface-variant">
-                  {aksesModal.jenis === 'guru' ? 'Presensi Guru'
-                    : aksesModal.jenis === 'siswa' ? 'Presensi Siswa'
-                    : 'Lapor Potensi Siswa'}
+                </DialogTitle>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {aksesModal.jenis === 'guru' ? 'Presensi Guru' : aksesModal.jenis === 'siswa' ? 'Presensi Siswa' : 'Lapor Potensi Siswa'}
                 </p>
               </div>
               <button
-                className="ml-auto p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant"
+                className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant transition-colors text-base leading-none"
                 onClick={() => setAksesModal({ open: false, jenis: null })}
+                aria-label="Tutup"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
+          </DialogHeader>
 
-            {/* Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-on-surface">
-                Masukkan kode akses 6 karakter
-              </label>
-              <input
-                ref={kodeRef}
-                type="text"
-                maxLength={6}
-                value={kodeInput}
-                onChange={e => setKodeInput(e.target.value.toUpperCase())}
-                onKeyDown={e => e.key === 'Enter' && verifikasiKode()}
-                placeholder="Contoh: ABC123"
-                className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-on-surface text-center text-xl font-mono tracking-[0.4em] placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setAksesModal({ open: false, jenis: null })}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={verifikasiKode}
-                disabled={aksesLoading || kodeInput.length !== 6}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {aksesLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {aksesLoading ? 'Memverifikasi...' : 'Masuk'}
-              </button>
-            </div>
+          <div className="space-y-2 mb-5">
+            <label className="text-sm font-semibold text-on-surface">Masukkan kode akses 6 karakter</label>
+            <input
+              ref={kodeRef}
+              type="text"
+              maxLength={6}
+              value={kodeInput}
+              onChange={e => setKodeInput(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && verifikasiKode()}
+              placeholder="Contoh: ABC123"
+              className="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container text-on-surface text-center text-xl font-mono tracking-[0.4em] placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setAksesModal({ open: false, jenis: null })}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-outline-variant text-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              onClick={verifikasiKode}
+              disabled={aksesLoading || kodeInput.length !== 6}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {aksesLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {aksesLoading ? 'Memverifikasi...' : 'Masuk'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

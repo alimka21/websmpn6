@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @font-face {
   font-family: 'Inter Fallback';
@@ -126,6 +127,30 @@
     0%   { opacity: 0; transform: translateY(-10px); }
     100% { opacity: 1; transform: translateY(0); }
   }
+}
+
+/* ── Shadcn UI compatibility tokens ──────────────────────────────────
+   These extend our design system with aliases needed by Radix/Shadcn
+   components (Dialog, Sheet, Avatar, Skeleton, DropdownMenu).
+   Values mirror the existing @theme tokens above. */
+@theme {
+  /* Shadcn semantic aliases */
+  --color-foreground: #131b2e;
+  --color-card: #ffffff;
+  --color-card-foreground: #131b2e;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #131b2e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: #131b2e;
+  --color-muted: #eaedff;
+  --color-muted-foreground: #444653;
+  --color-accent: #e2e7ff;
+  --color-accent-foreground: #131b2e;
+  --color-destructive: #ba1a1a;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #c4c5d5;
+  --color-input: #eaedff;
+  --color-ring: #00288e;
 }
 
 @layer base {
