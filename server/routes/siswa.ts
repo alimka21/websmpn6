@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { requireAuth, requireRole } from '../middleware';
+import { validate, JawabSoalSchema, SaveAnswersSchema } from '../lib/validate';
 
 const router = Router();
 router.use(requireAuth, requireRole(['SISWA']));
@@ -221,7 +222,7 @@ router.get('/sesi/:sessionId', async (req, res, next) => {
  * Dipakai client saat submit (flush localStorage) supaya tidak spam
  * N koneksi DB paralel yang bikin pool timeout.
  */
-router.post('/sesi/:sessionId/jawab-batch', async (req, res, next) => {
+router.post('/sesi/:sessionId/jawab-batch', validate(SaveAnswersSchema), async (req, res, next) => {
   try {
     const sessionId = req.params.sessionId;
 
@@ -272,7 +273,7 @@ router.post('/sesi/:sessionId/jawab-batch', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.post('/sesi/:sessionId/jawab', async (req, res, next) => {
+router.post('/sesi/:sessionId/jawab', validate(JawabSoalSchema), async (req, res, next) => {
   try {
     // Verifikasi kepemilikan + sesi masih aktif
     const sesi = await resolveOwnedSesi(req, req.params.sessionId);

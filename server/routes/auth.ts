@@ -4,16 +4,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { requireAuth } from '../middleware';
+import { validate, LoginSchema } from '../lib/validate';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', validate(LoginSchema), async (req, res, next) => {
   try {
     const { identifier, password, role } = req.body;
-    if (!identifier || !password || !role) {
-      return res.status(400).json({ error: "Field tidak lengkap." });
-    }
 
     let user = null;
     let queryRole = role;

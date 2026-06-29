@@ -10,6 +10,12 @@ import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { withCache, invalidateByPrefix } from '../lib/cache';
 import { toTitleCase } from '../lib/format';
+import {
+  validate,
+  CreateUjianSchema, UpdateUjianSchema,
+  AddSoalSchema, UpdateSoalSchema,
+  KoreksiUraianSchema,
+} from '../lib/validate';
 
 // Upload gambar soal
 const uploadsBase = path.dirname(
@@ -371,7 +377,7 @@ router.get('/ujian', async (req, res, next) => {
   } catch(error) { next(error); }
 });
 
-router.post('/ujian', async (req, res, next) => {
+router.post('/ujian', validate(CreateUjianSchema), async (req, res, next) => {
   try {
     const scope = await resolveScope(req);
     const { judul, mataPelajaran, tipeUjian, durasi, tanggalMulai, tanggalSelesai,
@@ -448,7 +454,7 @@ router.get('/ujian/:id', async (req, res, next) => {
   } catch(error) { next(error); }
 });
 
-router.patch('/ujian/:id', async (req, res, next) => {
+router.patch('/ujian/:id', validate(UpdateUjianSchema), async (req, res, next) => {
   try {
     if (!(await canAccessUjian(req, req.params.id))) {
       return res.status(404).json({ error: "Ujian tidak ditemukan" });
@@ -587,7 +593,7 @@ router.get('/ujian/:id/soal', async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-router.post('/ujian/:id/soal', async (req, res, next) => {
+router.post('/ujian/:id/soal', validate(AddSoalSchema), async (req, res, next) => {
   try {
     if (!(await canAccessUjian(req, req.params.id))) {
       return res.status(404).json({ error: "Ujian tidak ditemukan" });
@@ -830,7 +836,7 @@ router.post('/ujian/:id/soal/import', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.patch('/soal/:id', async (req, res, next) => {
+router.patch('/soal/:id', validate(UpdateSoalSchema), async (req, res, next) => {
   try {
     if (!(await canAccessSoal(req, req.params.id))) {
       return res.status(404).json({ error: "Soal tidak ditemukan" });
@@ -1108,7 +1114,7 @@ router.get('/ujian/:id/koreksi', async (req, res, next) => {
 });
 
 // Simpan penilaian uraian untuk 1 sesi, lalu hitung ulang nilaiAkhir
-router.post('/ujian/:id/koreksi/sesi/:sesiId', async (req, res, next) => {
+router.post('/ujian/:id/koreksi/sesi/:sesiId', validate(KoreksiUraianSchema), async (req, res, next) => {
   try {
     if (!(await canAccessUjian(req, req.params.id))) {
       return res.status(403).json({ error: 'Akses ditolak' });

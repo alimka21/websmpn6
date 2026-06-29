@@ -10,6 +10,12 @@ import { requireAuth, requireRole } from '../middleware';
 import { getPaginationParams, buildPaginatedResult } from '../lib/pagination';
 import { withCache, invalidateByPrefix } from '../lib/cache';
 import { toTitleCase } from '../lib/format';
+import {
+  validate,
+  CreateUserSchema, UpdateUserSchema, BulkDeleteSchema, ResetPasswordSchema,
+  CreateKelasSchema, UpdateKelasSchema,
+  CreateLogoMitraSchema, UpdateLogoMitraSchema,
+} from '../lib/validate';
 
 const router = Router();
 router.use(requireAuth, requireRole(['SUPER_ADMIN']));
@@ -225,7 +231,7 @@ router.get('/users', async (req, res, next) => {
   }
 });
 
-router.post('/users', async (req, res, next) => {
+router.post('/users', validate(CreateUserSchema), async (req, res, next) => {
   try {
     const { email, password, role, nama, nip, mataPelajaran, mataPelajaranList, nis, rfidKode: newRfidKode, kelasId } = req.body;
 
@@ -290,7 +296,7 @@ router.post('/users', async (req, res, next) => {
   }
 });
 
-router.patch('/users/:id', async (req, res, next) => {
+router.patch('/users/:id', validate(UpdateUserSchema), async (req, res, next) => {
   try {
     const { email, isActive, nama, nis, rfidKode, nip, mataPelajaran, mataPelajaranList, kelasId } = req.body;
 
@@ -418,7 +424,7 @@ router.delete('/users/:id', async (req, res, next) => {
   }
 });
 
-router.post('/users/bulk-delete', async (req, res, next) => {
+router.post('/users/bulk-delete', validate(BulkDeleteSchema), async (req, res, next) => {
   try {
     const { ids } = req.body as { ids: string[] };
     if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids wajib diisi' });
@@ -728,7 +734,7 @@ router.post('/users/import', async (req, res, next) => {
   }
 });
 
-router.post('/users/:id/reset-password', async (req, res, next) => {
+router.post('/users/:id/reset-password', validate(ResetPasswordSchema), async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
@@ -786,7 +792,7 @@ router.put('/kelas/:id/guru', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.post('/kelas', async (req, res, next) => {
+router.post('/kelas', validate(CreateKelasSchema), async (req, res, next) => {
   try {
     const { nama, tingkat, tahunAjaran, guruId } = req.body;
     if (!nama || !tingkat || !tahunAjaran || !guruId) {
@@ -799,7 +805,7 @@ router.post('/kelas', async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-router.patch('/kelas/:id', async (req, res, next) => {
+router.patch('/kelas/:id', validate(UpdateKelasSchema), async (req, res, next) => {
   try {
     const { nama, tingkat, tahunAjaran, guruId } = req.body;
     const kelas = await prisma.kelas.update({
@@ -2151,7 +2157,7 @@ router.get('/logo-mitra', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/logo-mitra', async (req, res, next) => {
+router.post('/logo-mitra', validate(CreateLogoMitraSchema), async (req, res, next) => {
   try {
     const { nama, imageUrl, linkUrl, urutan } = req.body;
     if (!nama || !imageUrl) {
@@ -2169,7 +2175,7 @@ router.post('/logo-mitra', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.patch('/logo-mitra/:id', async (req, res, next) => {
+router.patch('/logo-mitra/:id', validate(UpdateLogoMitraSchema), async (req, res, next) => {
   try {
     const { nama, imageUrl, linkUrl, urutan, isActive } = req.body;
     const data: Record<string, any> = {};

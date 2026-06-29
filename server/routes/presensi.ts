@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { prisma } from '../lib/prisma';
 import { requireAuth, requireRole } from '../middleware';
+import { validate, PresensiGuruSchema, PresensiSiswaRfidSchema } from '../lib/validate';
 
 // Upload foto presensi guru (datang/pulang)
 const uploadsBase    = path.dirname(process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads/berita'));
@@ -188,7 +189,7 @@ router.get('/guru-list', async (req, res, next) => {
 // Validasi geofencing lalu catat waktuDatang
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/guru/datang', async (req, res, next) => {
+router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next) => {
   try {
     const { guruId, latitude, longitude, fotoUrl } = req.body;
     if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
@@ -248,7 +249,7 @@ router.post('/guru/datang', async (req, res, next) => {
 // Validasi geofencing lalu catat waktuPulang
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/guru/pulang', async (req, res, next) => {
+router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next) => {
   try {
     const { guruId, latitude, longitude, fotoUrl } = req.body;
     if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
@@ -542,7 +543,7 @@ router.get('/siswa/cari', async (req, res, next) => {
 // Catat waktuDatang siswa
 // ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/siswa', async (req, res, next) => {
+router.post('/siswa', validate(PresensiSiswaRfidSchema), async (req, res, next) => {
   try {
     const { siswaId, nis, rfidKode } = req.body;
     if (!siswaId && !nis && !rfidKode) {
