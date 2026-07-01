@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ujianKeys, fetchAdminUjianList } from '../../lib/queries/ujian';
 import { useNavigate } from 'react-router-dom';
 import { Search, Trash2, FileText, AlertTriangle, ClipboardList, Plus, PenTool, BarChart3 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
@@ -46,9 +48,11 @@ const getStatus = (start: string | null, end: string | null): { label: string; c
 
 export default function AdminUjianList() {
   const navigate = useNavigate();
-  const [ujianList, setUjianList] = useState<UjianRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data: ujianList = [], isLoading, error } = useQuery<UjianRow[]>({
+    queryKey: ujianKeys.adminList(),
+    queryFn: fetchAdminUjianList,
+  });
 
   const [search, setSearch] = useState('');
   const [filterGuru, setFilterGuru] = useState('ALL');
@@ -59,26 +63,6 @@ export default function AdminUjianList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const deleteModalRef = useModalA11y<HTMLDivElement>(deleteConfirm !== null, () => setDeleteConfirm(null));
 
-  const fetchUjian = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMsg(null);
-      // Endpoint paginated — halaman ini punya search + filter guru + filter status client-side,
-      // jadi ambil 100 ujian terbaru. Refactor jadi server-search kalau dataset > 100.
-      const res = await api.get('/api/admin/ujian?limit=100');
-      setUjianList(res?.data ?? []);
-      if (res?.pagination?.total > 100) {
-        toast.info(`Total ${res.pagination.total} ujian — hanya 100 terbaru ditampilkan.`);
-      }
-    } catch (e: any) {
-      setErrorMsg(e.message || 'Gagal memuat data ujian');
-      toast.error(e.message || 'Gagal memuat data ujian');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchUjian(); }, []);
   useEffect(() => { setPage(1); }, [search, filterGuru, filterStatus]);
 
   const guruOptions = useMemo(() => {
@@ -107,7 +91,7 @@ export default function AdminUjianList() {
       await api.delete(`/api/admin/ujian/${deleteConfirm.id}`);
       toast.success(`Ujian "${deleteConfirm.judul}" berhasil dihapus`);
       setDeleteConfirm(null);
-      fetchUjian();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.adminList() });
     } catch (e: any) {
       toast.error(e.message || 'Gagal menghapus ujian');
     } finally {
@@ -158,12 +142,12 @@ export default function AdminUjianList() {
             <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-2" />
             <span className="text-sm text-on-surface-variant">Memuat...</span>
           </div>
-        ) : errorMsg ? (
+        ) : error ? (
           <div className="py-12 flex flex-col items-center text-center">
             <AlertTriangle className="w-10 h-10 text-error mb-2" />
             <p className="text-error font-medium mb-1">Gagal memuat data</p>
-            <p className="text-sm text-on-surface-variant mb-4">{errorMsg}</p>
-            <Button onClick={fetchUjian}>Muat Ulang</Button>
+            <p className="text-sm text-on-surface-variant mb-4">{(error as any)?.message || 'Gagal memuat data ujian'}</p>
+            <Button onClick={() => queryClient.invalidateQueries({ queryKey: ujianKeys.adminList() })}>Muat Ulang</Button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 flex flex-col items-center text-center">

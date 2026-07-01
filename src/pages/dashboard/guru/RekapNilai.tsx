@@ -1,5 +1,7 @@
 import { toast } from 'sonner';
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ujianKeys, fetchGuruUjianList, fetchGuruRekap } from '../../../lib/queries/ujian';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
@@ -12,10 +14,8 @@ export default function RekapNilai() {
   const [searchParams] = useSearchParams();
   const preselectedId = searchParams.get('ujianId');
 
-  const [ujianList, setUjianList] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [selectedUjian, setSelectedUjian] = useState<string>('');
-  const [rekapData, setRekapData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState<'xlsx' | 'pdf' | null>(null);
   const [filterKelas, setFilterKelas] = useState<string>('');
 
@@ -42,7 +42,7 @@ export default function RekapNilai() {
       toast.success(res?.message || `Sesi siswa "${resetTarget.nama}" berhasil di-reset`);
       setResetTarget(null);
       // Refresh rekap
-      fetchRekap();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.guruRekap(selectedUjian) });
     } catch (err: any) {
       toast.error(err.message || 'Gagal reset sesi siswa');
     } finally {
@@ -50,43 +50,34 @@ export default function RekapNilai() {
     }
   };
 
-  useEffect(() => { fetchUjian(); }, []);
+  const { data: ujianListRaw = [] } = useQuery<any[]>({
+    queryKey: ujianKeys.guruList(),
+    queryFn: fetchGuruUjianList,
+  });
 
-  const fetchUjian = async () => {
-    try {
-      // Endpoint paginated — dropdown ujian ambil 100 terbaru.
-      const res = await api.get('/api/guru/ujian?limit=100');
-      const list = res?.data ?? [];
-      const filtered = list.filter((u: any) => new Date() >= new Date(u.tanggalMulai));
-      setUjianList(filtered);
-      if (filtered.length > 0) {
-        const targetId = preselectedId && filtered.some((u: any) => u.id === preselectedId)
-          ? preselectedId
-          : filtered[0].id;
-        setSelectedUjian(targetId);
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Gagal memuat daftar ujian');
-    }
-  };
+  const ujianList = useMemo(
+    () => ujianListRaw.filter((u: any) => new Date() >= new Date(u.tanggalMulai)),
+    [ujianListRaw],
+  );
 
+  // Inisialisasi selectedUjian saat data pertama kali tersedia
   useEffect(() => {
-    if (selectedUjian) fetchRekap();
-  }, [selectedUjian]);
-
-  const fetchRekap = async () => {
-    try {
-      setIsLoading(true);
-      setRekapData(null);
-      setFilterKelas('');
-      const res = await api.get(`/api/guru/ujian/${selectedUjian}/hasil`);
-      setRekapData(res);
-    } catch (error: any) {
-      toast.error(error?.message || 'Gagal memuat rekap nilai');
-    } finally {
-      setIsLoading(false);
+    if (ujianList.length > 0 && !selectedUjian) {
+      const targetId = preselectedId && ujianList.some((u: any) => u.id === preselectedId)
+        ? preselectedId
+        : ujianList[0].id;
+      setSelectedUjian(targetId);
     }
-  };
+  }, [ujianList]);
+
+  // Reset filter kelas saat ujian berganti
+  useEffect(() => { setFilterKelas(''); }, [selectedUjian]);
+
+  const { data: rekapData = null, isLoading } = useQuery({
+    queryKey: ujianKeys.guruRekap(selectedUjian),
+    queryFn: () => fetchGuruRekap(selectedUjian),
+    enabled: !!selectedUjian,
+  });
 
   const durasiMenit = (mulaiAt: string | null, selesaiAt: string | null): number | null => {
     if (!mulaiAt || !selesaiAt) return null;

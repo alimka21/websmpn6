@@ -1,5 +1,7 @@
 import { toast } from 'sonner';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ujianKeys, fetchGuruUjianList, fetchGuruKelas, fetchGuruMapel } from '../../../lib/queries/ujian';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 import { Input, Label } from '../../../components/ui/input';
@@ -30,13 +32,23 @@ interface EditForm {
 }
 
 export default function DaftarUjian() {
-  const [ujianList, setUjianList] = useState<any[]>([]);
-  const [kelasList, setKelasList] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: ujianList = [], isLoading, error } = useQuery({
+    queryKey: ujianKeys.guruList(),
+    queryFn: fetchGuruUjianList,
+  });
+  const { data: kelasList = [] } = useQuery({
+    queryKey: ujianKeys.guruKelas(),
+    queryFn: fetchGuruKelas,
+  });
+  const { data: mapelList = [] } = useQuery<string[]>({
+    queryKey: ujianKeys.guruMapel(),
+    queryFn: fetchGuruMapel,
+  });
 
   // Edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -89,52 +101,15 @@ export default function DaftarUjian() {
       });
       toast.success(aktif ? 'Ujian ditambahkan ke Dashboard Tugas' : 'Ujian dikeluarkan dari Dashboard Tugas');
       setDashboardModal(null);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.guruList() });
     } catch (err: any) {
       toast.error(err?.response?.data?.error || 'Gagal mengubah pengaturan dashboard');
     } finally { setDashSaving(false); }
   };
 
-  // Mapel list untuk edit modal
-  const [mapelList, setMapelList] = useState<string[]>([]);
-
   // Modal a11y
   const editModalRef = useModalA11y<HTMLDivElement>(editModalOpen, () => setEditModalOpen(false));
   const deleteModalRef = useModalA11y<HTMLDivElement>(deleteModalOpen, () => { setDeleteModalOpen(false); setDeletingUjian(null); });
-
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMsg(null);
-      // Endpoint paginated — halaman ini punya filter/search client-side, ambil 100.
-      const res = await api.get('/api/guru/ujian?limit=100');
-      setUjianList(res?.data ?? []);
-      if (res?.pagination?.total > 100) {
-        toast.info(`Total ${res.pagination.total} ujian — hanya 100 terbaru ditampilkan.`);
-      }
-    } catch (error: any) {
-      const msg = error?.message || 'Gagal memuat daftar ujian. Periksa koneksi Anda.';
-      setErrorMsg(msg);
-      toast.error(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchKelas = async () => {
-    try {
-      const res = await api.get('/api/guru/kelas');
-      setKelasList(res);
-    } catch (error: any) {
-      toast.error(error?.message || 'Gagal memuat daftar kelas');
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    fetchKelas();
-    api.get('/api/guru/mapel').then((res: any) => setMapelList(Array.isArray(res) ? res : [])).catch(() => {});
-  }, []);
 
   const getStatus = (ujian: any) => {
     if (!ujian._count?.soal || ujian._count.soal === 0) return 'DRAFT';
@@ -223,7 +198,7 @@ export default function DaftarUjian() {
       });
       toast.success('Informasi ujian berhasil diperbarui');
       setEditModalOpen(false);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.guruList() });
     } catch (error: any) {
       toast.error(error.message || 'Gagal menyimpan perubahan');
     } finally {
@@ -245,7 +220,7 @@ export default function DaftarUjian() {
       toast.success('Ujian berhasil dihapus');
       setDeleteModalOpen(false);
       setDeletingUjian(null);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.guruList() });
     } catch (error: any) {
       toast.error(error.message || 'Gagal menghapus ujian');
     } finally {
@@ -259,7 +234,7 @@ export default function DaftarUjian() {
       setIsDuplicating(ujianId);
       await api.post(`/api/guru/ujian/${ujianId}/duplikat`);
       toast.success('Ujian berhasil diduplikat');
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ujianKeys.guruList() });
     } catch (error: any) {
       toast.error(error.message || 'Gagal menduplikat ujian');
     } finally {
@@ -314,8 +289,8 @@ export default function DaftarUjian() {
               <div className="w-6 h-6 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
               <p className="text-sm text-on-surface-variant">Memuat data ujian...</p>
             </div>
-          ) : errorMsg ? (
-            <ErrorState message={errorMsg} onRetry={fetchData} />
+          ) : error ? (
+            <ErrorState message={(error as any)?.message || 'Gagal memuat daftar ujian'} onRetry={() => queryClient.invalidateQueries({ queryKey: ujianKeys.guruList() })} />
           ) : filteredList.length === 0 ? (
             <div className="py-16 text-center space-y-2">
               <FileText className="w-10 h-10 text-outline mx-auto" />
