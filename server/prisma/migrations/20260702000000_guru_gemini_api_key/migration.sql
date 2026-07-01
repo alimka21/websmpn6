@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Guru` ADD COLUMN `geminiApiKey` VARCHAR(200) NULL DEFAULT NULL;

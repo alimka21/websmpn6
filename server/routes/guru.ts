@@ -47,6 +47,33 @@ const router = Router();
 // admin (lihat semua) vs guru (hanya milik sendiri).
 router.use(requireAuth, requireRole(['GURU', 'SUPER_ADMIN']));
 
+// Ambil profil guru (termasuk geminiApiKey — masked untuk tampil di UI)
+router.get('/profile', async (req, res, next) => {
+  try {
+    const guruId = (req as any).user.profileId;
+    const guru = await prisma.guru.findUnique({
+      where: { id: guruId },
+      select: { id: true, nama: true, nip: true, fotoUrl: true, geminiApiKey: true },
+    });
+    if (!guru) return res.status(404).json({ error: 'Profil tidak ditemukan' });
+    // Kirim flag hasGeminiKey tanpa expose key-nya ke frontend
+    res.json({ ...guru, hasGeminiKey: !!guru.geminiApiKey, geminiApiKey: undefined });
+  } catch (e) { next(e); }
+});
+
+// Simpan / hapus geminiApiKey guru
+router.patch('/profile/gemini-key', async (req, res, next) => {
+  try {
+    const guruId = (req as any).user.profileId;
+    const { apiKey } = req.body as { apiKey: string | null };
+    await prisma.guru.update({
+      where: { id: guruId },
+      data: { geminiApiKey: apiKey || null },
+    });
+    res.json({ ok: true, hasGeminiKey: !!apiKey });
+  } catch (e) { next(e); }
+});
+
 interface Scope {
   isAdmin: boolean;
   guruId: string | null;
@@ -1111,6 +1138,77 @@ router.get('/ujian/:id/koreksi', async (req, res, next) => {
 
     res.json({ soal: soalUraian.map(s => ({ id: s.id, nomor: s.nomor, tipe: s.tipe, teks: s.teks, poin: s.poin })), sesi: result });
   } catch(error) { next(error); }
+});
+
+// AI grading — panggil Gemini dari server menggunakan key yang tersimpan di DB guru
+router.post('/ujian/:id/koreksi/sesi/:sesiId/ai-grade', async (req, res, next) => {
+  try {
+    if (!(await canAccessUjian(req, req.params.id, 'read'))) {
+      return res.status(404).json({ error: 'Ujian tidak ditemukan' });
+    }
+
+    const guruId = (req as any).user.profileId as string | null;
+    if (!guruId) return res.status(403).json({ error: 'Hanya guru yang bisa menggunakan fitur AI' });
+
+    const guru = await prisma.guru.findUnique({ where: { id: guruId }, select: { geminiApiKey: true } });
+    if (!guru?.geminiApiKey) {
+      return res.status(400).json({ error: 'API Key Gemini belum diatur. Hubungi admin untuk mengaturnya.' });
+    }
+
+    const { soalList } = req.body as {
+      soalList: { soalId: string; nomor: number; pertanyaan: string; tipe: string; jawabanSiswa: string }[];
+    };
+    if (!Array.isArray(soalList) || soalList.length === 0) {
+      return res.status(400).json({ error: 'Data soal kosong' });
+    }
+
+    const prompt = `Kamu adalah asisten penilai ujian sekolah. Nilai jawaban uraian/esai siswa berikut.
+
+Untuk setiap jawaban, berikan:
+- nilai: integer 1-10 (10=sempurna/lengkap, 1=tidak relevan/kosong)
+- alasan: 1-2 kalimat singkat dalam Bahasa Indonesia mengapa nilainya segitu
+
+Format output HANYA JSON array (tanpa teks, tanpa markdown):
+[{"soalId":"...","nilai":7,"alasan":"..."}]
+
+Data soal dan jawaban siswa:
+${JSON.stringify(soalList, null, 2)}`;
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${guru.geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+        }),
+      },
+    );
+
+    if (!geminiRes.ok) {
+      const err = await geminiRes.json().catch(() => ({}));
+      const msg = (err as any)?.error?.message || `Gemini API error ${geminiRes.status}`;
+      return res.status(502).json({ error: msg });
+    }
+
+    const data = await geminiRes.json();
+    const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
+
+    let results: { soalId: string; nilai: number; alasan: string }[];
+    try {
+      const parsed = JSON.parse(text);
+      results = (Array.isArray(parsed) ? parsed : []).map((r: any) => ({
+        soalId: String(r.soalId ?? ''),
+        nilai: Math.max(1, Math.min(10, Math.round(Number(r.nilai) || 5))),
+        alasan: String(r.alasan ?? ''),
+      }));
+    } catch {
+      return res.status(502).json({ error: 'Gagal membaca respons AI. Coba lagi.' });
+    }
+
+    res.json({ results });
+  } catch (e) { next(e); }
 });
 
 // Simpan penilaian uraian untuk 1 sesi, lalu hitung ulang nilaiAkhir

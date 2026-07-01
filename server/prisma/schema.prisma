@@ -63,6 +63,7 @@ model Guru {
   nama          String
   mataPelajaran String  // legacy — dipertahankan untuk backward compat
   fotoUrl       String?
+  geminiApiKey  String? @db.VarChar(200)
 
   kelas            Kelas[]
   guruKelas        GuruKelas[]
