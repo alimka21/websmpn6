@@ -48,11 +48,11 @@ function hitungJarakMeter(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Midnight lokal hari ini */
+/** Midnight WIB hari ini sebagai UTC Date.
+ *  Server Hostinger UTC → tanpa ini "hari ini" bergeser hingga 7 jam. */
 function tanggalHariIni(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const wibStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); // "YYYY-MM-DD"
+  return new Date(`${wibStr}T00:00:00+07:00`);
 }
 
 /** Format Date ke "HH.mm" dalam timezone WIB — dipakai untuk response kiosk.
@@ -71,12 +71,10 @@ function buildTargetWIB(referensi: Date, hhmm: string): Date {
   return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00+07:00`);
 }
 
-/** Parse "HH:mm" → Date hari ini dengan jam tersebut */
+/** Parse "HH:mm" → Date hari ini jam tersebut dalam WIB.
+ *  Setara buildTargetWIB tapi tanpa parameter referensi. */
 function jamKeDate(hhmm: string): Date {
-  const [jam, menit] = hhmm.split(':').map(Number);
-  const d = new Date();
-  d.setHours(jam, menit, 0, 0);
-  return d;
+  return buildTargetWIB(new Date(), hhmm);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

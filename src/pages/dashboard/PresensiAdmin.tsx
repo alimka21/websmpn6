@@ -43,11 +43,13 @@ interface PresensiSiswaRow {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const TZ = 'Asia/Jakarta';
+
 const fmtTime = (d: string | null) =>
-  d ? new Date(d).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—';
+  d ? new Date(d).toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }) : '—';
 
 const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  d ? new Date(d).toLocaleDateString('id-ID', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 const fmtDurasi = (m: number | null) => {
   if (m === null) return '—';
@@ -55,10 +57,16 @@ const fmtDurasi = (m: number | null) => {
   return h > 0 ? `${h}j ${min}m` : `${min}m`;
 };
 
+// Konversi UTC ISO → "YYYY-MM-DDTHH:mm" dalam WIB untuk input datetime-local
 const toDatetimeLocal = (d: string | null) => {
   if (!d) return '';
-  const dt = new Date(d);
-  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}T${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+  const wib = new Date(d).toLocaleString('en-CA', {
+    timeZone: TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  // en-CA format: "YYYY-MM-DD, HH:mm" → ubah ke "YYYY-MM-DDTHH:mm"
+  return wib.replace(', ', 'T').replace(/(\d{2}):(\d{2}).*/, '$1:$2');
 };
 
 const nowYear = new Date().getFullYear();

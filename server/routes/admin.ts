@@ -18,6 +18,25 @@ import {
 } from '../lib/validate';
 
 const router = Router();
+
+// ── Timezone helpers (server Hostinger = UTC, semua display harus WIB) ─────
+const TZ = 'Asia/Jakarta';
+const fmtWIB = (d: Date) =>
+  d.toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+const fmtDateWIB = (d: Date) =>
+  d.toLocaleDateString('id-ID', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
+/** Bangun target waktu masuk/pulang dalam WIB dari string "HH:mm". */
+function buildTargetWIB(referensi: Date, hhmm: string): Date {
+  const [jam, menit] = hhmm.split(':').map(Number);
+  const wibDate = new Date(referensi.getTime() + 7 * 60 * 60 * 1000);
+  const dateStr  = wibDate.toISOString().slice(0, 10);
+  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00+07:00`);
+}
+/** Midnight WIB untuk suatu date-string ("YYYY-MM-DD" atau Date). */
+function wibMidnight(d: string | Date): Date {
+  const str = typeof d === 'string' ? d : d.toLocaleDateString('en-CA', { timeZone: TZ });
+  return new Date(`${str}T00:00:00+07:00`);
+}
 router.use(requireAuth, requireRole(['SUPER_ADMIN']));
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1387,7 +1406,7 @@ router.get('/activity', async (req, res, next) => {
         actor: p.guru?.nama ?? '—',
         actorRole: 'guru' as const,
         description: `Clock-in presensi`,
-        meta: p.waktuDatang ? new Date(p.waktuDatang).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
+        meta: p.waktuDatang ? fmtWIB(new Date(p.waktuDatang)) : '—',
       })),
     ];
 
@@ -1450,14 +1469,10 @@ router.get('/presensi/guru/export', async (req, res, next) => {
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
-        const targetMasuk = new Date(p.waktuDatang);
-        targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
-
+        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
-
         if (p.waktuPulang) {
           totalJam = Math.floor((p.waktuPulang.getTime() - p.waktuDatang.getTime()) / 60_000);
         }
@@ -1465,11 +1480,11 @@ router.get('/presensi/guru/export', async (req, res, next) => {
 
       ws.addRow({
         no: idx + 1,
-        tanggal: p.tanggal.toLocaleDateString('id-ID'),
+        tanggal: fmtDateWIB(p.tanggal),
         nama: p.guru.nama,
         nip: p.guru.nip,
-        jamDatang: p.waktuDatang ? p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
-        jamPulang: p.waktuPulang ? p.waktuPulang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—',
+        jamDatang: p.waktuDatang ? fmtWIB(p.waktuDatang) : '—',
+        jamPulang: p.waktuPulang ? fmtWIB(p.waktuPulang) : '—',
         keterlambatan: keterlambatan || 0,
         totalJam: totalJam || 0,
         status: p.autoCheckout ? 'Auto Checkout' : (p.waktuPulang ? 'Manual' : 'Belum Pulang'),
@@ -1541,22 +1556,16 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
 
     // Data
     data.forEach((p, idx) => {
-      let tepatWaktu = true;
-      const [jamMasuk, menitMasuk] = jamMasukDefault.split(':').map(Number);
-      const targetMasuk = new Date(p.waktuDatang);
-      targetMasuk.setHours(jamMasuk, menitMasuk, 0, 0);
-
-      if (p.waktuDatang > targetMasuk) {
-        tepatWaktu = false;
-      }
+      const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+      const tepatWaktu = p.waktuDatang <= targetMasuk;
 
       ws.addRow({
         no: idx + 1,
-        tanggal: p.tanggal.toLocaleDateString('id-ID'),
+        tanggal: fmtDateWIB(p.tanggal),
         nis: p.siswa.nis,
         nama: p.siswa.nama,
         kelas: p.siswa.kelas?.nama || '—',
-        jamDatang: p.waktuDatang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        jamDatang: fmtWIB(p.waktuDatang),
         status: tepatWaktu ? 'Tepat Waktu' : 'Terlambat',
       });
     });
@@ -1636,11 +1645,11 @@ router.get('/absensi', async (req, res, next) => {
 
     const tanggalWhere: any = {};
     if (dari) {
-      const start = new Date(dari); start.setHours(0, 0, 0, 0);
-      tanggalWhere.gte = start;
+      tanggalWhere.gte = wibMidnight(dari);
     }
     if (sampai) {
-      const end = new Date(sampai); end.setDate(end.getDate() + 1); end.setHours(0, 0, 0, 0);
+      const end = wibMidnight(sampai);
+      end.setTime(end.getTime() + 24 * 60 * 60 * 1000);
       tanggalWhere.lt = end;
     }
 
@@ -1722,8 +1731,8 @@ router.get('/absensi/export', async (req, res, next) => {
     const { dari, sampai, kelasId } = req.query as Record<string, string>;
 
     const tanggalWhere: any = {};
-    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tanggalWhere.gte = d; }
-    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tanggalWhere.lt = d; }
+    if (dari)   { tanggalWhere.gte = wibMidnight(dari); }
+    if (sampai) { const e = wibMidnight(sampai); e.setTime(e.getTime() + 86_400_000); tanggalWhere.lt = e; }
 
     // Ambil data hadir dan absensi
     const siswaWhere: any = kelasId ? { kelasId } : {};
@@ -1887,8 +1896,8 @@ router.get('/potensi/rekap', async (req, res, next) => {
     const limit = Math.min(100, Number(lm) || 50);
 
     const tglFilter: any = {};
-    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
-    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+    if (dari)   { tglFilter.gte = wibMidnight(dari); }
+    if (sampai) { const e = wibMidnight(sampai); e.setTime(e.getTime() + 86_400_000); tglFilter.lt = e; }
 
     const where: any = {
       ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}),
@@ -1941,8 +1950,8 @@ router.get('/potensi/export-excel', async (req, res, next) => {
   try {
     const { dari, sampai, tipe, kelasId } = req.query as Record<string, string>;
     const tglFilter: any = {};
-    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
-    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+    if (dari)   { tglFilter.gte = wibMidnight(dari); }
+    if (sampai) { const e = wibMidnight(sampai); e.setTime(e.getTime() + 86_400_000); tglFilter.lt = e; }
 
     const where: any = {
       ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}),
@@ -2001,8 +2010,8 @@ router.post('/potensi/export-docx', async (req, res, next) => {
     if (!siswa) return res.status(404).json({ error: 'Siswa tidak ditemukan' });
 
     const tglFilter: any = {};
-    if (dari)   { const d = new Date(dari);   d.setHours(0,0,0,0); tglFilter.gte = d; }
-    if (sampai) { const d = new Date(sampai); d.setDate(d.getDate()+1); d.setHours(0,0,0,0); tglFilter.lt = d; }
+    if (dari)   { tglFilter.gte = wibMidnight(dari); }
+    if (sampai) { const e = wibMidnight(sampai); e.setTime(e.getTime() + 86_400_000); tglFilter.lt = e; }
 
     const laporan = await prisma.laporanPotensi.findMany({
       where: { siswaId, ...(Object.keys(tglFilter).length ? { tanggal: tglFilter } : {}) },

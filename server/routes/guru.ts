@@ -1321,13 +1321,13 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       ws.addRow(['Judul Ujian', ujian.judul]);
       ws.addRow(['Mata Pelajaran', ujian.mataPelajaran]);
       ws.addRow(['Kelas', kelasNama]);
-      ws.addRow(['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID')]);
+      ws.addRow(['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })]);
       ws.addRow(['Durasi Ujian', `${ujian.durasi} menit`]);
       ws.addRow([]);
 
       const fmtTime = (dt: Date | null | undefined) => {
         if (!dt) return '-';
-        return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return new Date(dt).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
       };
       const durasiMnt = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
         if (!mulai || !selesai) return '-';
@@ -1402,7 +1402,7 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       // Info block (2 kolom)
       const infoLeft  = [['Mata Pelajaran', ujian.mataPelajaran], ['Kelas', kelasNama || '-']];
       const infoRight = [
-        ['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID')],
+        ['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })],
         ['Durasi Ujian', `${ujian.durasi} menit`],
       ];
       const iy = 101;
@@ -1419,7 +1419,7 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       // Helper waktu
       const fmtT = (dt: Date | null | undefined) => {
         if (!dt) return '-';
-        return new Date(dt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return new Date(dt).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
       };
       const durasiT = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
         if (!mulai || !selesai) return '-';

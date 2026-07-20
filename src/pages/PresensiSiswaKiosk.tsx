@@ -149,7 +149,7 @@ export default function PresensiSiswaKiosk() {
       setSuccessData({
         nama: siswa.nama,
         kelas: siswa.kelas,
-        time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        time: now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }),
       });
       setShowSuccess(true);
       setAttendedCount(prev => prev + 1);
@@ -228,10 +228,10 @@ export default function PresensiSiswaKiosk() {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="text-2xl font-bold text-[#1e40af] tabular-nums leading-tight">
-                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {currentTime.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
               <div className="text-xs text-[#64748b]">
-                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {currentTime.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
             </div>
             <Link
