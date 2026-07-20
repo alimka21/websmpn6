@@ -329,6 +329,7 @@ export const PengaturanPresensiScalarFieldEnum = {
   radiusMeter: 'radiusMeter',
   jamMasukDefault: 'jamMasukDefault',
   jamPulangDefault: 'jamPulangDefault',
+  timezone: 'timezone',
   kodeAksesGuru: 'kodeAksesGuru',
   kodeAksesSiswa: 'kodeAksesSiswa',
   kodeAksesLapor: 'kodeAksesLapor',
@@ -746,6 +747,7 @@ export const PengaturanPresensiOrderByRelevanceFieldEnum = {
   id: 'id',
   jamMasukDefault: 'jamMasukDefault',
   jamPulangDefault: 'jamPulangDefault',
+  timezone: 'timezone',
   kodeAksesGuru: 'kodeAksesGuru',
   kodeAksesSiswa: 'kodeAksesSiswa',
   kodeAksesLapor: 'kodeAksesLapor'

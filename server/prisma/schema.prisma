@@ -324,6 +324,7 @@ model PengaturanPresensi {
 
   jamMasukDefault   String   @default("07:00") // format "HH:mm"
   jamPulangDefault  String   @default("15:30")
+  timezone          String   @default("Asia/Jakarta") @db.VarChar(50) // WIB=Asia/Jakarta WITA=Asia/Makassar WIT=Asia/Jayapura
 
   kodeAksesGuru     String?  // Kode akses 6 karakter untuk masuk halaman presensi guru
   kodeAksesSiswa    String?  // Kode akses 6 karakter untuk masuk halaman presensi siswa

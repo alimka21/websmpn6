@@ -19,23 +19,28 @@ import {
 
 const router = Router();
 
-// ── Timezone helpers (server Hostinger = UTC, semua display harus WIB) ─────
-const TZ = 'Asia/Jakarta';
-const fmtWIB = (d: Date) =>
-  d.toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
-const fmtDateWIB = (d: Date) =>
-  d.toLocaleDateString('id-ID', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
-/** Bangun target waktu masuk/pulang dalam WIB dari string "HH:mm". */
-function buildTargetWIB(referensi: Date, hhmm: string): Date {
+// ── Timezone helpers (server Hostinger = UTC, semua display ikut timezone sekolah) ─────
+const TZ_OFFSETS_ADMIN: Record<string, string> = {
+  'Asia/Jakarta':  '+07:00',
+  'Asia/Makassar': '+08:00',
+  'Asia/Jayapura': '+09:00',
+};
+const tzOffAdm = (tz: string) => TZ_OFFSETS_ADMIN[tz] || '+07:00';
+
+const fmtWIB = (d: Date, tz: string = 'Asia/Jakarta') =>
+  d.toLocaleTimeString('id-ID', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+const fmtDateWIB = (d: Date, tz: string = 'Asia/Jakarta') =>
+  d.toLocaleDateString('id-ID', { timeZone: tz, day: 'numeric', month: 'short', year: 'numeric' });
+/** Bangun target waktu masuk/pulang dari string "HH:mm" sesuai timezone sekolah. */
+function buildTargetWIB(referensi: Date, hhmm: string, tz: string = 'Asia/Jakarta'): Date {
   const [jam, menit] = hhmm.split(':').map(Number);
-  const wibDate = new Date(referensi.getTime() + 7 * 60 * 60 * 1000);
-  const dateStr  = wibDate.toISOString().slice(0, 10);
-  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00+07:00`);
+  const dateStr = referensi.toLocaleDateString('en-CA', { timeZone: tz });
+  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00${tzOffAdm(tz)}`);
 }
-/** Midnight WIB untuk suatu date-string ("YYYY-MM-DD" atau Date). */
-function wibMidnight(d: string | Date): Date {
-  const str = typeof d === 'string' ? d : d.toLocaleDateString('en-CA', { timeZone: TZ });
-  return new Date(`${str}T00:00:00+07:00`);
+/** Midnight lokal untuk suatu date-string ("YYYY-MM-DD" atau Date) sesuai timezone. */
+function wibMidnight(d: string | Date, tz: string = 'Asia/Jakarta'): Date {
+  const str = typeof d === 'string' ? d : d.toLocaleDateString('en-CA', { timeZone: tz });
+  return new Date(`${str}T00:00:00${tzOffAdm(tz)}`);
 }
 router.use(requireAuth, requireRole(['SUPER_ADMIN']));
 
@@ -1439,9 +1444,10 @@ router.get('/presensi/guru/export', async (req, res, next) => {
       orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
     });
 
-    // Get jam masuk default
+    // Get jam masuk default dan timezone
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Jakarta';
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Presensi Guru');
@@ -1469,7 +1475,7 @@ router.get('/presensi/guru/export', async (req, res, next) => {
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault, tz);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
@@ -1480,11 +1486,11 @@ router.get('/presensi/guru/export', async (req, res, next) => {
 
       ws.addRow({
         no: idx + 1,
-        tanggal: fmtDateWIB(p.tanggal),
+        tanggal: fmtDateWIB(p.tanggal, tz),
         nama: p.guru.nama,
         nip: p.guru.nip,
-        jamDatang: p.waktuDatang ? fmtWIB(p.waktuDatang) : '—',
-        jamPulang: p.waktuPulang ? fmtWIB(p.waktuPulang) : '—',
+        jamDatang: p.waktuDatang ? fmtWIB(p.waktuDatang, tz) : '—',
+        jamPulang: p.waktuPulang ? fmtWIB(p.waktuPulang, tz) : '—',
         keterlambatan: keterlambatan || 0,
         totalJam: totalJam || 0,
         status: p.autoCheckout ? 'Auto Checkout' : (p.waktuPulang ? 'Manual' : 'Belum Pulang'),
@@ -1532,9 +1538,10 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
       orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
     });
 
-    // Get jam masuk default
+    // Get jam masuk default dan timezone
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Jakarta';
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Presensi Siswa');
@@ -1556,16 +1563,16 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
 
     // Data
     data.forEach((p, idx) => {
-      const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+      const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault, tz);
       const tepatWaktu = p.waktuDatang <= targetMasuk;
 
       ws.addRow({
         no: idx + 1,
-        tanggal: fmtDateWIB(p.tanggal),
+        tanggal: fmtDateWIB(p.tanggal, tz),
         nis: p.siswa.nis,
         nama: p.siswa.nama,
         kelas: p.siswa.kelas?.nama || '—',
-        jamDatang: fmtWIB(p.waktuDatang),
+        jamDatang: fmtWIB(p.waktuDatang, tz),
         status: tepatWaktu ? 'Tepat Waktu' : 'Terlambat',
       });
     });

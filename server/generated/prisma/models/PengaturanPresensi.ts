@@ -45,6 +45,7 @@ export type PengaturanPresensiMinAggregateOutputType = {
   radiusMeter: number | null
   jamMasukDefault: string | null
   jamPulangDefault: string | null
+  timezone: string | null
   kodeAksesGuru: string | null
   kodeAksesSiswa: string | null
   kodeAksesLapor: string | null
@@ -58,6 +59,7 @@ export type PengaturanPresensiMaxAggregateOutputType = {
   radiusMeter: number | null
   jamMasukDefault: string | null
   jamPulangDefault: string | null
+  timezone: string | null
   kodeAksesGuru: string | null
   kodeAksesSiswa: string | null
   kodeAksesLapor: string | null
@@ -71,6 +73,7 @@ export type PengaturanPresensiCountAggregateOutputType = {
   radiusMeter: number
   jamMasukDefault: number
   jamPulangDefault: number
+  timezone: number
   kodeAksesGuru: number
   kodeAksesSiswa: number
   kodeAksesLapor: number
@@ -98,6 +101,7 @@ export type PengaturanPresensiMinAggregateInputType = {
   radiusMeter?: true
   jamMasukDefault?: true
   jamPulangDefault?: true
+  timezone?: true
   kodeAksesGuru?: true
   kodeAksesSiswa?: true
   kodeAksesLapor?: true
@@ -111,6 +115,7 @@ export type PengaturanPresensiMaxAggregateInputType = {
   radiusMeter?: true
   jamMasukDefault?: true
   jamPulangDefault?: true
+  timezone?: true
   kodeAksesGuru?: true
   kodeAksesSiswa?: true
   kodeAksesLapor?: true
@@ -124,6 +129,7 @@ export type PengaturanPresensiCountAggregateInputType = {
   radiusMeter?: true
   jamMasukDefault?: true
   jamPulangDefault?: true
+  timezone?: true
   kodeAksesGuru?: true
   kodeAksesSiswa?: true
   kodeAksesLapor?: true
@@ -224,6 +230,7 @@ export type PengaturanPresensiGroupByOutputType = {
   radiusMeter: number
   jamMasukDefault: string
   jamPulangDefault: string
+  timezone: string
   kodeAksesGuru: string | null
   kodeAksesSiswa: string | null
   kodeAksesLapor: string | null
@@ -260,6 +267,7 @@ export type PengaturanPresensiWhereInput = {
   radiusMeter?: Prisma.IntFilter<"PengaturanPresensi"> | number
   jamMasukDefault?: Prisma.StringFilter<"PengaturanPresensi"> | string
   jamPulangDefault?: Prisma.StringFilter<"PengaturanPresensi"> | string
+  timezone?: Prisma.StringFilter<"PengaturanPresensi"> | string
   kodeAksesGuru?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
   kodeAksesSiswa?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
   kodeAksesLapor?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
@@ -273,6 +281,7 @@ export type PengaturanPresensiOrderByWithRelationInput = {
   radiusMeter?: Prisma.SortOrder
   jamMasukDefault?: Prisma.SortOrder
   jamPulangDefault?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
   kodeAksesGuru?: Prisma.SortOrderInput | Prisma.SortOrder
   kodeAksesSiswa?: Prisma.SortOrderInput | Prisma.SortOrder
   kodeAksesLapor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -290,6 +299,7 @@ export type PengaturanPresensiWhereUniqueInput = Prisma.AtLeast<{
   radiusMeter?: Prisma.IntFilter<"PengaturanPresensi"> | number
   jamMasukDefault?: Prisma.StringFilter<"PengaturanPresensi"> | string
   jamPulangDefault?: Prisma.StringFilter<"PengaturanPresensi"> | string
+  timezone?: Prisma.StringFilter<"PengaturanPresensi"> | string
   kodeAksesGuru?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
   kodeAksesSiswa?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
   kodeAksesLapor?: Prisma.StringNullableFilter<"PengaturanPresensi"> | string | null
@@ -303,6 +313,7 @@ export type PengaturanPresensiOrderByWithAggregationInput = {
   radiusMeter?: Prisma.SortOrder
   jamMasukDefault?: Prisma.SortOrder
   jamPulangDefault?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
   kodeAksesGuru?: Prisma.SortOrderInput | Prisma.SortOrder
   kodeAksesSiswa?: Prisma.SortOrderInput | Prisma.SortOrder
   kodeAksesLapor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -324,6 +335,7 @@ export type PengaturanPresensiScalarWhereWithAggregatesInput = {
   radiusMeter?: Prisma.IntWithAggregatesFilter<"PengaturanPresensi"> | number
   jamMasukDefault?: Prisma.StringWithAggregatesFilter<"PengaturanPresensi"> | string
   jamPulangDefault?: Prisma.StringWithAggregatesFilter<"PengaturanPresensi"> | string
+  timezone?: Prisma.StringWithAggregatesFilter<"PengaturanPresensi"> | string
   kodeAksesGuru?: Prisma.StringNullableWithAggregatesFilter<"PengaturanPresensi"> | string | null
   kodeAksesSiswa?: Prisma.StringNullableWithAggregatesFilter<"PengaturanPresensi"> | string | null
   kodeAksesLapor?: Prisma.StringNullableWithAggregatesFilter<"PengaturanPresensi"> | string | null
@@ -337,6 +349,7 @@ export type PengaturanPresensiCreateInput = {
   radiusMeter?: number
   jamMasukDefault?: string
   jamPulangDefault?: string
+  timezone?: string
   kodeAksesGuru?: string | null
   kodeAksesSiswa?: string | null
   kodeAksesLapor?: string | null
@@ -350,6 +363,7 @@ export type PengaturanPresensiUncheckedCreateInput = {
   radiusMeter?: number
   jamMasukDefault?: string
   jamPulangDefault?: string
+  timezone?: string
   kodeAksesGuru?: string | null
   kodeAksesSiswa?: string | null
   kodeAksesLapor?: string | null
@@ -363,6 +377,7 @@ export type PengaturanPresensiUpdateInput = {
   radiusMeter?: Prisma.IntFieldUpdateOperationsInput | number
   jamMasukDefault?: Prisma.StringFieldUpdateOperationsInput | string
   jamPulangDefault?: Prisma.StringFieldUpdateOperationsInput | string
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
   kodeAksesGuru?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesSiswa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesLapor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -376,6 +391,7 @@ export type PengaturanPresensiUncheckedUpdateInput = {
   radiusMeter?: Prisma.IntFieldUpdateOperationsInput | number
   jamMasukDefault?: Prisma.StringFieldUpdateOperationsInput | string
   jamPulangDefault?: Prisma.StringFieldUpdateOperationsInput | string
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
   kodeAksesGuru?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesSiswa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesLapor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -389,6 +405,7 @@ export type PengaturanPresensiCreateManyInput = {
   radiusMeter?: number
   jamMasukDefault?: string
   jamPulangDefault?: string
+  timezone?: string
   kodeAksesGuru?: string | null
   kodeAksesSiswa?: string | null
   kodeAksesLapor?: string | null
@@ -402,6 +419,7 @@ export type PengaturanPresensiUpdateManyMutationInput = {
   radiusMeter?: Prisma.IntFieldUpdateOperationsInput | number
   jamMasukDefault?: Prisma.StringFieldUpdateOperationsInput | string
   jamPulangDefault?: Prisma.StringFieldUpdateOperationsInput | string
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
   kodeAksesGuru?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesSiswa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesLapor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -415,6 +433,7 @@ export type PengaturanPresensiUncheckedUpdateManyInput = {
   radiusMeter?: Prisma.IntFieldUpdateOperationsInput | number
   jamMasukDefault?: Prisma.StringFieldUpdateOperationsInput | string
   jamPulangDefault?: Prisma.StringFieldUpdateOperationsInput | string
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
   kodeAksesGuru?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesSiswa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   kodeAksesLapor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -434,6 +453,7 @@ export type PengaturanPresensiCountOrderByAggregateInput = {
   radiusMeter?: Prisma.SortOrder
   jamMasukDefault?: Prisma.SortOrder
   jamPulangDefault?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
   kodeAksesGuru?: Prisma.SortOrder
   kodeAksesSiswa?: Prisma.SortOrder
   kodeAksesLapor?: Prisma.SortOrder
@@ -453,6 +473,7 @@ export type PengaturanPresensiMaxOrderByAggregateInput = {
   radiusMeter?: Prisma.SortOrder
   jamMasukDefault?: Prisma.SortOrder
   jamPulangDefault?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
   kodeAksesGuru?: Prisma.SortOrder
   kodeAksesSiswa?: Prisma.SortOrder
   kodeAksesLapor?: Prisma.SortOrder
@@ -466,6 +487,7 @@ export type PengaturanPresensiMinOrderByAggregateInput = {
   radiusMeter?: Prisma.SortOrder
   jamMasukDefault?: Prisma.SortOrder
   jamPulangDefault?: Prisma.SortOrder
+  timezone?: Prisma.SortOrder
   kodeAksesGuru?: Prisma.SortOrder
   kodeAksesSiswa?: Prisma.SortOrder
   kodeAksesLapor?: Prisma.SortOrder
@@ -487,6 +509,7 @@ export type PengaturanPresensiSelect<ExtArgs extends runtime.Types.Extensions.In
   radiusMeter?: boolean
   jamMasukDefault?: boolean
   jamPulangDefault?: boolean
+  timezone?: boolean
   kodeAksesGuru?: boolean
   kodeAksesSiswa?: boolean
   kodeAksesLapor?: boolean
@@ -502,13 +525,14 @@ export type PengaturanPresensiSelectScalar = {
   radiusMeter?: boolean
   jamMasukDefault?: boolean
   jamPulangDefault?: boolean
+  timezone?: boolean
   kodeAksesGuru?: boolean
   kodeAksesSiswa?: boolean
   kodeAksesLapor?: boolean
   updatedAt?: boolean
 }
 
-export type PengaturanPresensiOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "latitudeSekolah" | "longitudeSekolah" | "radiusMeter" | "jamMasukDefault" | "jamPulangDefault" | "kodeAksesGuru" | "kodeAksesSiswa" | "kodeAksesLapor" | "updatedAt", ExtArgs["result"]["pengaturanPresensi"]>
+export type PengaturanPresensiOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "latitudeSekolah" | "longitudeSekolah" | "radiusMeter" | "jamMasukDefault" | "jamPulangDefault" | "timezone" | "kodeAksesGuru" | "kodeAksesSiswa" | "kodeAksesLapor" | "updatedAt", ExtArgs["result"]["pengaturanPresensi"]>
 
 export type $PengaturanPresensiPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "PengaturanPresensi"
@@ -520,6 +544,7 @@ export type $PengaturanPresensiPayload<ExtArgs extends runtime.Types.Extensions.
     radiusMeter: number
     jamMasukDefault: string
     jamPulangDefault: string
+    timezone: string
     kodeAksesGuru: string | null
     kodeAksesSiswa: string | null
     kodeAksesLapor: string | null
@@ -899,6 +924,7 @@ export interface PengaturanPresensiFieldRefs {
   readonly radiusMeter: Prisma.FieldRef<"PengaturanPresensi", 'Int'>
   readonly jamMasukDefault: Prisma.FieldRef<"PengaturanPresensi", 'String'>
   readonly jamPulangDefault: Prisma.FieldRef<"PengaturanPresensi", 'String'>
+  readonly timezone: Prisma.FieldRef<"PengaturanPresensi", 'String'>
   readonly kodeAksesGuru: Prisma.FieldRef<"PengaturanPresensi", 'String'>
   readonly kodeAksesSiswa: Prisma.FieldRef<"PengaturanPresensi", 'String'>
   readonly kodeAksesLapor: Prisma.FieldRef<"PengaturanPresensi", 'String'>

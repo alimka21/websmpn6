@@ -48,33 +48,36 @@ function hitungJarakMeter(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Midnight WIB hari ini sebagai UTC Date.
- *  Server Hostinger UTC → tanpa ini "hari ini" bergeser hingga 7 jam. */
-function tanggalHariIni(): Date {
-  const wibStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); // "YYYY-MM-DD"
-  return new Date(`${wibStr}T00:00:00+07:00`);
+// Mapping timezone Indonesia ke offset string untuk konstruksi Date
+const TZ_OFFSETS: Record<string, string> = {
+  'Asia/Jakarta':  '+07:00', // WIB
+  'Asia/Makassar': '+08:00', // WITA
+  'Asia/Jayapura': '+09:00', // WIT
+};
+const tzOffset = (tz: string) => TZ_OFFSETS[tz] || '+07:00';
+
+/** Midnight lokal hari ini sebagai UTC Date, sesuai timezone sekolah.
+ *  Server Hostinger UTC → tanpa ini "hari ini" bergeser. */
+function tanggalHariIni(tz: string = 'Asia/Jakarta'): Date {
+  const str = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+  return new Date(`${str}T00:00:00${tzOffset(tz)}`);
 }
 
-/** Format Date ke "HH.mm" dalam timezone WIB — dipakai untuk response kiosk.
- *  Hostinger berjalan UTC; tanpa timeZone 07:30 WIB akan tampil "00.30". */
-function fmtWIB(d: Date): string {
-  return d.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+/** Format Date ke "HH.mm" sesuai timezone sekolah. */
+function fmtTZ(d: Date, tz: string = 'Asia/Jakarta'): string {
+  return d.toLocaleTimeString('id-ID', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
 }
 
-/** Bangun target waktu masuk/pulang dalam WIB dari string "HH:mm".
- *  Diperlukan agar perhitungan keterlambatan benar di server UTC. */
-function buildTargetWIB(referensi: Date, hhmm: string): Date {
+/** Bangun target waktu masuk/pulang dalam timezone sekolah dari string "HH:mm". */
+function buildTargetTZ(referensi: Date, hhmm: string, tz: string = 'Asia/Jakarta'): Date {
   const [jam, menit] = hhmm.split(':').map(Number);
-  // Geser ke WIB untuk ambil tanggal lokalnya
-  const wibDate = new Date(referensi.getTime() + 7 * 60 * 60 * 1000);
-  const dateStr  = wibDate.toISOString().slice(0, 10); // "YYYY-MM-DD" versi WIB
-  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00+07:00`);
+  const dateStr = referensi.toLocaleDateString('en-CA', { timeZone: tz });
+  return new Date(`${dateStr}T${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:00${tzOffset(tz)}`);
 }
 
-/** Parse "HH:mm" → Date hari ini jam tersebut dalam WIB.
- *  Setara buildTargetWIB tapi tanpa parameter referensi. */
-function jamKeDate(hhmm: string): Date {
-  return buildTargetWIB(new Date(), hhmm);
+/** Parse "HH:mm" → Date hari ini jam tersebut dalam timezone sekolah. */
+function jamKeDate(hhmm: string, tz: string = 'Asia/Jakarta'): Date {
+  return buildTargetTZ(new Date(), hhmm, tz);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,14 +91,15 @@ async function jalankanAutoCheckout(): Promise<void> {
     const cfg = await prisma.pengaturanPresensi.findFirst();
     if (!cfg) return;
 
+    const tz = cfg.timezone || 'Asia/Jakarta';
     const sekarang = new Date();
-    const batasWaktu = jamKeDate(cfg.jamPulangDefault);
+    const batasWaktu = jamKeDate(cfg.jamPulangDefault, tz);
 
     if (sekarang < batasWaktu) return;
 
     const { count } = await prisma.presensiGuru.updateMany({
       where: {
-        tanggal: tanggalHariIni(),
+        tanggal: tanggalHariIni(tz),
         waktuDatang: { not: null },
         waktuPulang: null,
         autoCheckout: false,
@@ -139,7 +143,9 @@ router.post('/upload/foto', uploadPresensi.single('foto'), async (req, res, next
 
 router.get('/guru-list', async (req, res, next) => {
   try {
-    const today = tanggalHariIni();
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -172,8 +178,8 @@ router.get('/guru-list', async (req, res, next) => {
           statusHariIni: presensi ? {
             sudahDatang: !!presensi.waktuDatang,
             sudahPulang: !!presensi.waktuPulang,
-            waktuDatang: presensi.waktuDatang ? fmtWIB(new Date(presensi.waktuDatang)) : undefined,
-            waktuPulang: presensi.waktuPulang ? fmtWIB(new Date(presensi.waktuPulang)) : undefined,
+            waktuDatang: presensi.waktuDatang ? fmtTZ(new Date(presensi.waktuDatang), tz) : undefined,
+            waktuPulang: presensi.waktuPulang ? fmtTZ(new Date(presensi.waktuPulang), tz) : undefined,
           } : undefined,
         };
       })
@@ -219,7 +225,8 @@ router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next)
       });
     }
 
-    const today = tanggalHariIni();
+    const tz = cfg.timezone || 'Asia/Jakarta';
+    const today = tanggalHariIni(tz);
     const existing = await prisma.presensiGuru.findUnique({
       where: { guruId_tanggal: { guruId, tanggal: today } },
     });
@@ -279,7 +286,8 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
       });
     }
 
-    const today = tanggalHariIni();
+    const tz = cfg.timezone || 'Asia/Jakarta';
+    const today = tanggalHariIni(tz);
     const existing = await prisma.presensiGuru.findUnique({
       where: { guruId_tanggal: { guruId, tanggal: today } },
     });
@@ -309,14 +317,14 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
 
 router.get('/guru/recent', async (req, res, next) => {
   try {
-    const today = tanggalHariIni();
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const limit = Number(req.query.limit) || 10;
-
-    const cfg = await prisma.pengaturanPresensi.findFirst();
-    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
 
     const data = await prisma.presensiGuru.findMany({
       where: {
@@ -341,7 +349,7 @@ router.get('/guru/recent', async (req, res, next) => {
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+        const targetMasuk = buildTargetTZ(p.waktuDatang, jamMasukDefault, tz);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
@@ -354,8 +362,8 @@ router.get('/guru/recent', async (req, res, next) => {
         id: p.id,
         nama: p.guru.nama,
         nip: p.guru.nip,
-        waktuDatang: p.waktuDatang ? fmtWIB(p.waktuDatang) : null,
-        waktuPulang: p.waktuPulang ? fmtWIB(p.waktuPulang) : null,
+        waktuDatang: p.waktuDatang ? fmtTZ(p.waktuDatang, tz) : null,
+        waktuPulang: p.waktuPulang ? fmtTZ(p.waktuPulang, tz) : null,
         keterlambatan,
         totalJam,
         autoCheckout: p.autoCheckout,
@@ -372,14 +380,14 @@ router.get('/guru/recent', async (req, res, next) => {
 
 router.get('/siswa/recent', async (req, res, next) => {
   try {
-    const today = tanggalHariIni();
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const limit = Number(req.query.limit) || 10;
-
-    const cfg = await prisma.pengaturanPresensi.findFirst();
-    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
 
     const data = await prisma.presensiSiswa.findMany({
       where: {
@@ -408,7 +416,7 @@ router.get('/siswa/recent', async (req, res, next) => {
       let tepatWaktu = true;
       let keterlambatan = 0;
 
-      const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+      const targetMasuk = buildTargetTZ(p.waktuDatang, jamMasukDefault, tz);
       if (p.waktuDatang > targetMasuk) {
         tepatWaktu = false;
         keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
@@ -420,7 +428,7 @@ router.get('/siswa/recent', async (req, res, next) => {
         nis: p.siswa.nis,
         kelas: p.siswa.kelas?.nama || '-',
         kelasId: p.siswa.kelasId || '',
-        waktu: fmtWIB(p.waktuDatang),
+        waktu: fmtTZ(p.waktuDatang, tz),
         tepatWaktu,
         keterlambatan,
       };
@@ -454,7 +462,8 @@ router.get('/guru/dashboard', async (req, res, next) => {
       const end   = new Date(Number(req.query.tahun), Number(req.query.bulan), 1);
       where = { tanggal: { gte: start, lt: end } };
     } else {
-      where = { tanggal: tanggalHariIni() };
+      const cfgTmp = await prisma.pengaturanPresensi.findFirst();
+      where = { tanggal: tanggalHariIni(cfgTmp?.timezone || 'Asia/Jakarta') };
     }
 
     const [rows, total] = await Promise.all([
@@ -468,16 +477,17 @@ router.get('/guru/dashboard', async (req, res, next) => {
       prisma.presensiGuru.count({ where }),
     ]);
 
-    // Ambil jam masuk default untuk hitung keterlambatan
+    // Ambil jam masuk default dan timezone untuk hitung keterlambatan
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Jakarta';
 
     const data = rows.map((p: any, i: number) => {
       let keterlambatan = 0;
       let totalJam = 0;
 
       if (p.waktuDatang) {
-        const targetMasuk = buildTargetWIB(p.waktuDatang, jamMasukDefault);
+        const targetMasuk = buildTargetTZ(p.waktuDatang, jamMasukDefault, tz);
         if (p.waktuDatang > targetMasuk) {
           keterlambatan = Math.floor((p.waktuDatang.getTime() - targetMasuk.getTime()) / 60_000);
         }
@@ -571,7 +581,8 @@ router.post('/siswa', validate(PresensiSiswaRfidSchema), async (req, res, next) 
       });
     }
 
-    const today = tanggalHariIni();
+    const cfgSiswa = await prisma.pengaturanPresensi.findFirst();
+    const today = tanggalHariIni(cfgSiswa?.timezone || 'Asia/Jakarta');
     const existing = await prisma.presensiSiswa.findUnique({
       where: { siswaId_tanggal: { siswaId: siswa.id, tanggal: today } },
     });
@@ -613,13 +624,14 @@ router.get('/pengaturan', async (req, res, next) => {
       radiusMeter:      100,
       jamMasukDefault:  '07:00',
       jamPulangDefault: '15:30',
+      timezone:         'Asia/Jakarta',
     });
   } catch (err) { next(err); }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7. PUT /api/presensi/pengaturan  — SUPER_ADMIN only
-// Body: { latitudeSekolah, longitudeSekolah, radiusMeter, jamMasukDefault, jamPulangDefault }
+// Body: { latitudeSekolah, longitudeSekolah, radiusMeter, jamMasukDefault, jamPulangDefault, timezone }
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
@@ -629,6 +641,7 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
       radiusMeter,
       jamMasukDefault,
       jamPulangDefault,
+      timezone,
     } = req.body;
 
     // Parse koordinat dari format Google Maps
@@ -656,12 +669,14 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
       }
     }
 
+    const validTimezones = ['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'];
     const payload = {
       latitudeSekolah,
       longitudeSekolah,
       radiusMeter: Number(radiusMeter) || 100,
       jamMasukDefault: String(jamMasukDefault || '07:00').trim(),
       jamPulangDefault: String(jamPulangDefault || '15:30').trim(),
+      timezone: validTimezones.includes(timezone) ? timezone : 'Asia/Jakarta',
     };
 
     const existing = await prisma.pengaturanPresensi.findFirst();
@@ -697,7 +712,8 @@ router.get('/siswa/dashboard', requireAuth, requireRole(['SUPER_ADMIN']), async 
       const end   = new Date(Number(req.query.tahun), Number(req.query.bulan), 1);
       tanggalWhere = { tanggal: { gte: start, lt: end } };
     } else {
-      tanggalWhere = { tanggal: tanggalHariIni() };
+      const cfgTmp2 = await prisma.pengaturanPresensi.findFirst();
+      tanggalWhere = { tanggal: tanggalHariIni(cfgTmp2?.timezone || 'Asia/Jakarta') };
     }
 
     const siswaWhere = search
@@ -780,7 +796,8 @@ router.delete('/siswa/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (re
 // GET /api/presensi/siswa/stats — statistik hari ini untuk kiosk
 router.get('/siswa/stats', async (req, res, next) => {
   try {
-    const today = tanggalHariIni();
+    const cfgStats = await prisma.pengaturanPresensi.findFirst();
+    const today = tanggalHariIni(cfgStats?.timezone || 'Asia/Jakarta');
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -838,7 +855,8 @@ router.get('/siswa/stats', async (req, res, next) => {
 
 router.get('/siswa/belum-hadir', async (req, res, next) => {
   try {
-    const today = tanggalHariIni();
+    const cfgBelum = await prisma.pengaturanPresensi.findFirst();
+    const today = tanggalHariIni(cfgBelum?.timezone || 'Asia/Jakarta');
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 

@@ -19,6 +19,7 @@ interface Pengaturan {
   radiusMeter: number;
   jamMasukDefault: string;
   jamPulangDefault: string;
+  timezone: string;
 }
 
 interface PengaturanForm {
@@ -26,6 +27,7 @@ interface PengaturanForm {
   radiusMeter: number;
   jamMasukDefault: string;
   jamPulangDefault: string;
+  timezone: string;
 }
 
 interface PresensiGuruRow {
@@ -43,13 +45,17 @@ interface PresensiSiswaRow {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const TZ = 'Asia/Jakarta';
+const TZ_LABELS: Record<string, string> = {
+  'Asia/Jakarta':  'WIB — Waktu Indonesia Barat (UTC+7)',
+  'Asia/Makassar': 'WITA — Waktu Indonesia Tengah (UTC+8)',
+  'Asia/Jayapura': 'WIT — Waktu Indonesia Timur (UTC+9)',
+};
 
-const fmtTime = (d: string | null) =>
-  d ? new Date(d).toLocaleTimeString('id-ID', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }) : '—';
+const fmtTime = (d: string | null, tz = 'Asia/Jakarta') =>
+  d ? new Date(d).toLocaleTimeString('id-ID', { timeZone: tz, hour: '2-digit', minute: '2-digit' }) : '—';
 
-const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString('id-ID', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const fmtDate = (d: string | null, tz = 'Asia/Jakarta') =>
+  d ? new Date(d).toLocaleDateString('id-ID', { timeZone: tz, day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 const fmtDurasi = (m: number | null) => {
   if (m === null) return '—';
@@ -57,16 +63,15 @@ const fmtDurasi = (m: number | null) => {
   return h > 0 ? `${h}j ${min}m` : `${min}m`;
 };
 
-// Konversi UTC ISO → "YYYY-MM-DDTHH:mm" dalam WIB untuk input datetime-local
-const toDatetimeLocal = (d: string | null) => {
+// Konversi UTC ISO → "YYYY-MM-DDTHH:mm" dalam timezone sekolah untuk input datetime-local
+const toDatetimeLocal = (d: string | null, tz = 'Asia/Jakarta') => {
   if (!d) return '';
-  const wib = new Date(d).toLocaleString('en-CA', {
-    timeZone: TZ,
+  const local = new Date(d).toLocaleString('en-CA', {
+    timeZone: tz,
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hour12: false,
   });
-  // en-CA format: "YYYY-MM-DD, HH:mm" → ubah ke "YYYY-MM-DDTHH:mm"
-  return wib.replace(', ', 'T').replace(/(\d{2}):(\d{2}).*/, '$1:$2');
+  return local.replace(', ', 'T').replace(/(\d{2}):(\d{2}).*/, '$1:$2');
 };
 
 const nowYear = new Date().getFullYear();
@@ -104,13 +109,14 @@ export default function PresensiAdmin() {
   // ── Pengaturan state ─────────────────────────────────────────────────────
   const [cfg, setCfg] = useState<Pengaturan>({
     latitudeSekolah: 0, longitudeSekolah: 0, radiusMeter: 100,
-    jamMasukDefault: '07:00', jamPulangDefault: '15:30',
+    jamMasukDefault: '07:00', jamPulangDefault: '15:30', timezone: 'Asia/Jakarta',
   });
   const [cfgForm, setCfgForm] = useState<PengaturanForm>({
     koordinatSekolah: '',
     radiusMeter: 100,
     jamMasukDefault: '07:00',
     jamPulangDefault: '15:30',
+    timezone: 'Asia/Jakarta',
   });
   const [savingCfg, setSavingCfg] = useState(false);
 
@@ -171,6 +177,7 @@ export default function PresensiAdmin() {
           radiusMeter: d.radiusMeter || 100,
           jamMasukDefault: d.jamMasukDefault || '07:00',
           jamPulangDefault: d.jamPulangDefault || '15:30',
+          timezone: d.timezone || 'Asia/Jakarta',
         });
       })
       .catch(() => {});
@@ -287,8 +294,8 @@ export default function PresensiAdmin() {
   // ── Edit guru presensi ───────────────────────────────────────────────────
   const openEdit = (row: PresensiGuruRow) => {
     setEditTarget(row);
-    setEditDatang(toDatetimeLocal(row.waktuDatang));
-    setEditPulang(toDatetimeLocal(row.waktuPulang));
+    setEditDatang(toDatetimeLocal(row.waktuDatang, cfg.timezone));
+    setEditPulang(toDatetimeLocal(row.waktuPulang, cfg.timezone));
   };
 
   const submitEdit = async () => {
@@ -571,9 +578,36 @@ export default function PresensiAdmin() {
                 <Clock className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-on-surface">Jam Default</h3>
-                <p className="text-sm text-on-surface-variant">Batas waktu untuk presensi dan auto-checkout</p>
+                <h3 className="font-semibold text-on-surface">Jam Default & Zona Waktu</h3>
+                <p className="text-sm text-on-surface-variant">Batas waktu presensi, auto-checkout, dan zona waktu sekolah</p>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-on-surface-variant">Zona Waktu Sekolah</label>
+              <div className="grid grid-cols-3 gap-3">
+                {(Object.entries(TZ_LABELS) as [string, string][]).map(([val, label]) => {
+                  const [kode, ...rest] = label.split(' — ');
+                  return (
+                    <label
+                      key={val}
+                      className={`cursor-pointer rounded-xl border-2 p-3 transition-colors ${cfgForm.timezone === val ? 'border-primary bg-primary/5' : 'border-outline-variant hover:border-primary/40'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="timezone"
+                        value={val}
+                        checked={cfgForm.timezone === val}
+                        onChange={() => setCfgForm(p => ({ ...p, timezone: val }))}
+                        className="sr-only"
+                      />
+                      <div className="font-bold text-sm text-primary">{kode}</div>
+                      <div className="text-xs text-on-surface-variant mt-0.5">{rest.join(' — ')}</div>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-on-surface-variant">Zona waktu dipakai untuk pencatatan jam presensi dan laporan</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -791,9 +825,9 @@ export default function PresensiAdmin() {
                   <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
                     <td className="px-4 py-3 text-on-surface-variant">{row.no}</td>
                     <td className="px-4 py-3 font-medium text-on-surface">{row.nama}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuPulang)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal, cfg.timezone)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang, cfg.timezone)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuPulang, cfg.timezone)}</td>
                     <td className="px-4 py-3 text-on-surface-variant">
                       {row.keterlambatan > 0 ? (
                         <span className="text-error font-medium">{row.keterlambatan} menit</span>
@@ -894,8 +928,8 @@ export default function PresensiAdmin() {
                     <td className="px-4 py-3 font-mono font-medium text-on-surface">{row.nis}</td>
                     <td className="px-4 py-3 font-medium text-on-surface">{row.nama}</td>
                     <td className="px-4 py-3 text-on-surface-variant">{row.kelas}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang, cfg.timezone)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal, cfg.timezone)}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => setDelSiswaId(row.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors" title="Hapus">
                         <Trash2 className="w-4 h-4" />
@@ -926,7 +960,7 @@ export default function PresensiAdmin() {
             </div>
             <div className="px-6 py-5 space-y-4">
               <p className="text-sm font-medium text-primary">{editTarget.nama}</p>
-              <p className="text-xs text-on-surface-variant">{fmtDate(editTarget.tanggal)}</p>
+              <p className="text-xs text-on-surface-variant">{fmtDate(editTarget.tanggal, cfg.timezone)}</p>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-on-surface-variant">Jam Datang</label>
                 <input type="datetime-local" value={editDatang} onChange={e => setEditDatang(e.target.value)}
