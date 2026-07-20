@@ -1,7 +1,8 @@
 node_modules/
 dist/
 server/dist/
-server/generated/
+# server/generated/ — JANGAN ignore, harus ikut deploy ke Hostinger
+# (prisma generate tidak selalu jalan saat npm install di shared hosting)
 server/.env
 .env
 .env.local
