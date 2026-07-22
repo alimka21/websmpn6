@@ -169,7 +169,7 @@ export default function LoginPage() {
                 value={identifier}
                 onChange={e => setIdentifier(e.target.value)}
                 disabled={isLoading}
-                autoComplete={role === 'SISWA' ? 'username' : 'email'}
+                autoComplete={role === 'SISWA' ? 'username' : role === 'GURU' ? 'username' : 'email'}
                 className="w-full px-4 py-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
               />
             </div>
