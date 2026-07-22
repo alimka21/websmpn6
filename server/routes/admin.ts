@@ -1812,7 +1812,10 @@ router.get('/absensi/export', async (req, res, next) => {
 
 router.get('/jenis-kebaikan', async (_req, res, next) => {
   try {
-    const data = await prisma.jenisKebaikan.findMany({ orderBy: { nama: 'asc' } });
+    const data = await prisma.jenisKebaikan.findMany({
+      orderBy: { nama: 'asc' },
+      include: { _count: { select: { laporan: true } } },
+    });
     res.json(data);
   } catch (err) { next(err); }
 });
@@ -1855,7 +1858,10 @@ router.delete('/jenis-kebaikan/:id', async (req, res, next) => {
 
 router.get('/jenis-pelanggaran', async (_req, res, next) => {
   try {
-    const data = await prisma.jenisPelanggaran.findMany({ orderBy: { nama: 'asc' } });
+    const data = await prisma.jenisPelanggaran.findMany({
+      orderBy: { nama: 'asc' },
+      include: { _count: { select: { laporan: true } } },
+    });
     res.json(data);
   } catch (err) { next(err); }
 });
@@ -1898,7 +1904,7 @@ router.delete('/jenis-pelanggaran/:id', async (req, res, next) => {
 
 router.get('/potensi/rekap', async (req, res, next) => {
   try {
-    const { dari, sampai, tipe, kelasId, siswaId, page: pg, limit: lm } = req.query as Record<string, string>;
+    const { dari, sampai, tipe, kelasId, siswaId, search, page: pg, limit: lm } = req.query as Record<string, string>;
     const page  = Math.max(1, Number(pg) || 1);
     const limit = Math.min(100, Number(lm) || 50);
 
@@ -1911,6 +1917,10 @@ router.get('/potensi/rekap', async (req, res, next) => {
       ...(tipe && tipe !== 'semua' ? { tipe: tipe.toUpperCase() } : {}),
       ...(siswaId ? { siswaId } : {}),
       ...(kelasId ? { siswa: { kelasId } } : {}),
+      ...(search ? { siswa: { OR: [
+        { nama: { contains: search } },
+        { nis:  { contains: search } },
+      ] } } : {}),
     };
 
     const [data, total] = await Promise.all([
@@ -1937,11 +1947,70 @@ router.get('/potensi/rekap', async (req, res, next) => {
         namaPelapor: l.namaPelapor,
         keterangan: l.keterangan,
         buktiUrl: l.buktiUrl,
+        jenisKebaikanId: l.jenisKebaikanId,
+        jenisPelanggaranId: l.jenisPelanggaranId,
         jenis: l.jenisKebaikan?.nama || l.jenisPelanggaran?.nama || '—',
-        siswa: { nama: l.siswa.nama, nis: l.siswa.nis, kelas: l.siswa.kelas.nama },
+        siswa: { id: l.siswaId, nama: l.siswa.nama, nis: l.siswa.nis, kelas: l.siswa.kelas?.nama ?? '—' },
       })),
       total, page, totalPages: Math.ceil(total / limit),
     });
+  } catch (err) { next(err); }
+});
+
+// GET /api/admin/potensi/siswa-list — list flat siswa untuk dropdown tambah laporan
+router.get('/potensi/siswa-list', async (_req, res, next) => {
+  try {
+    const list = await prisma.siswa.findMany({
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
+      orderBy: { nama: 'asc' },
+    });
+    res.json(list.map(s => ({ id: s.id, nama: s.nama, nis: s.nis, kelas: s.kelas?.nama ?? '—' })));
+  } catch (err) { next(err); }
+});
+
+// POST /api/admin/potensi/laporan — admin tambah laporan manual
+router.post('/potensi/laporan', async (req, res, next) => {
+  try {
+    const { siswaId, tipe, jenisId, poin, keterangan, namaPelapor, tanggal } = req.body;
+    if (!siswaId || !tipe || !poin) return res.status(400).json({ error: 'siswaId, tipe, dan poin wajib diisi' });
+
+    const data: any = {
+      siswaId,
+      tipe: String(tipe).toUpperCase(),
+      poin: Number(poin),
+      namaPelapor: String(namaPelapor || 'Admin').trim(),
+      tanggal: tanggal ? new Date(tanggal) : new Date(),
+      ...(keterangan ? { keterangan: String(keterangan).trim() } : {}),
+    };
+    if (tipe === 'KEBAIKAN' && jenisId)    data.jenisKebaikanId    = jenisId;
+    if (tipe === 'PELANGGARAN' && jenisId) data.jenisPelanggaranId = jenisId;
+
+    const result = await prisma.laporanPotensi.create({ data });
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// PUT /api/admin/potensi/laporan/:id — admin edit laporan
+router.put('/potensi/laporan/:id', async (req, res, next) => {
+  try {
+    const { tipe, jenisId, poin, keterangan, namaPelapor, tanggal } = req.body;
+    const data: any = {
+      ...(tipe        ? { tipe: String(tipe).toUpperCase() } : {}),
+      ...(poin        ? { poin: Number(poin) } : {}),
+      ...(namaPelapor ? { namaPelapor: String(namaPelapor).trim() } : {}),
+      ...(tanggal     ? { tanggal: new Date(tanggal) } : {}),
+      ...(keterangan !== undefined ? { keterangan: keterangan ? String(keterangan).trim() : null } : {}),
+    };
+    // Reset jenis lama, set yang baru
+    if (tipe === 'KEBAIKAN') {
+      data.jenisKebaikanId    = jenisId || null;
+      data.jenisPelanggaranId = null;
+    } else if (tipe === 'PELANGGARAN') {
+      data.jenisPelanggaranId = jenisId || null;
+      data.jenisKebaikanId    = null;
+    }
+    const result = await prisma.laporanPotensi.update({ where: { id: req.params.id }, data });
+    res.json(result);
   } catch (err) { next(err); }
 });
 
