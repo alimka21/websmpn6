@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, Home, GraduationCap, Clock, Users, IdCard, LogIn, LogOut, ArrowRight } from 'lucide-react';
+import { CheckCircle, Home, GraduationCap, Clock, Users, IdCard, LogIn, LogOut, ArrowRight, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -18,20 +18,20 @@ interface GuruInfo {
   };
 }
 
-interface RecentActivity {
-  id: string;
-  nama: string;
-  nip: string;
-  waktuDatang: string | null;
-  waktuPulang: string | null;
-  keterlambatan: number;
-  totalJam: number;
-  autoCheckout: boolean;
-}
-
 // USB HID RFID reader mengetik sangat cepat; threshold antar karakter < 50ms
 const RFID_SPEED_MS = 50;
 const RFID_MIN_LEN  = 4;
+
+function hitungTotalJam(masuk?: string, pulang?: string): string {
+  if (!masuk || !pulang) return '-';
+  const [mH, mM] = masuk.split(':').map(Number);
+  const [pH, pM] = pulang.split(':').map(Number);
+  const totalMenit = (pH * 60 + pM) - (mH * 60 + mM);
+  if (totalMenit <= 0) return '-';
+  const jam = Math.floor(totalMenit / 60);
+  const menit = totalMenit % 60;
+  return jam > 0 ? `${jam}j ${menit}m` : `${menit}m`;
+}
 
 export default function PresensiGuruKiosk() {
   const cfg        = useSiteConfig();
@@ -42,24 +42,23 @@ export default function PresensiGuruKiosk() {
     if (!sessionStorage.getItem('presensi_guru_ok')) navigate('/', { replace: true });
   }, [navigate]);
 
-  const [currentTime, setCurrentTime]     = useState(new Date());
-  const [presensiTZ, setPresensiTZ]       = useState('Asia/Jakarta');
-  const [nip, setNip]                     = useState('');
-  const [guru, setGuru]                   = useState<GuruInfo | null>(null);
-  const [loading, setLoading]             = useState(false);
-  const [submitting, setSubmitting]       = useState(false);
-  const [showSuccess, setShowSuccess]     = useState(false);
-  const [successData, setSuccessData]     = useState<{ nama: string; type: 'datang' | 'pulang'; time: string }>({
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [presensiTZ, setPresensiTZ]   = useState('Asia/Jakarta');
+  const [nip, setNip]                 = useState('');
+  const [guru, setGuru]               = useState<GuruInfo | null>(null);
+  const [loading, setLoading]         = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<{ nama: string; type: 'datang' | 'pulang'; time: string }>({
     nama: '', type: 'datang', time: '',
   });
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [attendedCount, setAttendedCount]   = useState(0);
-  const [totalGuru, setTotalGuru]           = useState(0);
+  const [guruList, setGuruList]       = useState<GuruInfo[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
 
-  const inputRef        = useRef<HTMLInputElement>(null);
-  const lastKeyTimeRef  = useRef<number>(0);
-  const rfidSpeedRef    = useRef<number>(0);  // jumlah karakter yg terdeteksi kecepatan RFID
-  const isRfidModeRef   = useRef<boolean>(false);
+  const inputRef       = useRef<HTMLInputElement>(null);
+  const lastKeyTimeRef = useRef<number>(0);
+  const rfidSpeedRef   = useRef<number>(0);
+  const isRfidModeRef  = useRef<boolean>(false);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -70,25 +69,21 @@ export default function PresensiGuruKiosk() {
     api.get('/api/presensi/pengaturan').then((d: any) => {
       if (d?.timezone) setPresensiTZ(d.timezone);
     }).catch(() => {});
-    loadRecentActivity();
-    loadGuruStats();
+    loadGuruList();
     inputRef.current?.focus();
   }, []);
 
-  const loadRecentActivity = async () => {
-    try {
-      const data = await api.get('/api/presensi/guru/recent?limit=20');
-      setRecentActivity(data);
-    } catch { /* silent */ }
-  };
-
-  const loadGuruStats = async () => {
+  const loadGuruList = async () => {
+    setLoadingList(true);
     try {
       const data = await api.get('/api/presensi/guru-list');
-      setTotalGuru(data.length);
-      setAttendedCount(data.filter((g: any) => g.statusHariIni?.sudahDatang).length);
+      setGuruList(data);
     } catch { /* silent */ }
+    finally { setLoadingList(false); }
   };
+
+  const hadirCount  = guruList.filter(g => g.statusHariIni.sudahDatang).length;
+  const totalGuru   = guruList.length;
 
   const doSubmit = useCallback(async (guruData: GuruInfo) => {
     const mode: 'datang' | 'pulang' = guruData.statusHariIni.sudahDatang ? 'pulang' : 'datang';
@@ -106,10 +101,9 @@ export default function PresensiGuruKiosk() {
         setShowSuccess(false);
         setGuru(null);
         setNip('');
-        rfidSpeedRef.current = 0;
+        rfidSpeedRef.current  = 0;
         isRfidModeRef.current = false;
-        loadRecentActivity();
-        loadGuruStats();
+        loadGuruList();
         inputRef.current?.focus();
       }, 3000);
     } catch (err: any) {
@@ -136,7 +130,6 @@ export default function PresensiGuruKiosk() {
         return;
       }
 
-      // Jika mode RFID → auto-submit langsung
       if (isRfidModeRef.current) {
         isRfidModeRef.current = false;
         await doSubmit(data);
@@ -150,7 +143,6 @@ export default function PresensiGuruKiosk() {
     }
   }, [doSubmit]);
 
-  // Deteksi kecepatan ketik untuk RFID
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNip(val);
@@ -169,17 +161,12 @@ export default function PresensiGuruKiosk() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
-    if (guru) {
-      doSubmit(guru);
-    } else {
-      doSearch(nip);
-    }
+    if (guru) doSubmit(guru);
+    else doSearch(nip);
   };
 
-  // Auto-submit setelah 150ms berhenti ketik — khusus RFID (kecepatan tinggi)
   useEffect(() => {
     if (!nip || guru || loading) return;
-
     const timer = setTimeout(() => {
       if (rfidSpeedRef.current >= RFID_MIN_LEN && nip.length >= RFID_MIN_LEN) {
         isRfidModeRef.current = true;
@@ -187,7 +174,6 @@ export default function PresensiGuruKiosk() {
       }
       rfidSpeedRef.current = 0;
     }, 150);
-
     return () => clearTimeout(timer);
   }, [nip, guru, loading, doSearch]);
 
@@ -243,9 +229,19 @@ export default function PresensiGuruKiosk() {
       {/* Status Bar */}
       <div className="bg-white border-b border-[#e2e8f0] px-6 py-3">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[#64748b]">
-            <Users className="w-4 h-4 text-[#1e40af]" />
-            <span>Kehadiran hari ini: <span className="font-semibold text-[#0f172a]">{attendedCount}/{totalGuru}</span> guru</span>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-sm text-[#64748b]">
+              <Users className="w-4 h-4 text-[#1e40af]" />
+              <span>Total Guru: <span className="font-semibold text-[#0f172a]">{totalGuru}</span></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                {hadirCount} Hadir
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                {Math.max(0, totalGuru - hadirCount)} Belum Hadir
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2 text-[#1e40af] font-semibold text-sm">
             <span className="relative flex h-2 w-2">
@@ -283,26 +279,23 @@ export default function PresensiGuruKiosk() {
         </div>
       )}
 
-      <main className="max-w-[1400px] mx-auto p-6 flex gap-6">
-        {/* Center: Scan Card */}
-        <section className="flex-1 flex items-start justify-center pt-12">
-          <div className="w-full max-w-[520px] bg-white rounded-3xl p-10 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0]">
-            {/* Icon */}
-            <div className="mb-8 flex justify-center">
-              <div className="w-36 h-36 border-2 border-dashed border-[#c4c5d5] rounded-2xl flex items-center justify-center bg-[#f8fafc]">
-                <IdCard className="w-16 h-16 text-[#64748b]" />
+      <main className="max-w-[1400px] mx-auto px-6 py-8 space-y-8">
+
+        {/* ── Scan Card (tengah) ── */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-[560px] bg-white rounded-3xl p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] border border-[#e2e8f0]">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 border-2 border-dashed border-[#c4c5d5] rounded-xl flex items-center justify-center bg-[#f8fafc] flex-shrink-0">
+                <IdCard className="w-7 h-7 text-[#64748b]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[#0f172a]">Scan RFID atau Masukkan NIP</h2>
+                <p className="text-sm text-[#64748b]">Tempelkan kartu ke scanner, atau ketik NIP lalu Enter.</p>
               </div>
             </div>
 
-            <h2 className="text-3xl font-bold text-[#0f172a] text-center mb-2">
-              Scan RFID atau Masukkan NIP
-            </h2>
-            <p className="text-sm text-[#64748b] text-center mb-8">
-              Tempelkan kartu RFID ke scanner, atau ketik NIP secara manual.
-            </p>
-
             {/* Input */}
-            <form onSubmit={e => { e.preventDefault(); guru ? doSubmit(guru) : doSearch(nip); }} className="mb-6">
+            <form onSubmit={e => { e.preventDefault(); guru ? doSubmit(guru) : doSearch(nip); }} className="mb-4">
               <div className="relative">
                 <input
                   ref={inputRef}
@@ -311,7 +304,7 @@ export default function PresensiGuruKiosk() {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="NIP atau Kode RFID..."
-                  className="w-full px-6 py-4 text-xl text-center border-2 border-[#e2e8f0] bg-white rounded-xl focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all placeholder:text-[#c4c5d5]"
+                  className="w-full px-5 py-3.5 text-lg text-center border-2 border-[#e2e8f0] bg-white rounded-xl focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all placeholder:text-[#c4c5d5]"
                   disabled={loading || submitting}
                   autoFocus
                 />
@@ -321,7 +314,7 @@ export default function PresensiGuruKiosk() {
                     onClick={() => doSearch(nip)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1e40af] hover:text-[#1e3a8a]"
                   >
-                    <ArrowRight className="w-6 h-6" />
+                    <ArrowRight className="w-5 h-5" />
                   </button>
                 )}
               </div>
@@ -329,16 +322,16 @@ export default function PresensiGuruKiosk() {
 
             {/* Guru Card + Absen Button */}
             {guru ? (
-              <div className="space-y-4">
-                <div className={`border rounded-xl p-5 ${
+              <div className="space-y-3">
+                <div className={`border rounded-xl p-4 ${
                   mode === 'datang' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'
                 }`}>
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-14 h-14 bg-[#1e40af] rounded-full flex items-center justify-center text-white flex-shrink-0">
-                      <GraduationCap className="w-7 h-7" />
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-11 h-11 bg-[#1e40af] rounded-full flex items-center justify-center text-white flex-shrink-0">
+                      <GraduationCap className="w-6 h-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-[#0f172a] truncate">{guru.nama}</h3>
+                      <h3 className="font-semibold text-[#0f172a] truncate">{guru.nama}</h3>
                       <p className="text-sm text-[#64748b]">NIP: {guru.nip}</p>
                     </div>
                   </div>
@@ -351,18 +344,18 @@ export default function PresensiGuruKiosk() {
                 <button
                   onClick={() => doSubmit(guru)}
                   disabled={submitting}
-                  className={`w-full py-4 text-white rounded-xl disabled:opacity-50 font-semibold text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 ${
+                  className={`w-full py-3.5 text-white rounded-xl disabled:opacity-50 font-semibold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 ${
                     mode === 'datang' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                 >
                   {submitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                       Menyimpan...
                     </>
                   ) : (
                     <>
-                      {mode === 'datang' ? <LogIn className="w-5 h-5" /> : <LogOut className="w-5 h-5" />}
+                      {mode === 'datang' ? <LogIn className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
                       Presensi {mode === 'datang' ? 'Masuk' : 'Pulang'} Sekarang
                     </>
                   )}
@@ -378,86 +371,136 @@ export default function PresensiGuruKiosk() {
               <button
                 onClick={() => doSearch(nip)}
                 disabled={loading || !nip.trim()}
-                className="w-full py-4 bg-[#1e40af] text-white rounded-xl hover:bg-[#1e3a8a] disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-all shadow-md"
+                className="w-full py-3.5 bg-[#1e40af] text-white rounded-xl hover:bg-[#1e3a8a] disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base transition-all shadow-md"
               >
                 {loading ? 'Mencari...' : 'Cari & Absen'}
               </button>
             )}
-
-            <p className="text-xs text-center text-[#64748b] mt-6 flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
-              Tempelkan kartu RFID ke scanner, atau ketik NIP lalu tekan Enter
-            </p>
           </div>
-        </section>
+        </div>
 
-        {/* Right Sidebar: Activity */}
-        <aside className="w-[400px] bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
-          <div className="px-6 py-5 border-b border-[#f1f5f9]">
-            <h3 className="text-lg font-bold text-[#0f172a] mb-4">Aktivitas Hari Ini</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-green-50 rounded-lg p-3 text-center border border-green-200">
-                <div className="text-2xl font-bold text-green-700">{attendedCount}</div>
-                <div className="text-[10px] text-green-600 font-medium uppercase">Hadir</div>
-              </div>
-              <div className="bg-red-50 rounded-lg p-3 text-center border border-red-200">
-                <div className="text-2xl font-bold text-red-700">{Math.max(0, totalGuru - attendedCount)}</div>
-                <div className="text-[10px] text-red-600 font-medium uppercase">Belum</div>
-              </div>
-              <div className="bg-[#f8fafc] rounded-lg p-3 text-center border border-[#e2e8f0]">
-                <div className="text-2xl font-bold text-[#0f172a]">{totalGuru}</div>
-                <div className="text-[10px] text-[#64748b] font-medium uppercase">Total</div>
-              </div>
-            </div>
+        {/* ── Tabel Rekap Presensi Hari Ini ── */}
+        <section className="bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
+            <h3 className="text-base font-bold text-[#0f172a]">Rekap Presensi Guru Hari Ini</h3>
+            <button
+              onClick={loadGuruList}
+              disabled={loadingList}
+              className="flex items-center gap-1.5 text-xs text-[#1e40af] hover:text-[#1e3a8a] disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingList ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-[#f1f5f9]">
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-16 text-[#64748b]">
-                <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm font-medium">Belum ada guru yang hadir</p>
-              </div>
-            ) : (
-              recentActivity.map((activity) => (
-                <div key={activity.id} className="px-6 py-4 hover:bg-[#f8fafc] transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
-                      <GraduationCap className="w-5 h-5 text-[#1e40af]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[#0f172a] truncate">{activity.nama}</div>
-                      <div className="text-xs text-[#64748b]">NIP: {activity.nip}</div>
-                    </div>
-                    <div className="text-right flex-shrink-0 min-w-[90px]">
-                      {activity.waktuDatang && (
-                        <div className="text-xs font-semibold text-green-600">
-                          Masuk {activity.waktuDatang}
-                          {activity.keterlambatan > 0 && (
-                            <span className="ml-1 text-red-600">(T+{activity.keterlambatan}m)</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wide w-10">No</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] uppercase tracking-wide">Nama Guru</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-32">Jam Datang</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-32">Jam Pulang</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-28">Total Jam</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-28">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#f1f5f9]">
+                {loadingList ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-[#64748b]">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[#1e40af]/30 border-t-[#1e40af] rounded-full animate-spin" />
+                        <span className="text-sm">Memuat data...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : guruList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-[#64748b]">
+                      <GraduationCap className="w-10 h-10 mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">Tidak ada data guru</p>
+                    </td>
+                  </tr>
+                ) : (
+                  guruList.map((g, idx) => {
+                    const { sudahDatang, sudahPulang, waktuDatang, waktuPulang } = g.statusHariIni;
+                    const totalJam = hitungTotalJam(waktuDatang, waktuPulang);
+                    return (
+                      <tr
+                        key={g.id}
+                        className={`hover:bg-[#f8fafc] transition-colors ${
+                          sudahDatang ? '' : 'opacity-60'
+                        }`}
+                      >
+                        <td className="px-4 py-3 text-[#64748b] text-center text-xs">{idx + 1}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#dde1ff] rounded-full flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-4 h-4 text-[#1e40af]" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-[#0f172a]">{g.nama}</div>
+                              <div className="text-xs text-[#64748b]">NIP: {g.nip}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {waktuDatang ? (
+                            <span className="font-semibold text-green-700">{waktuDatang}</span>
+                          ) : (
+                            <span className="text-[#c4c5d5]">—</span>
                           )}
-                        </div>
-                      )}
-                      {activity.waktuPulang && (
-                        <div className="text-xs font-semibold text-blue-600">
-                          Pulang {activity.waktuPulang}
-                        </div>
-                      )}
-                      {!activity.waktuDatang && (
-                        <div className="text-xs text-[#c4c5d5]">Belum hadir</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {waktuPulang ? (
+                            <span className="font-semibold text-blue-700">{waktuPulang}</span>
+                          ) : (
+                            <span className="text-[#c4c5d5]">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {totalJam !== '-' ? (
+                            <span className="text-[#0f172a] font-medium">{totalJam}</span>
+                          ) : (
+                            <span className="text-[#c4c5d5]">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {sudahPulang ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                              Pulang
+                            </span>
+                          ) : sudahDatang ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                              Hadir
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                              Belum Hadir
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        </aside>
+
+          {guruList.length > 0 && (
+            <div className="px-6 py-3 border-t border-[#f1f5f9] bg-[#f8fafc] flex items-center gap-4 text-xs text-[#64748b]">
+              <span>Total: <strong className="text-[#0f172a]">{totalGuru}</strong> guru</span>
+              <span className="text-green-600 font-semibold">{hadirCount} hadir</span>
+              <span className="text-red-600 font-semibold">{Math.max(0, totalGuru - hadirCount)} belum hadir</span>
+            </div>
+          )}
+        </section>
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e2e8f0] px-6 py-3">
-        <p className="text-center text-[#64748b] text-[11px]">
-          © 2026 Sistem Presensi Digital
-        </p>
+      <footer className="py-4 text-center text-[#64748b] text-[11px]">
+        © 2026 Sistem Presensi Digital
       </footer>
     </div>
   );
