@@ -33,6 +33,7 @@ export type PresensiGuruMinAggregateOutputType = {
   fotoDatang: string | null
   fotoPulang: string | null
   autoCheckout: boolean | null
+  autoAbsent: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,6 +47,7 @@ export type PresensiGuruMaxAggregateOutputType = {
   fotoDatang: string | null
   fotoPulang: string | null
   autoCheckout: boolean | null
+  autoAbsent: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -59,6 +61,7 @@ export type PresensiGuruCountAggregateOutputType = {
   fotoDatang: number
   fotoPulang: number
   autoCheckout: number
+  autoAbsent: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -74,6 +77,7 @@ export type PresensiGuruMinAggregateInputType = {
   fotoDatang?: true
   fotoPulang?: true
   autoCheckout?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -87,6 +91,7 @@ export type PresensiGuruMaxAggregateInputType = {
   fotoDatang?: true
   fotoPulang?: true
   autoCheckout?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -100,6 +105,7 @@ export type PresensiGuruCountAggregateInputType = {
   fotoDatang?: true
   fotoPulang?: true
   autoCheckout?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -186,6 +192,7 @@ export type PresensiGuruGroupByOutputType = {
   fotoDatang: string | null
   fotoPulang: string | null
   autoCheckout: boolean
+  autoAbsent: boolean
   createdAt: Date
   updatedAt: Date
   _count: PresensiGuruCountAggregateOutputType | null
@@ -220,6 +227,7 @@ export type PresensiGuruWhereInput = {
   fotoDatang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   fotoPulang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   autoCheckout?: Prisma.BoolFilter<"PresensiGuru"> | boolean
+  autoAbsent?: Prisma.BoolFilter<"PresensiGuru"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
   guru?: Prisma.XOR<Prisma.GuruScalarRelationFilter, Prisma.GuruWhereInput>
@@ -234,6 +242,7 @@ export type PresensiGuruOrderByWithRelationInput = {
   fotoDatang?: Prisma.SortOrderInput | Prisma.SortOrder
   fotoPulang?: Prisma.SortOrderInput | Prisma.SortOrder
   autoCheckout?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   guru?: Prisma.GuruOrderByWithRelationInput
@@ -253,6 +262,7 @@ export type PresensiGuruWhereUniqueInput = Prisma.AtLeast<{
   fotoDatang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   fotoPulang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   autoCheckout?: Prisma.BoolFilter<"PresensiGuru"> | boolean
+  autoAbsent?: Prisma.BoolFilter<"PresensiGuru"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
   guru?: Prisma.XOR<Prisma.GuruScalarRelationFilter, Prisma.GuruWhereInput>
@@ -267,6 +277,7 @@ export type PresensiGuruOrderByWithAggregationInput = {
   fotoDatang?: Prisma.SortOrderInput | Prisma.SortOrder
   fotoPulang?: Prisma.SortOrderInput | Prisma.SortOrder
   autoCheckout?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PresensiGuruCountOrderByAggregateInput
@@ -286,6 +297,7 @@ export type PresensiGuruScalarWhereWithAggregatesInput = {
   fotoDatang?: Prisma.StringNullableWithAggregatesFilter<"PresensiGuru"> | string | null
   fotoPulang?: Prisma.StringNullableWithAggregatesFilter<"PresensiGuru"> | string | null
   autoCheckout?: Prisma.BoolWithAggregatesFilter<"PresensiGuru"> | boolean
+  autoAbsent?: Prisma.BoolWithAggregatesFilter<"PresensiGuru"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PresensiGuru"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PresensiGuru"> | Date | string
 }
@@ -298,6 +310,7 @@ export type PresensiGuruCreateInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   guru: Prisma.GuruCreateNestedOneWithoutPresensiGuruInput
@@ -312,6 +325,7 @@ export type PresensiGuruUncheckedCreateInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -324,6 +338,7 @@ export type PresensiGuruUpdateInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   guru?: Prisma.GuruUpdateOneRequiredWithoutPresensiGuruNestedInput
@@ -338,6 +353,7 @@ export type PresensiGuruUncheckedUpdateInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -351,6 +367,7 @@ export type PresensiGuruCreateManyInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -363,6 +380,7 @@ export type PresensiGuruUpdateManyMutationInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -376,6 +394,7 @@ export type PresensiGuruUncheckedUpdateManyInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -410,6 +429,7 @@ export type PresensiGuruCountOrderByAggregateInput = {
   fotoDatang?: Prisma.SortOrder
   fotoPulang?: Prisma.SortOrder
   autoCheckout?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -423,6 +443,7 @@ export type PresensiGuruMaxOrderByAggregateInput = {
   fotoDatang?: Prisma.SortOrder
   fotoPulang?: Prisma.SortOrder
   autoCheckout?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -436,6 +457,7 @@ export type PresensiGuruMinOrderByAggregateInput = {
   fotoDatang?: Prisma.SortOrder
   fotoPulang?: Prisma.SortOrder
   autoCheckout?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -490,6 +512,7 @@ export type PresensiGuruCreateWithoutGuruInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -502,6 +525,7 @@ export type PresensiGuruUncheckedCreateWithoutGuruInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -544,6 +568,7 @@ export type PresensiGuruScalarWhereInput = {
   fotoDatang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   fotoPulang?: Prisma.StringNullableFilter<"PresensiGuru"> | string | null
   autoCheckout?: Prisma.BoolFilter<"PresensiGuru"> | boolean
+  autoAbsent?: Prisma.BoolFilter<"PresensiGuru"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PresensiGuru"> | Date | string
 }
@@ -556,6 +581,7 @@ export type PresensiGuruCreateManyGuruInput = {
   fotoDatang?: string | null
   fotoPulang?: string | null
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -568,6 +594,7 @@ export type PresensiGuruUpdateWithoutGuruInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -580,6 +607,7 @@ export type PresensiGuruUncheckedUpdateWithoutGuruInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -592,6 +620,7 @@ export type PresensiGuruUncheckedUpdateManyWithoutGuruInput = {
   fotoDatang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fotoPulang?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   autoCheckout?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -607,6 +636,7 @@ export type PresensiGuruSelect<ExtArgs extends runtime.Types.Extensions.Internal
   fotoDatang?: boolean
   fotoPulang?: boolean
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   guru?: boolean | Prisma.GuruDefaultArgs<ExtArgs>
@@ -623,11 +653,12 @@ export type PresensiGuruSelectScalar = {
   fotoDatang?: boolean
   fotoPulang?: boolean
   autoCheckout?: boolean
+  autoAbsent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PresensiGuruOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "guruId" | "tanggal" | "waktuDatang" | "waktuPulang" | "fotoDatang" | "fotoPulang" | "autoCheckout" | "createdAt" | "updatedAt", ExtArgs["result"]["presensiGuru"]>
+export type PresensiGuruOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "guruId" | "tanggal" | "waktuDatang" | "waktuPulang" | "fotoDatang" | "fotoPulang" | "autoCheckout" | "autoAbsent" | "createdAt" | "updatedAt", ExtArgs["result"]["presensiGuru"]>
 export type PresensiGuruInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   guru?: boolean | Prisma.GuruDefaultArgs<ExtArgs>
 }
@@ -646,6 +677,7 @@ export type $PresensiGuruPayload<ExtArgs extends runtime.Types.Extensions.Intern
     fotoDatang: string | null
     fotoPulang: string | null
     autoCheckout: boolean
+    autoAbsent: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["presensiGuru"]>
@@ -1026,6 +1058,7 @@ export interface PresensiGuruFieldRefs {
   readonly fotoDatang: Prisma.FieldRef<"PresensiGuru", 'String'>
   readonly fotoPulang: Prisma.FieldRef<"PresensiGuru", 'String'>
   readonly autoCheckout: Prisma.FieldRef<"PresensiGuru", 'Boolean'>
+  readonly autoAbsent: Prisma.FieldRef<"PresensiGuru", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"PresensiGuru", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PresensiGuru", 'DateTime'>
 }

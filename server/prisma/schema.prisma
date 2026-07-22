@@ -60,6 +60,7 @@ model Guru {
   userId        String  @unique
   user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   nip           String  @unique
+  rfidKode      String? @unique @db.VarChar(50)
   nama          String
   mataPelajaran String  // legacy — dipertahankan untuk backward compat
   fotoUrl       String?
@@ -269,6 +270,7 @@ model PresensiGuru {
   fotoDatang   String?   @db.LongText // Base64 foto saat datang
   fotoPulang   String?   @db.LongText // Base64 foto saat pulang
   autoCheckout Boolean   @default(false) // true jika diisi otomatis oleh cron
+  autoAbsent   Boolean   @default(false) // true jika dibuat otomatis karena tidak hadir
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -305,6 +307,7 @@ model AbsensiSiswa {
   tanggal     DateTime // DATE saja (tanpa jam)
   status      String   // SAKIT | IZIN | ALFA
   keterangan  String?  @db.Text
+  autoAbsent  Boolean  @default(false) // true jika dibuat otomatis karena tidak hadir
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

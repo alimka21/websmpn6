@@ -55,7 +55,7 @@ import adminRoutes from './routes/admin';
 import guruRoutes from './routes/guru';
 import siswaRoutes from './routes/siswa';
 import publicRoutes from './routes/public';
-import presensiRoutes, { startAutoCheckoutCron } from './routes/presensi';
+import presensiRoutes, { startAutoCheckoutCron, startAutoAbsentCron } from './routes/presensi';
 import dokumenRoutes from './routes/dokumen';
 import agendaRoutes from './routes/agenda';
 
@@ -387,6 +387,7 @@ app.use("/api/agenda", agendaRoutes);
 app.use("/api", publicRoutes);
 
 startAutoCheckoutCron();
+startAutoAbsentCron();
 
 // Global Error Handler
 app.use(errorHandler);

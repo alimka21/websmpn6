@@ -144,7 +144,7 @@ export const AddSoalSchema = z.object({
   teks:       z.string().min(1, 'Teks soal wajib diisi'),
   imageUrl:   z.string().optional().nullable(),
   tipe:       z.enum(
-    ['PILIHAN_GANDA', 'PILIHAN_GANDA_KOMPLEKS', 'BENAR_SALAH', 'ISIAN_SINGKAT', 'URAIAN_SINGKAT', 'ESAI'],
+    ['PILIHAN_GANDA', 'PG_KOMPLEKS', 'BENAR_SALAH', 'ISIAN_SINGKAT', 'URAIAN_SINGKAT', 'ESAI'],
     { message: 'Tipe soal tidak valid' }
   ),
   opsi:       z.array(OpsiInputSchema).optional().default([]),
@@ -183,11 +183,16 @@ export const SaveAnswersSchema = z.object({
    PRESENSI — Guru & Siswa
 ───────────────────────────────────────────────────────────────── */
 export const PresensiGuruSchema = z.object({
-  guruId:    z.string().min(1, 'ID guru wajib diisi'),
+  guruId:    z.string().optional(),
+  nip:       z.string().optional(),
+  rfidKode:  z.string().optional(),
   latitude:  z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   fotoUrl:   z.string().optional().nullable(),
-});
+}).refine(
+  d => !!(d.guruId || d.nip || d.rfidKode),
+  { message: 'Salah satu dari guruId, nip, atau rfidKode wajib diisi' }
+);
 
 export const PresensiSiswaRfidSchema = z.object({
   siswaId:  z.string().optional(),

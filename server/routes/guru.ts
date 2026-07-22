@@ -1,5 +1,40 @@
 // server/routes/guru.ts
 import { Router } from 'express';
+
+// ── Timezone helpers ──────────────────────────────────────────────────────────
+const TZ_OFFSETS_GURU: Record<string, string> = {
+  'Asia/Jakarta':  '+07:00',
+  'Asia/Makassar': '+08:00',
+  'Asia/Jayapura': '+09:00',
+};
+const TZ_LABEL_GURU: Record<string, string> = {
+  'Asia/Jakarta':  'WIB',
+  'Asia/Makassar': 'WITA',
+  'Asia/Jayapura': 'WIT',
+};
+
+/**
+ * Parse string "YYYY-MM-DDTHH:mm" dari datetime-local input sebagai waktu lokal
+ * sekolah (bukan UTC server). Frontend tidak punya TZ info, backend harus append.
+ */
+function parseDTLocal(dt: string, tz: string = 'Asia/Jakarta'): Date {
+  const offset = TZ_OFFSETS_GURU[tz] || '+07:00';
+  const base   = (dt || '').slice(0, 16); // "YYYY-MM-DDTHH:mm"
+  return new Date(`${base}:00${offset}`);
+}
+
+/** Format Date ke "HH.mm" dalam school timezone untuk laporan. */
+function fmtTimeGuru(dt: Date | null | undefined, tz: string = 'Asia/Jakarta'): string {
+  if (!dt) return '-';
+  return new Date(dt).toLocaleTimeString('id-ID', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+}
+
+/** Format Date ke tanggal dalam school timezone untuk laporan. */
+function fmtDateGuru(dt: Date | null | undefined, tz: string = 'Asia/Jakarta'): string {
+  if (!dt) return '-';
+  return new Date(dt).toLocaleDateString('id-ID', { timeZone: tz, day: 'numeric', month: 'long', year: 'numeric' });
+}
+// ─────────────────────────────────────────────────────────────────────────────
 import bcrypt from 'bcryptjs';
 import ExcelJS from 'exceljs';
 import multer from 'multer';
@@ -290,7 +325,8 @@ router.get('/siswa', async (req, res, next) => {
       where: { kelasId: String(kelasId) },
       include: {
         user: { select: { id: true, email: true, isActive: true } }
-      }
+      },
+      orderBy: { nama: 'asc' },
     });
     res.json(siswa);
   } catch(error) { next(error); }
@@ -415,9 +451,13 @@ router.post('/ujian', validate(CreateUjianSchema), async (req, res, next) => {
       return res.status(400).json({ error: "Semua field wajib diisi" });
     }
 
+    // Baca timezone sekolah agar "2026-07-22T10:00" diinterpretasikan sebagai WITA/WIB/WIT
+    const cfgUjian = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzUjian  = cfgUjian?.timezone || 'Asia/Jakarta';
+
     // Validasi waktu: tanggalSelesai harus di masa depan & lebih besar dari mulai
-    const tMulai = new Date(tanggalMulai);
-    const tSelesai = new Date(tanggalSelesai);
+    const tMulai   = parseDTLocal(tanggalMulai, tzUjian);
+    const tSelesai = parseDTLocal(tanggalSelesai, tzUjian);
     if (tSelesai <= new Date()) {
       return res.status(400).json({ error: "Waktu ditutup harus lebih besar dari waktu saat ini" });
     }
@@ -489,13 +529,17 @@ router.patch('/ujian/:id', validate(UpdateUjianSchema), async (req, res, next) =
     const { judul, mataPelajaran, tipeUjian, durasi, tanggalMulai, tanggalSelesai,
             acak, acakOpsi, tampilkanPembahasan, tampilkanNilai, kelasIds } = req.body;
 
+    // Baca timezone sekolah untuk parse datetime-local
+    const cfgEdit = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzEdit  = cfgEdit?.timezone || 'Asia/Jakarta';
+
     // Validasi waktu kalau di-update
     if (tanggalSelesai) {
-      const tSelesai = new Date(tanggalSelesai);
+      const tSelesai = parseDTLocal(tanggalSelesai, tzEdit);
       if (tSelesai <= new Date()) {
         return res.status(400).json({ error: "Waktu ditutup harus lebih besar dari waktu saat ini" });
       }
-      if (tanggalMulai && tSelesai <= new Date(tanggalMulai)) {
+      if (tanggalMulai && tSelesai <= parseDTLocal(tanggalMulai, tzEdit)) {
         return res.status(400).json({ error: "Waktu ditutup harus lebih besar dari waktu dibuka" });
       }
     }
@@ -512,8 +556,8 @@ router.patch('/ujian/:id', validate(UpdateUjianSchema), async (req, res, next) =
         ...(mataPelajaran && {mataPelajaran: toTitleCase(mataPelajaran)}),
         ...(tipeUjian && {tipeUjian}),
         ...(durasi && {durasi: Number(durasi)}),
-        ...(tanggalMulai && {tanggalMulai: new Date(tanggalMulai)}),
-        ...(tanggalSelesai && {tanggalSelesai: new Date(tanggalSelesai)}),
+        ...(tanggalMulai   && { tanggalMulai:   parseDTLocal(tanggalMulai, tzEdit) }),
+        ...(tanggalSelesai && { tanggalSelesai: parseDTLocal(tanggalSelesai, tzEdit) }),
         ...(acak !== undefined && {acak: !!acak}),
         ...(acakOpsi !== undefined && {acakOpsi: !!acakOpsi}),
         ...(tampilkanPembahasan !== undefined && {tampilkanPembahasan: !!tampilkanPembahasan}),
@@ -938,7 +982,8 @@ router.get('/ujian/:id/hasil', async (req, res, next) => {
           where: { ujianId: ujian.id },
           include: { pelanggaran: true }
         }
-      }
+      },
+      orderBy: [{ kelas: { tingkat: 'asc' } }, { kelas: { nama: 'asc' } }, { nama: 'asc' }],
     });
 
     const result = siswaList.map(s => {
@@ -1272,6 +1317,9 @@ router.get('/ujian/:id/export', async (req, res, next) => {
     });
     if (!ujian) return res.status(404).json({ error: 'Ujian tidak ditemukan' });
 
+    const cfgExp = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzExp  = cfgExp?.timezone || 'Asia/Jakarta';
+
     const format = req.query.format || 'xlsx';
     const kelasIds = ujian.kelas.map(k => k.kelasId);
     const kelasNama = ujian.kelas.map(k => (k as any).kelas?.nama).filter(Boolean).join(', ');
@@ -1282,7 +1330,7 @@ router.get('/ujian/:id/export', async (req, res, next) => {
         sesiUjian: { where: { ujianId: req.params.id }, include: { pelanggaran: true } },
         kelas: true
       },
-      orderBy: [{ kelas: { nama: 'asc' } }, { nama: 'asc' }]
+      orderBy: [{ kelas: { tingkat: 'asc' } }, { kelas: { nama: 'asc' } }, { nama: 'asc' }],
     });
 
     const selesaiList = siswaList.filter(s => {
@@ -1321,14 +1369,11 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       ws.addRow(['Judul Ujian', ujian.judul]);
       ws.addRow(['Mata Pelajaran', ujian.mataPelajaran]);
       ws.addRow(['Kelas', kelasNama]);
-      ws.addRow(['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })]);
+      ws.addRow(['Tanggal', fmtDateGuru(ujian.tanggalMulai, tzExp)]);
       ws.addRow(['Durasi Ujian', `${ujian.durasi} menit`]);
       ws.addRow([]);
 
-      const fmtTime = (dt: Date | null | undefined) => {
-        if (!dt) return '-';
-        return new Date(dt).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
-      };
+      const fmtTime = (dt: Date | null | undefined) => fmtTimeGuru(dt, tzExp);
       const durasiMnt = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
         if (!mulai || !selesai) return '-';
         return `${Math.round((new Date(selesai).getTime() - new Date(mulai).getTime()) / 60000)} mnt`;
@@ -1402,7 +1447,7 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       // Info block (2 kolom)
       const infoLeft  = [['Mata Pelajaran', ujian.mataPelajaran], ['Kelas', kelasNama || '-']];
       const infoRight = [
-        ['Tanggal', new Date(ujian.tanggalMulai!).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })],
+        ['Tanggal', fmtDateGuru(ujian.tanggalMulai, tzExp)],
         ['Durasi Ujian', `${ujian.durasi} menit`],
       ];
       const iy = 101;
@@ -1417,10 +1462,7 @@ router.get('/ujian/:id/export', async (req, res, next) => {
       });
 
       // Helper waktu
-      const fmtT = (dt: Date | null | undefined) => {
-        if (!dt) return '-';
-        return new Date(dt).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
-      };
+      const fmtT = (dt: Date | null | undefined) => fmtTimeGuru(dt, tzExp);
       const durasiT = (mulai: Date | null | undefined, selesai: Date | null | undefined) => {
         if (!mulai || !selesai) return '-';
         return `${Math.round((new Date(selesai).getTime() - new Date(mulai).getTime()) / 60000)} mnt`;
@@ -1783,7 +1825,7 @@ router.get('/kolom-nilai/:id/nilai', async (req, res, next) => {
     const siswaList = await prisma.siswa.findMany({
       where: { kelasId: { in: kelasIds } },
       include: { kelas: { select: { id: true, nama: true } } },
-      orderBy: [{ kelas: { nama: 'asc' } }, { nama: 'asc' }],
+      orderBy: [{ kelas: { tingkat: 'asc' } }, { kelas: { nama: 'asc' } }, { nama: 'asc' }],
     });
 
     const nilaiList = await prisma.nilaiSiswa.findMany({

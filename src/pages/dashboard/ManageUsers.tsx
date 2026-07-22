@@ -124,7 +124,7 @@ export default function ManageUsers() {
   // ── Guru Modal ──
   const [showGuruModal, setShowGuruModal] = useState(false);
   const [editingGuruId, setEditingGuruId] = useState<string | null>(null);
-  const [guruForm, setGuruForm] = useState({ nip: '', nama: '', email: '', password: '' });
+  const [guruForm, setGuruForm] = useState({ nip: '', nama: '', email: '', password: '', rfidKode: '' });
   const [guruMapelList, setGuruMapelList] = useState<string[]>([]);
   const [guruMapelInput, setGuruMapelInput] = useState('');
   const [guruErrors, setGuruErrors] = useState<Record<string, string>>({});
@@ -386,14 +386,14 @@ export default function ManageUsers() {
     if (u) {
       setEditingGuruId(u.id);
       setEditingGuruModelId(u.guru.id);
-      setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '' });
+      setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '', rfidKode: (u.guru as any).rfidKode || '' });
       const existing = u.guru.guruMataPelajaran?.map(m => m.nama) ?? (u.guru.mataPelajaran ? [u.guru.mataPelajaran] : []);
       setGuruMapelList(existing);
       setGuruCurrentFoto(u.guru.fotoUrl ?? null);
     } else {
       setEditingGuruId(null);
       setEditingGuruModelId(null);
-      setGuruForm({ nip: '', nama: '', email: '', password: '' });
+      setGuruForm({ nip: '', nama: '', email: '', password: '', rfidKode: '' });
       setGuruMapelList([]);
       setGuruCurrentFoto(null);
     }
@@ -456,6 +456,7 @@ export default function ManageUsers() {
         await api.patch(`/api/admin/users/${editingGuruId}`, {
           email: guruForm.email, nama: guruForm.nama, nip: guruForm.nip,
           mataPelajaranList: guruMapelList,
+          rfidKode: guruForm.rfidKode,
         });
         toast.success('Data guru berhasil diperbarui');
       } else {
@@ -1188,6 +1189,10 @@ export default function ManageUsers() {
                 <div className="space-y-1.5">
                   <Label htmlFor="g-nip">NIP <span className="text-outline-variant font-normal">(opsional)</span></Label>
                   <Input id="g-nip" value={guruForm.nip} onChange={e => setGuruForm(f => ({ ...f, nip: e.target.value }))} placeholder="NIP" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="g-rfid">Kode RFID <span className="text-outline-variant font-normal">(opsional, untuk tap kiosk)</span></Label>
+                  <Input id="g-rfid" value={guruForm.rfidKode} onChange={e => setGuruForm(f => ({ ...f, rfidKode: e.target.value }))} placeholder="Kode kartu RFID guru" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Mata Pelajaran <span className="text-error">*</span></Label>

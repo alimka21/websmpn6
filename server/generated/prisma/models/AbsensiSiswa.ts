@@ -31,6 +31,7 @@ export type AbsensiSiswaMinAggregateOutputType = {
   tanggal: Date | null
   status: string | null
   keterangan: string | null
+  autoAbsent: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +43,7 @@ export type AbsensiSiswaMaxAggregateOutputType = {
   tanggal: Date | null
   status: string | null
   keterangan: string | null
+  autoAbsent: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +55,7 @@ export type AbsensiSiswaCountAggregateOutputType = {
   tanggal: number
   status: number
   keterangan: number
+  autoAbsent: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +69,7 @@ export type AbsensiSiswaMinAggregateInputType = {
   tanggal?: true
   status?: true
   keterangan?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +81,7 @@ export type AbsensiSiswaMaxAggregateInputType = {
   tanggal?: true
   status?: true
   keterangan?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +93,7 @@ export type AbsensiSiswaCountAggregateInputType = {
   tanggal?: true
   status?: true
   keterangan?: true
+  autoAbsent?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +178,7 @@ export type AbsensiSiswaGroupByOutputType = {
   tanggal: Date
   status: string
   keterangan: string | null
+  autoAbsent: boolean
   createdAt: Date
   updatedAt: Date
   _count: AbsensiSiswaCountAggregateOutputType | null
@@ -204,6 +211,7 @@ export type AbsensiSiswaWhereInput = {
   tanggal?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   status?: Prisma.StringFilter<"AbsensiSiswa"> | string
   keterangan?: Prisma.StringNullableFilter<"AbsensiSiswa"> | string | null
+  autoAbsent?: Prisma.BoolFilter<"AbsensiSiswa"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   siswa?: Prisma.XOR<Prisma.SiswaScalarRelationFilter, Prisma.SiswaWhereInput>
@@ -217,6 +225,7 @@ export type AbsensiSiswaOrderByWithRelationInput = {
   tanggal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   keterangan?: Prisma.SortOrderInput | Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   siswa?: Prisma.SiswaOrderByWithRelationInput
@@ -235,6 +244,7 @@ export type AbsensiSiswaWhereUniqueInput = Prisma.AtLeast<{
   tanggal?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   status?: Prisma.StringFilter<"AbsensiSiswa"> | string
   keterangan?: Prisma.StringNullableFilter<"AbsensiSiswa"> | string | null
+  autoAbsent?: Prisma.BoolFilter<"AbsensiSiswa"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   siswa?: Prisma.XOR<Prisma.SiswaScalarRelationFilter, Prisma.SiswaWhereInput>
@@ -248,6 +258,7 @@ export type AbsensiSiswaOrderByWithAggregationInput = {
   tanggal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   keterangan?: Prisma.SortOrderInput | Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.AbsensiSiswaCountOrderByAggregateInput
@@ -265,6 +276,7 @@ export type AbsensiSiswaScalarWhereWithAggregatesInput = {
   tanggal?: Prisma.DateTimeWithAggregatesFilter<"AbsensiSiswa"> | Date | string
   status?: Prisma.StringWithAggregatesFilter<"AbsensiSiswa"> | string
   keterangan?: Prisma.StringNullableWithAggregatesFilter<"AbsensiSiswa"> | string | null
+  autoAbsent?: Prisma.BoolWithAggregatesFilter<"AbsensiSiswa"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AbsensiSiswa"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AbsensiSiswa"> | Date | string
 }
@@ -274,6 +286,7 @@ export type AbsensiSiswaCreateInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   siswa: Prisma.SiswaCreateNestedOneWithoutAbsensiInput
@@ -287,6 +300,7 @@ export type AbsensiSiswaUncheckedCreateInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -296,6 +310,7 @@ export type AbsensiSiswaUpdateInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   siswa?: Prisma.SiswaUpdateOneRequiredWithoutAbsensiNestedInput
@@ -309,6 +324,7 @@ export type AbsensiSiswaUncheckedUpdateInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -320,6 +336,7 @@ export type AbsensiSiswaCreateManyInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -329,6 +346,7 @@ export type AbsensiSiswaUpdateManyMutationInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -340,6 +358,7 @@ export type AbsensiSiswaUncheckedUpdateManyInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -372,6 +391,7 @@ export type AbsensiSiswaCountOrderByAggregateInput = {
   tanggal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   keterangan?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -383,6 +403,7 @@ export type AbsensiSiswaMaxOrderByAggregateInput = {
   tanggal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   keterangan?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -394,6 +415,7 @@ export type AbsensiSiswaMinOrderByAggregateInput = {
   tanggal?: Prisma.SortOrder
   status?: Prisma.SortOrder
   keterangan?: Prisma.SortOrder
+  autoAbsent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -487,6 +509,7 @@ export type AbsensiSiswaCreateWithoutGuruInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   siswa: Prisma.SiswaCreateNestedOneWithoutAbsensiInput
@@ -498,6 +521,7 @@ export type AbsensiSiswaUncheckedCreateWithoutGuruInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -538,6 +562,7 @@ export type AbsensiSiswaScalarWhereInput = {
   tanggal?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   status?: Prisma.StringFilter<"AbsensiSiswa"> | string
   keterangan?: Prisma.StringNullableFilter<"AbsensiSiswa"> | string | null
+  autoAbsent?: Prisma.BoolFilter<"AbsensiSiswa"> | boolean
   createdAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AbsensiSiswa"> | Date | string
 }
@@ -547,6 +572,7 @@ export type AbsensiSiswaCreateWithoutSiswaInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   guru?: Prisma.GuruCreateNestedOneWithoutAbsensiInputInput
@@ -558,6 +584,7 @@ export type AbsensiSiswaUncheckedCreateWithoutSiswaInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -594,6 +621,7 @@ export type AbsensiSiswaCreateManyGuruInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -603,6 +631,7 @@ export type AbsensiSiswaUpdateWithoutGuruInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   siswa?: Prisma.SiswaUpdateOneRequiredWithoutAbsensiNestedInput
@@ -614,6 +643,7 @@ export type AbsensiSiswaUncheckedUpdateWithoutGuruInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -624,6 +654,7 @@ export type AbsensiSiswaUncheckedUpdateManyWithoutGuruInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -634,6 +665,7 @@ export type AbsensiSiswaCreateManySiswaInput = {
   tanggal: Date | string
   status: string
   keterangan?: string | null
+  autoAbsent?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -643,6 +675,7 @@ export type AbsensiSiswaUpdateWithoutSiswaInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   guru?: Prisma.GuruUpdateOneWithoutAbsensiInputNestedInput
@@ -654,6 +687,7 @@ export type AbsensiSiswaUncheckedUpdateWithoutSiswaInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -664,6 +698,7 @@ export type AbsensiSiswaUncheckedUpdateManyWithoutSiswaInput = {
   tanggal?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   keterangan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  autoAbsent?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -677,6 +712,7 @@ export type AbsensiSiswaSelect<ExtArgs extends runtime.Types.Extensions.Internal
   tanggal?: boolean
   status?: boolean
   keterangan?: boolean
+  autoAbsent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   siswa?: boolean | Prisma.SiswaDefaultArgs<ExtArgs>
@@ -692,11 +728,12 @@ export type AbsensiSiswaSelectScalar = {
   tanggal?: boolean
   status?: boolean
   keterangan?: boolean
+  autoAbsent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AbsensiSiswaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "siswaId" | "guruId" | "tanggal" | "status" | "keterangan" | "createdAt" | "updatedAt", ExtArgs["result"]["absensiSiswa"]>
+export type AbsensiSiswaOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "siswaId" | "guruId" | "tanggal" | "status" | "keterangan" | "autoAbsent" | "createdAt" | "updatedAt", ExtArgs["result"]["absensiSiswa"]>
 export type AbsensiSiswaInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   siswa?: boolean | Prisma.SiswaDefaultArgs<ExtArgs>
   guru?: boolean | Prisma.AbsensiSiswa$guruArgs<ExtArgs>
@@ -715,6 +752,7 @@ export type $AbsensiSiswaPayload<ExtArgs extends runtime.Types.Extensions.Intern
     tanggal: Date
     status: string
     keterangan: string | null
+    autoAbsent: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["absensiSiswa"]>
@@ -1094,6 +1132,7 @@ export interface AbsensiSiswaFieldRefs {
   readonly tanggal: Prisma.FieldRef<"AbsensiSiswa", 'DateTime'>
   readonly status: Prisma.FieldRef<"AbsensiSiswa", 'String'>
   readonly keterangan: Prisma.FieldRef<"AbsensiSiswa", 'String'>
+  readonly autoAbsent: Prisma.FieldRef<"AbsensiSiswa", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"AbsensiSiswa", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"AbsensiSiswa", 'DateTime'>
 }

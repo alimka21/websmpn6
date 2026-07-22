@@ -58,13 +58,20 @@ export default function BuatUjian() {
   const cancelModalRef = useModalA11y<HTMLDivElement>(showCancelConfirm, () => setShowCancelConfirm(false));
 
   useEffect(() => {
-    const now = new Date();
-    now.setHours(8, 0, 0, 0);
-    const tzOffset = now.getTimezoneOffset() * 60000;
-    const localNow = new Date(now.getTime() - tzOffset);
-    const end = new Date(now.getTime() + 2 * 60 * 60 * 1000 - tzOffset);
-    setTanggalMulai(localNow.toISOString().slice(0, 16));
-    setTanggalSelesai(end.toISOString().slice(0, 16));
+    // Load school timezone lalu set default waktu dalam school TZ
+    api.get('/api/presensi/pengaturan').then((cfg: any) => {
+      const tz = cfg?.timezone || 'Asia/Jakarta';
+      const now = new Date();
+      // set jam 08:00 dalam school TZ: ambil tanggal hari ini di tz, lalu buat 08:00
+      const dateStr = now.toLocaleDateString('en-CA', { timeZone: tz });
+      setTanggalMulai(`${dateStr}T08:00`);
+      setTanggalSelesai(`${dateStr}T10:00`);
+    }).catch(() => {
+      // fallback: pakai tanggal hari ini jam 08:00
+      const d = new Date().toLocaleDateString('en-CA');
+      setTanggalMulai(`${d}T08:00`);
+      setTanggalSelesai(`${d}T10:00`);
+    });
 
     const fetchKelas = async () => {
       try {

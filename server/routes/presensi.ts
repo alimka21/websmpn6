@@ -124,6 +124,113 @@ export function startAutoCheckoutCron(): void {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Auto-Absent Cron
+// Dijalankan setiap menit. Setelah jam_pulang_default:
+//   - Guru yang belum absen → buat record PresensiGuru dengan autoAbsent=true
+//   - Siswa yang belum absen & belum ada AbsensiSiswa → buat ALFA autoAbsent=true
+// Hanya berjalan sekali per hari (dilacak via autoAbsentDoneDate).
+// ─────────────────────────────────────────────────────────────────────────────
+
+let autoAbsentDoneDate = '';
+
+async function jalankanAutoAbsent(): Promise<void> {
+  try {
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    if (!cfg) return;
+
+    const tz       = cfg.timezone || 'Asia/Jakarta';
+    const sekarang = new Date();
+    const batas    = jamKeDate(cfg.jamPulangDefault, tz);
+
+    if (sekarang < batas) return; // belum waktunya
+
+    const hariIni = new Date().toLocaleDateString('en-CA', { timeZone: tz });
+    if (autoAbsentDoneDate === hariIni) return; // sudah dijalankan hari ini
+
+    const today    = tanggalHariIni(tz);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // ── Guru: buat record tidak hadir untuk yang belum ada record ──
+    const semuaGuru = await prisma.guru.findMany({
+      where: { user: { isActive: true } },
+      select: { id: true },
+    });
+    const guruSudahAda = await prisma.presensiGuru.findMany({
+      where: { tanggal: { gte: today, lt: tomorrow } },
+      select: { guruId: true },
+    });
+    const guruSudahAadaSet = new Set(guruSudahAda.map((g: { guruId: string }) => g.guruId));
+    const guruBelumHadir = semuaGuru.filter((g: { id: string }) => !guruSudahAadaSet.has(g.id));
+
+    if (guruBelumHadir.length > 0) {
+      await prisma.presensiGuru.createMany({
+        data: guruBelumHadir.map((g: { id: string }) => ({
+          guruId:      g.id,
+          tanggal:     today,
+          waktuDatang: null,
+          waktuPulang: null,
+          autoAbsent:  true,
+          autoCheckout: false,
+        })),
+        skipDuplicates: true,
+      });
+      console.log(`[AutoAbsent] ${guruBelumHadir.length} guru ditandai tidak hadir`);
+    }
+
+    // ── Siswa: buat ALFA untuk yang belum ada PresensiSiswa maupun AbsensiSiswa ──
+    const semuaSiswa = await prisma.siswa.findMany({
+      where: { user: { isActive: true } },
+      select: { id: true },
+    });
+    const siswaHadir = await prisma.presensiSiswa.findMany({
+      where: { tanggal: { gte: today, lt: tomorrow } },
+      select: { siswaId: true },
+    });
+    const siswaAbsensi = await prisma.absensiSiswa.findMany({
+      where: { tanggal: { gte: today, lt: tomorrow } },
+      select: { siswaId: true },
+    });
+    const siswaSudahAda = new Set([
+      ...siswaHadir.map((s: { siswaId: string }) => s.siswaId),
+      ...siswaAbsensi.map((s: { siswaId: string }) => s.siswaId),
+    ]);
+    const siswaBelumHadir = semuaSiswa.filter((s: { id: string }) => !siswaSudahAda.has(s.id));
+
+    if (siswaBelumHadir.length > 0) {
+      await prisma.absensiSiswa.createMany({
+        data: siswaBelumHadir.map((s: { id: string }) => ({
+          siswaId:    s.id,
+          tanggal:    today,
+          status:     'ALFA',
+          autoAbsent: true,
+        })),
+        skipDuplicates: true,
+      });
+      console.log(`[AutoAbsent] ${siswaBelumHadir.length} siswa ditandai ALFA otomatis`);
+    }
+
+    autoAbsentDoneDate = hariIni;
+  } catch (err) {
+    console.error('[AutoAbsent] Error:', err);
+  }
+}
+
+export function startAutoAbsentCron(): void {
+  setInterval(jalankanAutoAbsent, 60_000);
+  console.log('[AutoAbsent] Cron aktif — interval 1 menit');
+}
+
+// POST /api/presensi/auto-absent/trigger — SUPER_ADMIN: paksa jalankan auto-absent sekarang
+router.post('/auto-absent/trigger', requireAuth, requireRole(['SUPER_ADMIN']), async (req, res, next) => {
+  try {
+    autoAbsentDoneDate = ''; // reset agar bisa jalan meski sudah dijalankan hari ini
+    await jalankanAutoAbsent();
+    res.json({ success: true, message: 'Auto-absent berhasil dijalankan' });
+  } catch (err) { next(err); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1. GET /api/presensi/guru-list
 // Daftar semua guru aktif + status presensi hari ini
 // POST /api/presensi/upload/foto — Upload foto presensi (publik, dipanggil sebelum datang/pulang)
@@ -155,6 +262,7 @@ router.get('/guru-list', async (req, res, next) => {
         id: true,
         nama: true,
         nip: true,
+        rfidKode: true,
         presensiGuru: {
           where: {
             tanggal: {
@@ -175,6 +283,7 @@ router.get('/guru-list', async (req, res, next) => {
           id: g.id,
           nama: g.nama,
           nip: g.nip,
+          rfidKode: g.rfidKode,
           statusHariIni: presensi ? {
             sudahDatang: !!presensi.waktuDatang,
             sudahPulang: !!presensi.waktuPulang,
@@ -188,44 +297,94 @@ router.get('/guru-list', async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2a. GET /api/presensi/guru/cari?q=<NIP_atau_rfidKode>
+// Digunakan kiosk guru untuk lookup by NIP atau RFID sebelum submit presensi
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/guru/cari', async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q) return res.status(400).json({ error: 'NIP atau kode RFID wajib diisi' });
+
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const today = tanggalHariIni(tz);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const guru = await prisma.guru.findFirst({
+      where: { OR: [{ nip: q }, { rfidKode: q }] },
+      include: {
+        presensiGuru: {
+          where: { tanggal: { gte: today, lt: tomorrow } },
+          select: { waktuDatang: true, waktuPulang: true },
+        },
+      },
+    });
+
+    if (!guru) {
+      return res.status(404).json({ error: `Guru dengan NIP/RFID "${q}" tidak ditemukan.` });
+    }
+
+    const presensi = guru.presensiGuru[0];
+    res.json({
+      id: guru.id,
+      nama: guru.nama,
+      nip: guru.nip,
+      rfidKode: guru.rfidKode,
+      statusHariIni: presensi ? {
+        sudahDatang: !!presensi.waktuDatang,
+        sudahPulang: !!presensi.waktuPulang,
+        waktuDatang: presensi.waktuDatang ? fmtTZ(new Date(presensi.waktuDatang), tz) : undefined,
+        waktuPulang: presensi.waktuPulang ? fmtTZ(new Date(presensi.waktuPulang), tz) : undefined,
+      } : { sudahDatang: false, sudahPulang: false },
+    });
+  } catch (err) { next(err); }
+});
+
+// Helper: resolve guruId dari body (bisa by guruId, nip, atau rfidKode)
+async function resolveGuruId(body: any): Promise<{ guru: any; error?: string }> {
+  const { guruId, nip, rfidKode } = body;
+  if (guruId) {
+    const guru = await prisma.guru.findUnique({ where: { id: guruId } });
+    if (!guru) return { guru: null, error: 'Guru tidak ditemukan' };
+    return { guru };
+  }
+  const q = nip ? String(nip).trim() : rfidKode ? String(rfidKode).trim() : '';
+  if (!q) return { guru: null, error: 'guruId, nip, atau rfidKode wajib diisi' };
+  const guru = await prisma.guru.findFirst({ where: { OR: [{ nip: q }, { rfidKode: q }] } });
+  if (!guru) return { guru: null, error: `Guru dengan NIP/RFID "${q}" tidak ditemukan` };
+  return { guru };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. POST /api/presensi/guru/datang
-// Body: { guruId, latitude?, longitude?, fotoBase64? }
-// Validasi geofencing lalu catat waktuDatang
+// Body: { guruId | nip | rfidKode, latitude?, longitude?, fotoUrl? }
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next) => {
   try {
-    const { guruId, latitude, longitude, fotoUrl } = req.body;
-    if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
+    const { latitude, longitude, fotoUrl } = req.body;
 
-    const guru = await prisma.guru.findUnique({ where: { id: guruId } });
-    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
-
-    if (!fotoUrl) {
-      return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
-    }
-    if (latitude == null || longitude == null) {
-      return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
-    }
+    const { guru, error: lookupErr } = await resolveGuruId(req.body);
+    if (!guru) return res.status(404).json({ error: lookupErr });
+    const guruId = guru.id;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
-      return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+
+    // Geofencing opsional — hanya jika koordinat dikirim dan sekolah terkonfigurasi
+    if (latitude != null && longitude != null && cfg && cfg.latitudeSekolah !== 0) {
+      const jarak = Math.round(hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah));
+      if (jarak > cfg.radiusMeter) {
+        return res.status(403).json({
+          error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter`,
+          jarak,
+          radiusMeter: cfg.radiusMeter,
+        });
+      }
     }
 
-    const jarak = Math.round(
-      hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
-    );
-
-    if (jarak > cfg.radiusMeter) {
-      return res.status(403).json({
-        error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter\n\nSilakan datang ke sekolah untuk melakukan presensi.`,
-        jarak,
-        radiusMeter: cfg.radiusMeter,
-      });
-    }
-
-    const tz = cfg.timezone || 'Asia/Jakarta';
     const today = tanggalHariIni(tz);
     const existing = await prisma.presensiGuru.findUnique({
       where: { guruId_tanggal: { guruId, tanggal: today } },
@@ -240,8 +399,8 @@ router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next)
 
     const record = await prisma.presensiGuru.upsert({
       where: { guruId_tanggal: { guruId, tanggal: today } },
-      create:  { guruId, tanggal: today, waktuDatang: new Date(), fotoDatang: fotoUrl },
-      update:  { waktuDatang: new Date(), fotoDatang: fotoUrl },
+      create:  { guruId, tanggal: today, waktuDatang: new Date(), fotoDatang: fotoUrl || null },
+      update:  { waktuDatang: new Date(), fotoDatang: fotoUrl || null },
     });
 
     res.json({ success: true, nama: guru.nama, waktuDatang: record.waktuDatang });
@@ -250,43 +409,32 @@ router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. POST /api/presensi/guru/pulang
-// Body: { guruId, latitude?, longitude?, fotoBase64? }
-// Validasi geofencing lalu catat waktuPulang
+// Body: { guruId | nip | rfidKode, latitude?, longitude?, fotoUrl? }
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next) => {
   try {
-    const { guruId, latitude, longitude, fotoUrl } = req.body;
-    if (!guruId) return res.status(400).json({ error: 'guruId wajib diisi' });
+    const { latitude, longitude, fotoUrl } = req.body;
 
-    const guru = await prisma.guru.findUnique({ where: { id: guruId } });
-    if (!guru) return res.status(404).json({ error: 'Guru tidak ditemukan' });
-
-    if (!fotoUrl) {
-      return res.status(400).json({ error: 'Foto wajib diambil untuk verifikasi' });
-    }
-    if (latitude == null || longitude == null) {
-      return res.status(400).json({ error: 'Lokasi wajib diaktifkan untuk presensi' });
-    }
+    const { guru, error: lookupErr } = await resolveGuruId(req.body);
+    if (!guru) return res.status(404).json({ error: lookupErr });
+    const guruId = guru.id;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    if (!cfg || cfg.latitudeSekolah === 0 || cfg.longitudeSekolah === 0) {
-      return res.status(500).json({ error: 'Pengaturan lokasi sekolah belum dikonfigurasi oleh admin' });
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+
+    // Geofencing opsional — hanya jika koordinat dikirim dan sekolah terkonfigurasi
+    if (latitude != null && longitude != null && cfg && cfg.latitudeSekolah !== 0) {
+      const jarak = Math.round(hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah));
+      if (jarak > cfg.radiusMeter) {
+        return res.status(403).json({
+          error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter`,
+          jarak,
+          radiusMeter: cfg.radiusMeter,
+        });
+      }
     }
 
-    const jarak = Math.round(
-      hitungJarakMeter(latitude, longitude, cfg.latitudeSekolah, cfg.longitudeSekolah)
-    );
-
-    if (jarak > cfg.radiusMeter) {
-      return res.status(403).json({
-        error: `Anda berada di luar jangkauan sekolah.\n\nJarak Anda: ${jarak} meter\nBatas maksimal: ${cfg.radiusMeter} meter\n\nSilakan datang ke sekolah untuk melakukan presensi.`,
-        jarak,
-        radiusMeter: cfg.radiusMeter,
-      });
-    }
-
-    const tz = cfg.timezone || 'Asia/Jakarta';
     const today = tanggalHariIni(tz);
     const existing = await prisma.presensiGuru.findUnique({
       where: { guruId_tanggal: { guruId, tanggal: today } },
@@ -304,7 +452,7 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
 
     const record = await prisma.presensiGuru.update({
       where: { guruId_tanggal: { guruId, tanggal: today } },
-      data: { waktuPulang: new Date(), fotoPulang: fotoUrl, autoCheckout: false },
+      data: { waktuPulang: new Date(), fotoPulang: fotoUrl || null, autoCheckout: false },
     });
 
     res.json({ success: true, nama: guru.nama, waktuPulang: record.waktuPulang });
@@ -505,6 +653,7 @@ router.get('/guru/dashboard', async (req, res, next) => {
         waktuDatang:  p.waktuDatang,
         waktuPulang:  p.waktuPulang,
         autoCheckout: p.autoCheckout,
+        autoAbsent:   (p as any).autoAbsent ?? false,
         fotoDatang:   p.fotoDatang,
         fotoPulang:   p.fotoPulang,
         durasi:       totalJam || null,
@@ -762,7 +911,8 @@ router.patch('/guru/:id', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
     const existing = await prisma.presensiGuru.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Data presensi tidak ditemukan' });
 
-    const data: any = { autoCheckout: false };
+    // Saat admin mengedit, hapus flag autoAbsent (record sudah dikurasi manual)
+    const data: any = { autoCheckout: false, autoAbsent: false };
     if (waktuDatang !== undefined) data.waktuDatang = waktuDatang ? new Date(waktuDatang) : null;
     if (waktuPulang !== undefined) data.waktuPulang = waktuPulang ? new Date(waktuPulang) : null;
 
@@ -882,11 +1032,12 @@ router.get('/siswa/belum-hadir', async (req, res, next) => {
         kelas: {
           select: {
             id: true,
-            nama: true
+            nama: true,
+            tingkat: true,
           }
         }
       },
-      orderBy: { nama: 'asc' }
+      orderBy: [{ kelas: { tingkat: 'asc' } }, { kelas: { nama: 'asc' } }, { nama: 'asc' }],
     });
 
     const result = siswaList.map(s => ({

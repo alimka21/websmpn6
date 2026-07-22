@@ -28,6 +28,7 @@ export type GuruMinAggregateOutputType = {
   id: string | null
   userId: string | null
   nip: string | null
+  rfidKode: string | null
   nama: string | null
   mataPelajaran: string | null
   fotoUrl: string | null
@@ -38,6 +39,7 @@ export type GuruMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   nip: string | null
+  rfidKode: string | null
   nama: string | null
   mataPelajaran: string | null
   fotoUrl: string | null
@@ -48,6 +50,7 @@ export type GuruCountAggregateOutputType = {
   id: number
   userId: number
   nip: number
+  rfidKode: number
   nama: number
   mataPelajaran: number
   fotoUrl: number
@@ -60,6 +63,7 @@ export type GuruMinAggregateInputType = {
   id?: true
   userId?: true
   nip?: true
+  rfidKode?: true
   nama?: true
   mataPelajaran?: true
   fotoUrl?: true
@@ -70,6 +74,7 @@ export type GuruMaxAggregateInputType = {
   id?: true
   userId?: true
   nip?: true
+  rfidKode?: true
   nama?: true
   mataPelajaran?: true
   fotoUrl?: true
@@ -80,6 +85,7 @@ export type GuruCountAggregateInputType = {
   id?: true
   userId?: true
   nip?: true
+  rfidKode?: true
   nama?: true
   mataPelajaran?: true
   fotoUrl?: true
@@ -163,6 +169,7 @@ export type GuruGroupByOutputType = {
   id: string
   userId: string
   nip: string
+  rfidKode: string | null
   nama: string
   mataPelajaran: string
   fotoUrl: string | null
@@ -194,6 +201,7 @@ export type GuruWhereInput = {
   id?: Prisma.StringFilter<"Guru"> | string
   userId?: Prisma.StringFilter<"Guru"> | string
   nip?: Prisma.StringFilter<"Guru"> | string
+  rfidKode?: Prisma.StringNullableFilter<"Guru"> | string | null
   nama?: Prisma.StringFilter<"Guru"> | string
   mataPelajaran?: Prisma.StringFilter<"Guru"> | string
   fotoUrl?: Prisma.StringNullableFilter<"Guru"> | string | null
@@ -212,6 +220,7 @@ export type GuruOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   nip?: Prisma.SortOrder
+  rfidKode?: Prisma.SortOrderInput | Prisma.SortOrder
   nama?: Prisma.SortOrder
   mataPelajaran?: Prisma.SortOrder
   fotoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -231,6 +240,7 @@ export type GuruWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   userId?: string
   nip?: string
+  rfidKode?: string
   AND?: Prisma.GuruWhereInput | Prisma.GuruWhereInput[]
   OR?: Prisma.GuruWhereInput[]
   NOT?: Prisma.GuruWhereInput | Prisma.GuruWhereInput[]
@@ -246,12 +256,13 @@ export type GuruWhereUniqueInput = Prisma.AtLeast<{
   guruMataPelajaran?: Prisma.GuruMataPelajaranListRelationFilter
   absensiInput?: Prisma.AbsensiSiswaListRelationFilter
   kolomNilai?: Prisma.KolomNilaiListRelationFilter
-}, "id" | "userId" | "nip">
+}, "id" | "userId" | "nip" | "rfidKode">
 
 export type GuruOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   nip?: Prisma.SortOrder
+  rfidKode?: Prisma.SortOrderInput | Prisma.SortOrder
   nama?: Prisma.SortOrder
   mataPelajaran?: Prisma.SortOrder
   fotoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -268,6 +279,7 @@ export type GuruScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Guru"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Guru"> | string
   nip?: Prisma.StringWithAggregatesFilter<"Guru"> | string
+  rfidKode?: Prisma.StringNullableWithAggregatesFilter<"Guru"> | string | null
   nama?: Prisma.StringWithAggregatesFilter<"Guru"> | string
   mataPelajaran?: Prisma.StringWithAggregatesFilter<"Guru"> | string
   fotoUrl?: Prisma.StringNullableWithAggregatesFilter<"Guru"> | string | null
@@ -277,6 +289,7 @@ export type GuruScalarWhereWithAggregatesInput = {
 export type GuruCreateInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -295,6 +308,7 @@ export type GuruUncheckedCreateInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -311,6 +325,7 @@ export type GuruUncheckedCreateInput = {
 export type GuruUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -329,6 +344,7 @@ export type GuruUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -346,6 +362,7 @@ export type GuruCreateManyInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -355,6 +372,7 @@ export type GuruCreateManyInput = {
 export type GuruUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -365,6 +383,7 @@ export type GuruUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -386,6 +405,7 @@ export type GuruCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   nip?: Prisma.SortOrder
+  rfidKode?: Prisma.SortOrder
   nama?: Prisma.SortOrder
   mataPelajaran?: Prisma.SortOrder
   fotoUrl?: Prisma.SortOrder
@@ -396,6 +416,7 @@ export type GuruMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   nip?: Prisma.SortOrder
+  rfidKode?: Prisma.SortOrder
   nama?: Prisma.SortOrder
   mataPelajaran?: Prisma.SortOrder
   fotoUrl?: Prisma.SortOrder
@@ -406,6 +427,7 @@ export type GuruMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   nip?: Prisma.SortOrder
+  rfidKode?: Prisma.SortOrder
   nama?: Prisma.SortOrder
   mataPelajaran?: Prisma.SortOrder
   fotoUrl?: Prisma.SortOrder
@@ -556,6 +578,7 @@ export type GuruUpdateOneRequiredWithoutKolomNilaiNestedInput = {
 export type GuruCreateWithoutUserInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -572,6 +595,7 @@ export type GuruCreateWithoutUserInput = {
 export type GuruUncheckedCreateWithoutUserInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -604,6 +628,7 @@ export type GuruUpdateToOneWithWhereWithoutUserInput = {
 export type GuruUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -620,6 +645,7 @@ export type GuruUpdateWithoutUserInput = {
 export type GuruUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -636,6 +662,7 @@ export type GuruUncheckedUpdateWithoutUserInput = {
 export type GuruCreateWithoutGuruMataPelajaranInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -653,6 +680,7 @@ export type GuruUncheckedCreateWithoutGuruMataPelajaranInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -684,6 +712,7 @@ export type GuruUpdateToOneWithWhereWithoutGuruMataPelajaranInput = {
 export type GuruUpdateWithoutGuruMataPelajaranInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -701,6 +730,7 @@ export type GuruUncheckedUpdateWithoutGuruMataPelajaranInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -716,6 +746,7 @@ export type GuruUncheckedUpdateWithoutGuruMataPelajaranInput = {
 export type GuruCreateWithoutKelasInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -733,6 +764,7 @@ export type GuruUncheckedCreateWithoutKelasInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -764,6 +796,7 @@ export type GuruUpdateToOneWithWhereWithoutKelasInput = {
 export type GuruUpdateWithoutKelasInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -781,6 +814,7 @@ export type GuruUncheckedUpdateWithoutKelasInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -796,6 +830,7 @@ export type GuruUncheckedUpdateWithoutKelasInput = {
 export type GuruCreateWithoutGuruKelasInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -813,6 +848,7 @@ export type GuruUncheckedCreateWithoutGuruKelasInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -844,6 +880,7 @@ export type GuruUpdateToOneWithWhereWithoutGuruKelasInput = {
 export type GuruUpdateWithoutGuruKelasInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -861,6 +898,7 @@ export type GuruUncheckedUpdateWithoutGuruKelasInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -876,6 +914,7 @@ export type GuruUncheckedUpdateWithoutGuruKelasInput = {
 export type GuruCreateWithoutUjianInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -893,6 +932,7 @@ export type GuruUncheckedCreateWithoutUjianInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -924,6 +964,7 @@ export type GuruUpdateToOneWithWhereWithoutUjianInput = {
 export type GuruUpdateWithoutUjianInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -941,6 +982,7 @@ export type GuruUncheckedUpdateWithoutUjianInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -956,6 +998,7 @@ export type GuruUncheckedUpdateWithoutUjianInput = {
 export type GuruCreateWithoutPresensiGuruInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -973,6 +1016,7 @@ export type GuruUncheckedCreateWithoutPresensiGuruInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -1004,6 +1048,7 @@ export type GuruUpdateToOneWithWhereWithoutPresensiGuruInput = {
 export type GuruUpdateWithoutPresensiGuruInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1021,6 +1066,7 @@ export type GuruUncheckedUpdateWithoutPresensiGuruInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1036,6 +1082,7 @@ export type GuruUncheckedUpdateWithoutPresensiGuruInput = {
 export type GuruCreateWithoutAbsensiInputInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -1053,6 +1100,7 @@ export type GuruUncheckedCreateWithoutAbsensiInputInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -1084,6 +1132,7 @@ export type GuruUpdateToOneWithWhereWithoutAbsensiInputInput = {
 export type GuruUpdateWithoutAbsensiInputInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1101,6 +1150,7 @@ export type GuruUncheckedUpdateWithoutAbsensiInputInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1116,6 +1166,7 @@ export type GuruUncheckedUpdateWithoutAbsensiInputInput = {
 export type GuruCreateWithoutKolomNilaiInput = {
   id?: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -1133,6 +1184,7 @@ export type GuruUncheckedCreateWithoutKolomNilaiInput = {
   id?: string
   userId: string
   nip: string
+  rfidKode?: string | null
   nama: string
   mataPelajaran: string
   fotoUrl?: string | null
@@ -1164,6 +1216,7 @@ export type GuruUpdateToOneWithWhereWithoutKolomNilaiInput = {
 export type GuruUpdateWithoutKolomNilaiInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1181,6 +1234,7 @@ export type GuruUncheckedUpdateWithoutKolomNilaiInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   nip?: Prisma.StringFieldUpdateOperationsInput | string
+  rfidKode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   nama?: Prisma.StringFieldUpdateOperationsInput | string
   mataPelajaran?: Prisma.StringFieldUpdateOperationsInput | string
   fotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1282,6 +1336,7 @@ export type GuruSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   userId?: boolean
   nip?: boolean
+  rfidKode?: boolean
   nama?: boolean
   mataPelajaran?: boolean
   fotoUrl?: boolean
@@ -1303,13 +1358,14 @@ export type GuruSelectScalar = {
   id?: boolean
   userId?: boolean
   nip?: boolean
+  rfidKode?: boolean
   nama?: boolean
   mataPelajaran?: boolean
   fotoUrl?: boolean
   geminiApiKey?: boolean
 }
 
-export type GuruOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "nip" | "nama" | "mataPelajaran" | "fotoUrl" | "geminiApiKey", ExtArgs["result"]["guru"]>
+export type GuruOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "nip" | "rfidKode" | "nama" | "mataPelajaran" | "fotoUrl" | "geminiApiKey", ExtArgs["result"]["guru"]>
 export type GuruInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   kelas?: boolean | Prisma.Guru$kelasArgs<ExtArgs>
@@ -1338,6 +1394,7 @@ export type $GuruPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     userId: string
     nip: string
+    rfidKode: string | null
     nama: string
     mataPelajaran: string
     fotoUrl: string | null
@@ -1722,6 +1779,7 @@ export interface GuruFieldRefs {
   readonly id: Prisma.FieldRef<"Guru", 'String'>
   readonly userId: Prisma.FieldRef<"Guru", 'String'>
   readonly nip: Prisma.FieldRef<"Guru", 'String'>
+  readonly rfidKode: Prisma.FieldRef<"Guru", 'String'>
   readonly nama: Prisma.FieldRef<"Guru", 'String'>
   readonly mataPelajaran: Prisma.FieldRef<"Guru", 'String'>
   readonly fotoUrl: Prisma.FieldRef<"Guru", 'String'>

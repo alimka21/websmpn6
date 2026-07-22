@@ -2562,6 +2562,7 @@ export const GuruScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   nip: 'nip',
+  rfidKode: 'rfidKode',
   nama: 'nama',
   mataPelajaran: 'mataPelajaran',
   fotoUrl: 'fotoUrl',
@@ -2717,6 +2718,7 @@ export const PresensiGuruScalarFieldEnum = {
   fotoDatang: 'fotoDatang',
   fotoPulang: 'fotoPulang',
   autoCheckout: 'autoCheckout',
+  autoAbsent: 'autoAbsent',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -2742,6 +2744,7 @@ export const AbsensiSiswaScalarFieldEnum = {
   tanggal: 'tanggal',
   status: 'status',
   keterangan: 'keterangan',
+  autoAbsent: 'autoAbsent',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3015,6 +3018,7 @@ export const GuruOrderByRelevanceFieldEnum = {
   id: 'id',
   userId: 'userId',
   nip: 'nip',
+  rfidKode: 'rfidKode',
   nama: 'nama',
   mataPelajaran: 'mataPelajaran',
   fotoUrl: 'fotoUrl',

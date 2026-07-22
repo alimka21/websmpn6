@@ -12,7 +12,7 @@ import {
   Copy, Search, Users, AlertTriangle, BookOpen, CheckCircle2, PenLine
 } from 'lucide-react';
 import api from '../../../lib/api';
-import { formatDate } from '../../../lib/utils';
+import { formatDate, toDatetimeLocalInTZ } from '../../../lib/utils';
 import { ErrorState } from '../../../components/ui/ErrorState';
 import { useModalA11y } from '../../../hooks/useModalA11y';
 
@@ -34,8 +34,15 @@ interface EditForm {
 export default function DaftarUjian() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [search, setSearch] = useState('');
+  const [schoolTZ, setSchoolTZ] = useState('Asia/Jakarta');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    api.get('/api/presensi/pengaturan')
+      .then((d: any) => { if (d?.timezone) setSchoolTZ(d.timezone); })
+      .catch(() => {});
+  }, []);
 
   const { data: ujianList = [], isLoading, error } = useQuery({
     queryKey: ujianKeys.guruList(),
@@ -138,11 +145,6 @@ export default function DaftarUjian() {
   const hasParticipants = (ujian: any) => (ujian._count?.sesiUjian || 0) > 0;
 
   // ── Edit modal ──────────────────────────────────────────────
-  const toLocalISO = (d: string) => {
-    const date = new Date(d);
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  };
-
   const handleOpenEdit = (ujian: any) => {
     setEditingUjian(ujian);
     setEditErrors({});
@@ -151,8 +153,8 @@ export default function DaftarUjian() {
       mataPelajaran: ujian.mataPelajaran,
       tipeUjian: ujian.tipeUjian || 'ULANGAN_HARIAN',
       durasi: String(ujian.durasi),
-      tanggalMulai: ujian.tanggalMulai ? toLocalISO(ujian.tanggalMulai) : '',
-      tanggalSelesai: ujian.tanggalSelesai ? toLocalISO(ujian.tanggalSelesai) : '',
+      tanggalMulai:   ujian.tanggalMulai   ? toDatetimeLocalInTZ(ujian.tanggalMulai, schoolTZ)   : '',
+      tanggalSelesai: ujian.tanggalSelesai ? toDatetimeLocalInTZ(ujian.tanggalSelesai, schoolTZ) : '',
       kelasIds: ujian.kelas.map((uk: any) => uk.kelasId)
     });
     setEditModalOpen(true);
@@ -344,11 +346,11 @@ export default function DaftarUjian() {
                           <div className="flex flex-col gap-1.5 text-xs text-on-surface-variant">
                             <span className="flex items-center gap-1.5 font-medium">
                               <Calendar className="w-3.5 h-3.5 text-primary" />
-                              {formatDate(ujian.tanggalMulai, 'datetime')}
+                              {formatDate(ujian.tanggalMulai, 'datetime', schoolTZ)}
                             </span>
                             <span className="flex items-center gap-1.5">
                               <Calendar className="w-3.5 h-3.5 text-outline-variant" />
-                              {formatDate(ujian.tanggalSelesai, 'datetime')}
+                              {formatDate(ujian.tanggalSelesai, 'datetime', schoolTZ)}
                             </span>
                             <span className="flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-outline-variant" />

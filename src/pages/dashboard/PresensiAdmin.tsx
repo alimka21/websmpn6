@@ -33,7 +33,7 @@ interface PengaturanForm {
 interface PresensiGuruRow {
   no: number; id: string; nama: string; nip: string;
   tanggal: string; waktuDatang: string | null; waktuPulang: string | null;
-  durasi: number | null; autoCheckout: boolean;
+  durasi: number | null; autoCheckout: boolean; autoAbsent: boolean;
   fotoDatang: string | null; fotoPulang: string | null;
   keterlambatan: number; totalJam: number;
 }
@@ -41,6 +41,12 @@ interface PresensiGuruRow {
 interface PresensiSiswaRow {
   no: number; id: string; nis: string; nama: string; kelas: string;
   tanggal: string; waktuDatang: string;
+}
+
+interface AbsensiRow {
+  id: string; tanggal: string; status: string; keterangan: string | null; autoAbsent: boolean;
+  siswa: { nama: string; nis: string; kelas: string };
+  guru: { nama: string } | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -163,6 +169,23 @@ export default function PresensiAdmin() {
   const [exportingGuru, setExportingGuru] = useState(false);
   const [exportingSiswa, setExportingSiswa] = useState(false);
 
+  // ── Absensi siswa (tidak hadir) state ────────────────────────────────────
+  const [siswaSubTab, setSiswaSubTab]       = useState<'hadir' | 'tidakHadir'>('hadir');
+  const [absensiRows, setAbsensiRows]       = useState<AbsensiRow[]>([]);
+  const [absensiTotal, setAbsensiTotal]     = useState(0);
+  const [absensiPage, setAbsensiPage]       = useState(1);
+  const [absensiPages, setAbsensiPages]     = useState(1);
+  const [loadingAbsensi, setLoadingAbsensi] = useState(false);
+  const [editAbsensi, setEditAbsensi]       = useState<AbsensiRow | null>(null);
+  const [editAbsensiStatus, setEditAbsensiStatus] = useState('ALFA');
+  const [editAbsensiKet, setEditAbsensiKet] = useState('');
+  const [savingAbsensi, setSavingAbsensi]   = useState(false);
+  const [delAbsensiId, setDelAbsensiId]     = useState<string | null>(null);
+  const [deletingAbsensi, setDeletingAbsensi] = useState(false);
+
+  // ── Auto-absent trigger state ─────────────────────────────────────────────
+  const [triggeringAutoAbsent, setTriggeringAutoAbsent] = useState(false);
+
   // ── Load pengaturan ──────────────────────────────────────────────────────
   useEffect(() => {
     api.get('/api/presensi/pengaturan')
@@ -183,6 +206,11 @@ export default function PresensiAdmin() {
       .catch(() => {});
   }, []);
 
+  // ── Helper: "hari ini" dalam timezone sekolah ────────────────────────────
+  const todayInSchoolTZ = useCallback(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: cfg.timezone || 'Asia/Jakarta' }),
+  [cfg.timezone]);
+
   // ── Load guru presensi ───────────────────────────────────────────────────
   const loadGuru = useCallback(async (page = 1) => {
     setLoadingGuru(true);
@@ -190,7 +218,7 @@ export default function PresensiAdmin() {
       const params = new URLSearchParams({ page: String(page) });
       if (guruMode === 'hari' && guruTanggal) params.set('tanggal', guruTanggal);
       else if (guruMode === 'bulan') { params.set('bulan', guruBulan); params.set('tahun', guruTahun); }
-      else params.set('tanggal', new Date().toISOString().slice(0, 10));
+      else params.set('tanggal', todayInSchoolTZ());
 
       const r: any = await api.get(`/api/presensi/guru/dashboard?${params}`);
       setGuruRows(r.data || []);
@@ -199,7 +227,7 @@ export default function PresensiAdmin() {
       setGuruPages(r.totalPages || 1);
     } catch { toast.error('Gagal memuat data presensi guru'); }
     finally { setLoadingGuru(false); }
-  }, [guruMode, guruTanggal, guruBulan, guruTahun]);
+  }, [guruMode, guruTanggal, guruBulan, guruTahun, todayInSchoolTZ]);
 
   // ── Load siswa presensi ──────────────────────────────────────────────────
   const loadSiswa = useCallback(async (page = 1) => {
@@ -209,7 +237,7 @@ export default function PresensiAdmin() {
       if (siswaSearch) params.set('search', siswaSearch);
       if (siswaMode === 'hari' && siswaTanggal) params.set('tanggal', siswaTanggal);
       else if (siswaMode === 'bulan') { params.set('bulan', siswaBulan); params.set('tahun', siswaTahun); }
-      else params.set('tanggal', new Date().toISOString().slice(0, 10));
+      else params.set('tanggal', todayInSchoolTZ());
 
       const r: any = await api.get(`/api/presensi/siswa/dashboard?${params}`);
       setSiswaRows(r.data || []);
@@ -218,10 +246,54 @@ export default function PresensiAdmin() {
       setSiswaPages(r.totalPages || 1);
     } catch { toast.error('Gagal memuat data presensi siswa'); }
     finally { setLoadingSiswa(false); }
-  }, [siswaMode, siswaTanggal, siswaBulan, siswaTahun, siswaSearch]);
+  }, [siswaMode, siswaTanggal, siswaBulan, siswaTahun, siswaSearch, todayInSchoolTZ]);
+
+  // ── Load absensi siswa (tidak hadir) ────────────────────────────────────
+  const loadAbsensi = useCallback(async (page = 1) => {
+    setLoadingAbsensi(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '15' });
+      const today = todayInSchoolTZ();
+      if (siswaMode === 'hari') {
+        const tgl = siswaTanggal || today;
+        params.set('dari', tgl);
+        params.set('sampai', tgl);
+      } else {
+        const m = siswaBulan.padStart(2, '0');
+        const lastDay = new Date(Number(siswaTahun), Number(siswaBulan), 0).getDate();
+        params.set('dari', `${siswaTahun}-${m}-01`);
+        params.set('sampai', `${siswaTahun}-${m}-${lastDay}`);
+      }
+      const r: any = await api.get(`/api/admin/absensi?${params}`);
+      setAbsensiRows(r.data || []);
+      setAbsensiTotal(r.total || 0);
+      setAbsensiPage(r.page || 1);
+      setAbsensiPages(r.totalPages || 1);
+    } catch { toast.error('Gagal memuat data absensi siswa'); }
+    finally { setLoadingAbsensi(false); }
+  }, [siswaMode, siswaTanggal, siswaBulan, siswaTahun, todayInSchoolTZ]);
+
+  // ── Trigger auto-absent manual ────────────────────────────────────────────
+  const triggerAutoAbsent = async () => {
+    setTriggeringAutoAbsent(true);
+    try {
+      await api.post('/api/presensi/auto-absent/trigger', {});
+      toast.success('Auto-absent berhasil dijalankan. Halaman akan diperbarui...');
+      setTimeout(() => { loadGuru(1); loadAbsensi(1); }, 500);
+    } catch (err: any) {
+      toast.error(err?.message || 'Gagal menjalankan auto-absent');
+    } finally {
+      setTriggeringAutoAbsent(false);
+    }
+  };
 
   useEffect(() => { if (tab === 'guru') loadGuru(1); }, [tab, loadGuru]);
-  useEffect(() => { if (tab === 'siswa') loadSiswa(1); }, [tab, loadSiswa]);
+  useEffect(() => {
+    if (tab === 'siswa') {
+      if (siswaSubTab === 'hadir') loadSiswa(1);
+      else loadAbsensi(1);
+    }
+  }, [tab, siswaSubTab, loadSiswa, loadAbsensi]);
   useEffect(() => {
     if (tab === 'pengaturan') {
       setLoadingKode(true);
@@ -786,10 +858,23 @@ export default function PresensiAdmin() {
               tahun={guruTahun} onTahun={setGuruTahun}
               onApply={() => loadGuru(1)}
             />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <p className="text-sm text-on-surface-variant">
                 {guruTotal} data ditemukan
               </p>
+              <button
+                onClick={triggerAutoAbsent}
+                disabled={triggeringAutoAbsent}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+                title="Tandai guru yang belum hadir hari ini sebagai tidak hadir"
+              >
+                {triggeringAutoAbsent ? (
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4" />
+                )}
+                Tandai Tidak Hadir
+              </button>
               {guruMode === 'bulan' && (
                 <button
                   onClick={exportGuruExcel}
@@ -811,31 +896,50 @@ export default function PresensiAdmin() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-outline-variant">
-                  {['No','Nama Guru','Tanggal','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Foto','Aksi'].map(h => (
+                  {['No','Nama Guru','Tanggal','Status','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Foto','Aksi'].map(h => (
                     <th key={h} className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/40">
                 {loadingGuru ? (
-                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
+                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
                 ) : guruRows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
-                ) : guruRows.map(row => (
-                  <tr key={row.id} className="hover:bg-surface-container-low/50 transition-colors group">
+                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
+                ) : guruRows.map(row => {
+                  const isAbsent = row.autoAbsent && !row.waktuDatang;
+                  return (
+                  <tr key={row.id} className={`hover:bg-surface-container-low/50 transition-colors group ${isAbsent ? 'bg-red-50/40' : ''}`}>
                     <td className="px-4 py-3 text-on-surface-variant">{row.no}</td>
                     <td className="px-4 py-3 font-medium text-on-surface">{row.nama}</td>
                     <td className="px-4 py-3 text-on-surface-variant">{fmtDate(row.tanggal, cfg.timezone)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuDatang, cfg.timezone)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtTime(row.waktuPulang, cfg.timezone)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">
-                      {row.keterlambatan > 0 ? (
-                        <span className="text-error font-medium">{row.keterlambatan} menit</span>
+                    <td className="px-4 py-3">
+                      {isAbsent ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                          <AlertTriangle className="w-3 h-3" /> Tidak Hadir
+                        </span>
+                      ) : row.waktuDatang ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          <CheckCircle className="w-3 h-3" /> Hadir
+                        </span>
                       ) : (
-                        <span className="text-green-600 font-medium">Tepat Waktu</span>
+                        <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-on-surface-variant">{fmtDurasi(row.totalJam)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{isAbsent ? <span className="text-red-400">—</span> : fmtTime(row.waktuDatang, cfg.timezone)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{isAbsent ? <span className="text-red-400">—</span> : fmtTime(row.waktuPulang, cfg.timezone)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">
+                      {isAbsent ? (
+                        <span className="text-red-500 font-medium text-xs">Tidak Hadir</span>
+                      ) : row.keterlambatan > 0 ? (
+                        <span className="text-error font-medium">{row.keterlambatan} menit</span>
+                      ) : row.waktuDatang ? (
+                        <span className="text-green-600 font-medium">Tepat Waktu</span>
+                      ) : (
+                        <span className="text-on-surface-variant">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-on-surface-variant">{isAbsent ? '—' : fmtDurasi(row.totalJam)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         <FotoThumb src={row.fotoDatang} label="Foto Datang" />
@@ -853,7 +957,8 @@ export default function PresensiAdmin() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
@@ -870,6 +975,31 @@ export default function PresensiAdmin() {
       {/* ── TAB: Presensi Siswa ── */}
       {tab === 'siswa' && (
         <div className="space-y-4">
+          {/* Sub-tab: Hadir / Tidak Hadir */}
+          <div className="flex items-center gap-3 flex-wrap justify-between">
+            <div className="flex p-1 bg-surface-container rounded-xl">
+              <button onClick={() => setSiswaSubTab('hadir')} className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${siswaSubTab === 'hadir' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}`}>
+                Hadir ({siswaTotal})
+              </button>
+              <button onClick={() => setSiswaSubTab('tidakHadir')} className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${siswaSubTab === 'tidakHadir' ? 'bg-surface-container-lowest text-error shadow-sm' : 'text-on-surface-variant'}`}>
+                Tidak Hadir ({absensiTotal})
+              </button>
+            </div>
+            <button
+              onClick={triggerAutoAbsent}
+              disabled={triggeringAutoAbsent}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+              title="Tandai siswa yang belum hadir hari ini sebagai ALFA otomatis"
+            >
+              {triggeringAutoAbsent ? (
+                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <AlertTriangle className="w-4 h-4" />
+              )}
+              Tandai Tidak Hadir
+            </button>
+          </div>
+
           <div className="flex flex-wrap justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <FilterBar
@@ -877,37 +1007,33 @@ export default function PresensiAdmin() {
                 tanggal={siswaTanggal} onTanggal={setSiswaTanggal}
                 bulan={siswaBulan} onBulan={setSiswaBulan}
                 tahun={siswaTahun} onTahun={setSiswaTahun}
-                onApply={() => loadSiswa(1)}
+                onApply={() => siswaSubTab === 'hadir' ? loadSiswa(1) : loadAbsensi(1)}
               />
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
-                <input
-                  type="text" value={siswaSearch} onChange={e => setSiswaSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && loadSiswa(1)}
-                  placeholder="Cari nama atau NIS..."
-                  className="pl-9 pr-4 py-2 border border-outline-variant rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-surface-container-lowest w-52"
-                />
-              </div>
+              {siswaSubTab === 'hadir' && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-outline" />
+                  <input
+                    type="text" value={siswaSearch} onChange={e => setSiswaSearch(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && loadSiswa(1)}
+                    placeholder="Cari nama atau NIS..."
+                    className="pl-9 pr-4 py-2 border border-outline-variant rounded-xl text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-surface-container-lowest w-52"
+                  />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3">
-              <p className="text-sm text-on-surface-variant">{siswaTotal} data ditemukan</p>
-              {siswaMode === 'bulan' && (
-                <button
-                  onClick={exportSiswaExcel}
-                  disabled={exportingSiswa}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
-                >
-                  {exportingSiswa ? (
-                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
+              {siswaSubTab === 'hadir' && siswaMode === 'bulan' && (
+                <button onClick={exportSiswaExcel} disabled={exportingSiswa}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">
+                  {exportingSiswa ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
                   Export Excel
                 </button>
               )}
             </div>
           </div>
 
+          {/* Tabel Hadir */}
+          {siswaSubTab === 'hadir' && (
           <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -947,6 +1073,71 @@ export default function PresensiAdmin() {
               </div>
             )}
           </div>
+          )}
+
+          {/* Tabel Tidak Hadir (AbsensiSiswa) */}
+          {siswaSubTab === 'tidakHadir' && (
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden shadow-[0px_4px_20px_rgba(0,0,0,0.03)]">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-outline-variant">
+                  {['Tanggal','NIS','Nama Siswa','Kelas','Status','Keterangan','Sumber','Aksi'].map(h => (
+                    <th key={h} className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/40">
+                {loadingAbsensi ? (
+                  <tr><td colSpan={8} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
+                ) : absensiRows.length === 0 ? (
+                  <tr><td colSpan={8} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data ketidakhadiran untuk filter ini</td></tr>
+                ) : absensiRows.map(row => (
+                  <tr key={row.id} className={`hover:bg-surface-container-low/50 transition-colors group ${row.autoAbsent ? 'bg-red-50/30' : ''}`}>
+                    <td className="px-4 py-3 text-on-surface-variant text-sm">{row.tanggal}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-on-surface">{row.siswa.nis}</td>
+                    <td className="px-4 py-3 font-medium text-on-surface text-sm">{row.siswa.nama}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-sm">{row.siswa.kelas}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        row.status === 'SAKIT' ? 'bg-yellow-100 text-yellow-700'
+                        : row.status === 'IZIN' ? 'bg-blue-100 text-blue-700'
+                        : 'bg-red-100 text-red-700'
+                      }`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-on-surface-variant text-sm max-w-[180px] truncate">{row.keterangan || '—'}</td>
+                    <td className="px-4 py-3">
+                      {row.autoAbsent ? (
+                        <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">Auto</span>
+                      ) : (
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Manual</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => { setEditAbsensi(row); setEditAbsensiStatus(row.status); setEditAbsensiKet(row.keterangan || ''); }}
+                          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDelAbsensiId(row.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors" title="Hapus">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {absensiPages > 1 && (
+              <div className="px-5 py-4 bg-surface-container/30 border-t border-outline-variant flex justify-between items-center">
+                <p className="text-sm text-on-surface-variant">Hal {absensiPage} dari {absensiPages} · {absensiTotal} total</p>
+                <Pagination page={absensiPage} pages={absensiPages} onPage={p => { setAbsensiPage(p); loadAbsensi(p); }} />
+              </div>
+            )}
+          </div>
+          )}
         </div>
       )}
 
@@ -1014,6 +1205,88 @@ export default function PresensiAdmin() {
               <Button variant="outline" onClick={() => setDelSiswaId(null)} disabled={deletingSiswa} className="flex-1">Batal</Button>
               <Button variant="destructive" onClick={confirmDeleteSiswa} disabled={deletingSiswa} className="flex-1">
                 {deletingSiswa ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Absensi Siswa Modal ── */}
+      {editAbsensi && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant">
+              <h3 className="font-semibold text-on-surface">Edit Ketidakhadiran Siswa</h3>
+              <button onClick={() => setEditAbsensi(null)} className="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm font-medium text-primary">{editAbsensi.siswa.nama}</p>
+              <p className="text-xs text-on-surface-variant">{editAbsensi.siswa.kelas} · {editAbsensi.tanggal}</p>
+              {editAbsensi.autoAbsent && (
+                <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-orange-600 shrink-0" />
+                  <p className="text-xs text-orange-800">Data ini dibuat otomatis. Ubah status jika diperlukan.</p>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant">Status Ketidakhadiran</label>
+                <div className="flex gap-3">
+                  {['SAKIT','IZIN','ALFA'].map(s => (
+                    <label key={s} className={`flex-1 py-2 text-center rounded-xl border-2 cursor-pointer text-sm font-semibold transition-all ${editAbsensiStatus === s ? 'border-primary bg-primary/5 text-primary' : 'border-outline-variant text-on-surface-variant hover:border-primary/40'}`}>
+                      <input type="radio" value={s} checked={editAbsensiStatus === s} onChange={() => setEditAbsensiStatus(s)} className="sr-only" />
+                      {s}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-on-surface-variant">Keterangan <span className="text-on-surface-variant/60">(opsional)</span></label>
+                <input type="text" value={editAbsensiKet} onChange={e => setEditAbsensiKet(e.target.value)}
+                  placeholder="Misal: Sakit demam, surat terlampir"
+                  className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none" />
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex gap-3">
+              <Button variant="outline" onClick={() => setEditAbsensi(null)} disabled={savingAbsensi} className="flex-1">Batal</Button>
+              <Button onClick={async () => {
+                setSavingAbsensi(true);
+                try {
+                  await api.put(`/api/admin/absensi/${editAbsensi.id}`, { status: editAbsensiStatus, keterangan: editAbsensiKet });
+                  toast.success('Data absensi diperbarui');
+                  setEditAbsensi(null);
+                  loadAbsensi(absensiPage);
+                } catch { toast.error('Gagal memperbarui absensi'); }
+                finally { setSavingAbsensi(false); }
+              }} disabled={savingAbsensi} className="flex-1">
+                {savingAbsensi ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Delete Absensi ── */}
+      {delAbsensiId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-xl p-6 text-center space-y-4">
+            <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-error" />
+            </div>
+            <h3 className="font-semibold text-on-surface">Hapus data absensi ini?</h3>
+            <p className="text-sm text-on-surface-variant">Data yang dihapus tidak bisa dikembalikan.</p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setDelAbsensiId(null)} disabled={deletingAbsensi} className="flex-1">Batal</Button>
+              <Button variant="destructive" onClick={async () => {
+                setDeletingAbsensi(true);
+                try {
+                  await api.delete(`/api/admin/absensi/${delAbsensiId}`);
+                  toast.success('Data absensi dihapus');
+                  setDelAbsensiId(null);
+                  loadAbsensi(absensiPage);
+                } catch { toast.error('Gagal menghapus data'); }
+                finally { setDeletingAbsensi(false); }
+              }} disabled={deletingAbsensi} className="flex-1">
+                {deletingAbsensi ? 'Menghapus...' : 'Hapus'}
               </Button>
             </div>
           </div>

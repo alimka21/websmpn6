@@ -220,6 +220,13 @@ router.get('/users', async (req, res, next) => {
     const whereCondition = role ? { role: String(role) } : {};
     const { page, limit, skip } = getPaginationParams(req.query);
 
+    const orderBy: { guru?: { nama: 'asc' | 'desc' }; siswa?: { kelas?: { tingkat?: 'asc' | 'desc'; nama?: 'asc' | 'desc' }; nama?: 'asc' | 'desc' }; createdAt?: 'asc' | 'desc' }[] =
+      role === 'GURU'
+        ? [{ guru: { nama: 'asc' } }]
+        : role === 'SISWA'
+        ? [{ siswa: { kelas: { tingkat: 'asc' } } }, { siswa: { kelas: { nama: 'asc' } } }, { siswa: { nama: 'asc' } }]
+        : [{ createdAt: 'desc' }];
+
     // Select eksplisit — JANGAN return password hash ke frontend (security).
     const [users, total] = await prisma.$transaction([
       prisma.user.findMany({
@@ -244,7 +251,7 @@ router.get('/users', async (req, res, next) => {
           } },
           siswa: { select: { id: true, nama: true, nis: true, rfidKode: true, kelasId: true, kelas: { select: { id: true, nama: true, tingkat: true, guru: { select: { id: true, nama: true } } } } } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
       prisma.user.count({ where: whereCondition }),
     ]);
@@ -360,6 +367,8 @@ router.patch('/users/:id', validate(UpdateUserSchema), async (req, res, next) =>
             ...(nama && { nama: toTitleCase(nama) }),
             ...(nip && { nip }),
             ...(mapelLegacy && { mataPelajaran: toTitleCase(mapelLegacy) }),
+            // rfidKode: '' menghapus, string mengisi, undefined tidak mengubah
+            ...(rfidKode !== undefined && { rfidKode: rfidKode === '' ? null : rfidKode }),
           }
         });
       } else if (user.role === 'SISWA') {
@@ -1333,6 +1342,9 @@ router.get('/activity', async (req, res, next) => {
   try {
     const limit = Math.min(Number(req.query.limit) || 30, 100);
 
+    const cfgAct = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzAct  = cfgAct?.timezone || 'Asia/Jakarta';
+
     const [sesiSelesai, ujianBaru, presensiGuru] = await Promise.all([
       // Siswa menyelesaikan ujian
       prisma.sesiUjian.findMany({
@@ -1411,7 +1423,7 @@ router.get('/activity', async (req, res, next) => {
         actor: p.guru?.nama ?? '—',
         actorRole: 'guru' as const,
         description: `Clock-in presensi`,
-        meta: p.waktuDatang ? fmtWIB(new Date(p.waktuDatang)) : '—',
+        meta: p.waktuDatang ? fmtWIB(new Date(p.waktuDatang), tzAct) : '—',
       })),
     ];
 
@@ -1435,19 +1447,21 @@ router.get('/presensi/guru/export', async (req, res, next) => {
       return res.status(400).json({ error: 'Parameter bulan dan tahun wajib diisi' });
     }
 
-    const start = new Date(tahun, bulan - 1, 1);
-    const end = new Date(tahun, bulan, 1);
+    // Fetch cfg dulu agar start/end pakai school timezone, bukan server local TZ
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+
+    const pad2 = (n: number) => String(n).padStart(2, '0');
+    const start = wibMidnight(`${tahun}-${pad2(bulan)}-01`, tz);
+    const end   = wibMidnight(`${tahun}-${pad2(bulan < 12 ? bulan + 1 : 1)}-01`, bulan < 12 ? tz : tz);
+    if (bulan === 12) end.setFullYear(tahun + 1);
 
     const data = await prisma.presensiGuru.findMany({
       where: { tanggal: { gte: start, lt: end } },
       include: { guru: { select: { nama: true, nip: true } } },
       orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
     });
-
-    // Get jam masuk default dan timezone
-    const cfg = await prisma.pengaturanPresensi.findFirst();
-    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
-    const tz = cfg?.timezone || 'Asia/Jakarta';
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Presensi Guru');
@@ -1521,8 +1535,15 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
       return res.status(400).json({ error: 'Parameter bulan dan tahun wajib diisi' });
     }
 
-    const start = new Date(tahun, bulan - 1, 1);
-    const end = new Date(tahun, bulan, 1);
+    // Fetch cfg dulu agar start/end pakai school timezone
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Jakarta';
+
+    const pad2s = (n: number) => String(n).padStart(2, '0');
+    const start = wibMidnight(`${tahun}-${pad2s(bulan)}-01`, tz);
+    const end   = wibMidnight(`${tahun}-${pad2s(bulan < 12 ? bulan + 1 : 1)}-01`, tz);
+    if (bulan === 12) end.setFullYear(tahun + 1);
 
     const data = await prisma.presensiSiswa.findMany({
       where: { tanggal: { gte: start, lt: end } },
@@ -1537,11 +1558,6 @@ router.get('/presensi/siswa/export', async (req, res, next) => {
       },
       orderBy: [{ tanggal: 'asc' }, { waktuDatang: 'asc' }],
     });
-
-    // Get jam masuk default dan timezone
-    const cfg = await prisma.pengaturanPresensi.findFirst();
-    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
-    const tz = cfg?.timezone || 'Asia/Jakarta';
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Presensi Siswa');
@@ -1650,12 +1666,15 @@ router.get('/absensi', async (req, res, next) => {
     const page  = Math.max(1, Number(pageStr)  || 1);
     const limit = Math.min(100, Number(limitStr) || 50);
 
+    const cfgAbs = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzAbs  = cfgAbs?.timezone || 'Asia/Jakarta';
+
     const tanggalWhere: any = {};
     if (dari) {
-      tanggalWhere.gte = wibMidnight(dari);
+      tanggalWhere.gte = wibMidnight(dari, tzAbs);
     }
     if (sampai) {
-      const end = wibMidnight(sampai);
+      const end = wibMidnight(sampai, tzAbs);
       end.setTime(end.getTime() + 24 * 60 * 60 * 1000);
       tanggalWhere.lt = end;
     }
@@ -1682,9 +1701,10 @@ router.get('/absensi', async (req, res, next) => {
     res.json({
       data: data.map(a => ({
         id: a.id,
-        tanggal: a.tanggal.toISOString().slice(0, 10),
+        tanggal: a.tanggal.toLocaleDateString('en-CA', { timeZone: tzAbs }),
         status: a.status,
         keterangan: a.keterangan,
+        autoAbsent: a.autoAbsent,
         siswa: { nama: a.siswa.nama, nis: a.siswa.nis, kelas: a.siswa.kelas.nama },
         guru: a.guru ? { nama: a.guru.nama } : null,
       })),
@@ -1713,6 +1733,7 @@ router.put('/absensi/:id', async (req, res, next) => {
       data: {
         ...(status ? { status } : {}),
         ...(keterangan !== undefined ? { keterangan: keterangan || null } : {}),
+        autoAbsent: false, // admin mengedit → sudah dikurasi manual
       },
     });
 
@@ -1737,9 +1758,12 @@ router.get('/absensi/export', async (req, res, next) => {
   try {
     const { dari, sampai, kelasId } = req.query as Record<string, string>;
 
+    const cfgAbsExp = await prisma.pengaturanPresensi.findFirst({ select: { timezone: true } });
+    const tzAbsExp  = cfgAbsExp?.timezone || 'Asia/Jakarta';
+
     const tanggalWhere: any = {};
-    if (dari)   { tanggalWhere.gte = wibMidnight(dari); }
-    if (sampai) { const e = wibMidnight(sampai); e.setTime(e.getTime() + 86_400_000); tanggalWhere.lt = e; }
+    if (dari)   { tanggalWhere.gte = wibMidnight(dari, tzAbsExp); }
+    if (sampai) { const e = wibMidnight(sampai, tzAbsExp); e.setTime(e.getTime() + 86_400_000); tanggalWhere.lt = e; }
 
     // Ambil data hadir dan absensi
     const siswaWhere: any = kelasId ? { kelasId } : {};
@@ -1961,8 +1985,8 @@ router.get('/potensi/rekap', async (req, res, next) => {
 router.get('/potensi/siswa-list', async (_req, res, next) => {
   try {
     const list = await prisma.siswa.findMany({
-      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true } } },
-      orderBy: { nama: 'asc' },
+      select: { id: true, nama: true, nis: true, kelas: { select: { nama: true, tingkat: true } } },
+      orderBy: [{ kelas: { tingkat: 'asc' } }, { kelas: { nama: 'asc' } }, { nama: 'asc' }],
     });
     res.json(list.map(s => ({ id: s.id, nama: s.nama, nis: s.nis, kelas: s.kelas?.nama ?? '—' })));
   } catch (err) { next(err); }
@@ -2102,63 +2126,231 @@ router.post('/potensi/export-docx', async (req, res, next) => {
     const neto = totalKebaikan - totalPelanggaran;
     const periode = dari && sampai ? `${dari} s/d ${sampai}` : 'Semua Periode';
 
-    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, BorderStyle, HeadingLevel } = await import('docx');
+    const {
+      Document, Packer, Paragraph, Table, TableRow, TableCell,
+      TextRun, WidthType, AlignmentType, BorderStyle,
+      PageOrientation, convertMillimetersToTwip,
+    } = await import('docx');
 
-    const makeHeaderRow = (cols: string[]) => new TableRow({
-      children: cols.map(c => new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: c, bold: true })] })],
-        shading: { fill: 'E3F2FD' },
+    const fmtTgl = (d: Date) => d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    // Ukuran halaman A4 potrait, margin 2.5 cm semua sisi
+    const MARGIN = convertMillimetersToTwip(25);
+    // Lebar konten ≈ 210mm - 25mm*2 = 160mm → 9072 twips
+    const COL_W = {
+      no:       convertMillimetersToTwip(9),
+      tgl:      convertMillimetersToTwip(26),
+      jenis:    convertMillimetersToTwip(46),
+      poin:     convertMillimetersToTwip(14),
+      pelapor:  convertMillimetersToTwip(38),
+      ket:      convertMillimetersToTwip(27),
+    };
+    // info table
+    const INFO_LABEL = convertMillimetersToTwip(26);
+    const INFO_SEP   = convertMillimetersToTwip(4);
+    const INFO_VAL   = convertMillimetersToTwip(130);
+
+    const CELL_PAD = { top: 80, bottom: 80, left: 120, right: 120 };
+    const NO_BORDER = {
+      top:    { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      left:   { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      right:  { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+    };
+
+    const paraSpacing = { before: 40, after: 40, line: 276, lineRule: 'auto' as any };
+    const paraSpacingLg = { before: 80, after: 80, line: 276, lineRule: 'auto' as any };
+
+    // Baris header tabel kebaikan/pelanggaran
+    const makeHeaderRow = (cols: { label: string; w: number }[]) => new TableRow({
+      tableHeader: true,
+      children: cols.map(({ label, w }) => new TableCell({
+        width: { size: w, type: WidthType.DXA },
+        margins: CELL_PAD,
+        shading: { fill: 'DBEAFE' },
+        children: [new Paragraph({
+          spacing: paraSpacing,
+          children: [new TextRun({ text: label, bold: true, size: 20 })],
+        })],
       })),
     });
 
-    const makeTableRows = (rows: string[][]) => rows.map(cells => new TableRow({
-      children: cells.map(c => new TableCell({ children: [new Paragraph(c)] })),
-    }));
+    const makeDataRows = (rows: { vals: string[]; widths: number[] }[]) =>
+      rows.map((row, ri) => new TableRow({
+        children: row.vals.map((val, ci) => new TableCell({
+          width: { size: row.widths[ci], type: WidthType.DXA },
+          margins: CELL_PAD,
+          shading: ri % 2 === 1 ? { fill: 'F8FAFC' } : undefined,
+          children: [new Paragraph({
+            spacing: paraSpacing,
+            children: [new TextRun({ text: val, size: 20 })],
+          })],
+        })),
+      }));
+
+    const COL_WIDTHS = [COL_W.no, COL_W.tgl, COL_W.jenis, COL_W.poin, COL_W.pelapor, COL_W.ket];
+    const HDR_KEBAIKAN    = [
+      { label: 'No', w: COL_W.no }, { label: 'Tanggal', w: COL_W.tgl },
+      { label: 'Jenis Kebaikan', w: COL_W.jenis }, { label: 'Poin', w: COL_W.poin },
+      { label: 'Pelapor', w: COL_W.pelapor }, { label: 'Keterangan', w: COL_W.ket },
+    ];
+    const HDR_PELANGGARAN = [
+      { label: 'No', w: COL_W.no }, { label: 'Tanggal', w: COL_W.tgl },
+      { label: 'Jenis Pelanggaran', w: COL_W.jenis }, { label: 'Poin', w: COL_W.poin },
+      { label: 'Pelapor', w: COL_W.pelapor }, { label: 'Keterangan', w: COL_W.ket },
+    ];
+
+    const emptyRow = (span: number) => new TableRow({ children: [new TableCell({
+      columnSpan: span, margins: CELL_PAD,
+      children: [new Paragraph({ spacing: paraSpacing, children: [new TextRun({ text: 'Tidak ada data', italics: true, color: '6B7280', size: 20 })] })],
+    })] });
 
     const tblKebaikan = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
-        makeHeaderRow(['No', 'Tanggal', 'Jenis Kebaikan', 'Poin', 'Pelapor', 'Keterangan']),
-        ...makeTableRows(kebaikanList.map((l, i) => [
-          String(i+1), l.tanggal.toISOString().slice(0,10),
-          l.jenisKebaikan?.nama || '', String(l.poin), l.namaPelapor, l.keterangan || '',
-        ])),
-        ...(kebaikanList.length === 0 ? [new TableRow({ children: [new TableCell({ children: [new Paragraph('Tidak ada data')], columnSpan: 6 })] })] : []),
+        makeHeaderRow(HDR_KEBAIKAN),
+        ...(kebaikanList.length > 0
+          ? makeDataRows(kebaikanList.map((l, i) => ({
+              vals: [String(i+1), fmtTgl(l.tanggal), l.jenisKebaikan?.nama || '—', String(l.poin), l.namaPelapor, l.keterangan || ''],
+              widths: COL_WIDTHS,
+            })))
+          : [emptyRow(6)]),
       ],
     });
 
     const tblPelanggaran = new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
-        makeHeaderRow(['No', 'Tanggal', 'Jenis Pelanggaran', 'Poin', 'Pelapor', 'Keterangan']),
-        ...makeTableRows(pelanggaranList.map((l, i) => [
-          String(i+1), l.tanggal.toISOString().slice(0,10),
-          l.jenisPelanggaran?.nama || '', String(l.poin), l.namaPelapor, l.keterangan || '',
-        ])),
-        ...(pelanggaranList.length === 0 ? [new TableRow({ children: [new TableCell({ children: [new Paragraph('Tidak ada data')], columnSpan: 6 })] })] : []),
+        makeHeaderRow(HDR_PELANGGARAN),
+        ...(pelanggaranList.length > 0
+          ? makeDataRows(pelanggaranList.map((l, i) => ({
+              vals: [String(i+1), fmtTgl(l.tanggal), l.jenisPelanggaran?.nama || '—', String(l.poin), l.namaPelapor, l.keterangan || ''],
+              widths: COL_WIDTHS,
+            })))
+          : [emptyRow(6)]),
       ],
     });
 
-    const doc = new Document({
-      sections: [{
+    // Info tabel (tanpa border) — label | titik dua | nilai
+    const infoRow = (label: string, value: string) => new TableRow({
+      children: [
+        new TableCell({
+          width: { size: INFO_LABEL, type: WidthType.DXA },
+          borders: NO_BORDER, margins: { top: 60, bottom: 60, left: 0, right: 0 },
+          children: [new Paragraph({ spacing: paraSpacingLg, children: [new TextRun({ text: label, size: 22 })] })],
+        }),
+        new TableCell({
+          width: { size: INFO_SEP, type: WidthType.DXA },
+          borders: NO_BORDER, margins: { top: 60, bottom: 60, left: 60, right: 60 },
+          children: [new Paragraph({ spacing: paraSpacingLg, children: [new TextRun({ text: ':', size: 22 })] })],
+        }),
+        new TableCell({
+          width: { size: INFO_VAL, type: WidthType.DXA },
+          borders: NO_BORDER, margins: { top: 60, bottom: 60, left: 60, right: 0 },
+          children: [new Paragraph({ spacing: paraSpacingLg, children: [new TextRun({ text: value, size: 22 })] })],
+        }),
+      ],
+    });
+
+    const tblInfo = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top:           { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        bottom:        { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        left:          { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        right:         { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        insideVertical:   { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      },
+      rows: [
+        infoRow('Nama',    siswa.nama),
+        infoRow('NIS',     siswa.nis),
+        infoRow('Kelas',   siswa.kelas?.nama ?? '—'),
+        infoRow('Periode', periode),
+      ],
+    });
+
+    // Rekap akhir — tabel 2 kolom tanpa border
+    const rekapRow = (label: string, value: string, opts?: { bold?: boolean; color?: string }) =>
+      new TableRow({
         children: [
-          new Paragraph({ text: 'REKAPITULASI POTENSI SISWA', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ children: [new TextRun({ text: `Nama    : ${siswa.nama}`, break: 0 })] }),
-          new Paragraph({ children: [new TextRun({ text: `NIS     : ${siswa.nis}` })] }),
-          new Paragraph({ children: [new TextRun({ text: `Kelas   : ${siswa.kelas.nama}` })] }),
-          new Paragraph({ children: [new TextRun({ text: `Periode : ${periode}` })] }),
-          new Paragraph(''),
-          new Paragraph({ text: 'TABEL KEBAIKAN', heading: HeadingLevel.HEADING_2 }),
+          new TableCell({
+            width: { size: convertMillimetersToTwip(80), type: WidthType.DXA },
+            borders: NO_BORDER, margins: { top: 50, bottom: 50, left: 0, right: 0 },
+            children: [new Paragraph({ spacing: paraSpacing, children: [new TextRun({ text: label, bold: opts?.bold, size: 22 })] })],
+          }),
+          new TableCell({
+            width: { size: convertMillimetersToTwip(10), type: WidthType.DXA },
+            borders: NO_BORDER, margins: { top: 50, bottom: 50, left: 40, right: 40 },
+            children: [new Paragraph({ spacing: paraSpacing, children: [new TextRun({ text: ':', bold: opts?.bold, size: 22 })] })],
+          }),
+          new TableCell({
+            width: { size: convertMillimetersToTwip(70), type: WidthType.DXA },
+            borders: NO_BORDER, margins: { top: 50, bottom: 50, left: 40, right: 0 },
+            children: [new Paragraph({ spacing: paraSpacing, children: [new TextRun({ text: value, bold: opts?.bold, color: opts?.color, size: 22 })] })],
+          }),
+        ],
+      });
+
+    const tblRekap = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }, bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }, right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }, insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+      },
+      rows: [
+        rekapRow('Total Poin Kebaikan',      String(totalKebaikan)),
+        rekapRow('Total Poin Pelanggaran',   String(totalPelanggaran)),
+        rekapRow('Poin Neto (Baik-Langgar)', String(neto),                           { bold: true }),
+        rekapRow('Status',                   neto >= 0 ? 'POSITIF' : 'NEGATIF',     { bold: true, color: neto >= 0 ? '16A34A' : 'DC2626' }),
+      ],
+    });
+
+    const gap = () => new Paragraph({ text: '', spacing: { before: 160, after: 0 } });
+
+    const sectionTitle = (text: string) => new Paragraph({
+      spacing: { before: 200, after: 120 },
+      children: [new TextRun({ text, bold: true, size: 24, color: '1D4ED8', underline: {} })],
+    });
+
+    const doc = new Document({
+      styles: {
+        default: {
+          document: {
+            run:       { font: 'Calibri', size: 22 },
+            paragraph: { spacing: { line: 276, lineRule: 'auto' as any } },
+          },
+        },
+      },
+      sections: [{
+        properties: {
+          page: {
+            size: { orientation: PageOrientation.PORTRAIT },
+            margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
+          },
+        },
+        children: [
+          // Judul
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 240 },
+            children: [new TextRun({ text: 'REKAPITULASI POTENSI SISWA', bold: true, size: 32, color: '1D4ED8' })],
+          }),
+          // Info siswa
+          tblInfo,
+          gap(),
+          // Tabel kebaikan
+          sectionTitle('TABEL KEBAIKAN'),
           tblKebaikan,
-          new Paragraph(''),
-          new Paragraph({ text: 'TABEL PELANGGARAN', heading: HeadingLevel.HEADING_2 }),
+          gap(),
+          // Tabel pelanggaran
+          sectionTitle('TABEL PELANGGARAN'),
           tblPelanggaran,
-          new Paragraph(''),
-          new Paragraph({ text: 'REKAP AKHIR', heading: HeadingLevel.HEADING_2 }),
-          new Paragraph({ children: [new TextRun({ text: `Total Poin Kebaikan      : ${totalKebaikan}` })] }),
-          new Paragraph({ children: [new TextRun({ text: `Total Poin Pelanggaran   : ${totalPelanggaran}` })] }),
-          new Paragraph({ children: [new TextRun({ text: `Poin Neto (Baik-Langgar) : ${neto}`, bold: true })] }),
-          new Paragraph({ children: [new TextRun({ text: `Status                   : ${neto >= 0 ? 'POSITIF' : 'NEGATIF'}`, bold: true, color: neto >= 0 ? '16A34A' : 'DC2626' })] }),
+          gap(),
+          // Rekap akhir
+          sectionTitle('REKAP AKHIR'),
+          tblRekap,
         ],
       }],
     });
