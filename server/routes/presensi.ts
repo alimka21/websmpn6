@@ -289,7 +289,7 @@ router.get('/guru-list', async (req, res, next) => {
             sudahPulang: !!presensi.waktuPulang,
             waktuDatang: presensi.waktuDatang ? fmtTZ(new Date(presensi.waktuDatang), tz) : undefined,
             waktuPulang: presensi.waktuPulang ? fmtTZ(new Date(presensi.waktuPulang), tz) : undefined,
-          } : undefined,
+          } : { sudahDatang: false, sudahPulang: false },
         };
       })
     );

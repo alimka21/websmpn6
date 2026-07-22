@@ -424,7 +424,8 @@ export default function PresensiGuruKiosk() {
                   </tr>
                 ) : (
                   guruList.map((g, idx) => {
-                    const { sudahDatang, sudahPulang, waktuDatang, waktuPulang } = g.statusHariIni;
+                    const status = g.statusHariIni ?? { sudahDatang: false, sudahPulang: false };
+                    const { sudahDatang, sudahPulang, waktuDatang, waktuPulang } = status;
                     const totalJam = hitungTotalJam(waktuDatang, waktuPulang);
                     return (
                       <tr
