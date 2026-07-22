@@ -29,10 +29,9 @@ const ROLES: RoleOption[] = [
     value: 'GURU',
     label: 'Guru',
     Icon: GraduationCap,
-    idLabel: 'Alamat Email',
-    idPlaceholder: 'Contoh: guru@sekolah.sch.id',
-    idType: 'email',
-    idInputMode: 'email',
+    idLabel: 'Email atau NIP',
+    idPlaceholder: 'Email atau NIP (cth: 19870101…)',
+    idType: 'text',
   },
   {
     value: 'SISWA',
@@ -68,7 +67,7 @@ export default function LoginPage() {
       setErrorMsg('Semua field wajib diisi');
       return;
     }
-    if ((role === 'GURU' || role === 'SUPER_ADMIN') && !identifier.includes('@')) {
+    if (role === 'SUPER_ADMIN' && !identifier.includes('@')) {
       setErrorMsg('Format email tidak valid');
       return;
     }

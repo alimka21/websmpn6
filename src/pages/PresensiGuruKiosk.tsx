@@ -57,6 +57,7 @@ export default function PresensiGuruKiosk() {
   });
 
   const [attendedCount, setAttendedCount] = useState(0);
+  const [presensiTZ, setPresensiTZ] = useState('Asia/Jakarta');
 
   // Permission & Camera states
   const [cameraPermission, setCameraPermission] = useState<'pending' | 'granted' | 'denied'>('pending');
@@ -74,6 +75,9 @@ export default function PresensiGuruKiosk() {
   }, []);
 
   useEffect(() => {
+    api.get('/api/presensi/pengaturan').then((d: any) => {
+      if (d?.timezone) setPresensiTZ(d.timezone);
+    }).catch(() => {});
     loadGuruList();
     loadRecentActivity();
     requestPermissionsOnLoad();
@@ -309,7 +313,7 @@ export default function PresensiGuruKiosk() {
       setSuccessData({
         nama: selectedGuru.nama,
         type: mode,
-        time: now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: now.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         jarak: response.jarak,
       });
       setShowSuccess(true);
@@ -356,10 +360,10 @@ export default function PresensiGuruKiosk() {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="text-2xl font-bold text-[#1e40af] tabular-nums leading-tight">
-                {currentTime.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {currentTime.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
               <div className="text-xs text-[#64748b]">
-                {currentTime.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {currentTime.toLocaleDateString('id-ID', { timeZone: presensiTZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
             </div>
             <Link

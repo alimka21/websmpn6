@@ -5,8 +5,12 @@ import { Input, Label } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
 import { Plus, Users, Pencil, Trash2, KeyRound } from 'lucide-react';
 import api from '../../lib/api';
+import { useSiteConfig, tingkatOptions } from '../../hooks/useSiteConfig';
 
 export default function Students() {
+  const siteConfig = useSiteConfig();
+  const tingkatList = tingkatOptions(siteConfig.jenjang);
+
   const [kelasList, setKelasList] = useState<any[]>([]);
   const [selectedKelas, setSelectedKelas] = useState<string>('ALL');
   const [siswaList, setSiswaList] = useState<any[]>([]);
@@ -20,7 +24,7 @@ export default function Students() {
 
   // Modal Kelas
   const [showKelasModal, setShowKelasModal] = useState(false);
-  const [kelasForm, setKelasForm] = useState({ nama: '', tingkat: 'X', tahunAjaran: '' });
+  const [kelasForm, setKelasForm] = useState({ nama: '', tingkat: '', tahunAjaran: '' });
   const [isSubmittingKelas, setIsSubmittingKelas] = useState(false);
 
   const fetchKelas = async () => {
@@ -125,7 +129,7 @@ export default function Students() {
       setIsSubmittingKelas(true);
       const res = await api.post('/api/guru/kelas', kelasForm);
       setShowKelasModal(false);
-      setKelasForm({ nama: '', tingkat: 'X', tahunAjaran: '' });
+      setKelasForm({ nama: '', tingkat: '', tahunAjaran: '' });
       await fetchKelas();
       setSelectedKelas(res.id);
     } catch (error: any) {
@@ -277,10 +281,14 @@ export default function Students() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="tingkat">Tingkat *</Label>
-                    <Select id="tingkat" value={kelasForm.tingkat} onChange={e => setKelasForm({ ...kelasForm, tingkat: e.target.value })}>
-                      <option value="X">Kelas X</option>
-                      <option value="XI">Kelas XI</option>
-                      <option value="XII">Kelas XII</option>
+                    <Select
+                      id="tingkat"
+                      value={kelasForm.tingkat || String(tingkatList[0])}
+                      onChange={e => setKelasForm({ ...kelasForm, tingkat: e.target.value })}
+                    >
+                      {tingkatList.map(t => (
+                        <option key={t} value={String(t)}>Kelas {t}</option>
+                      ))}
                     </Select>
                   </div>
                   <div className="space-y-2">

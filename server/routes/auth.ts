@@ -15,13 +15,20 @@ router.post('/login', validate(LoginSchema), async (req, res, next) => {
 
     let user = null;
     let queryRole = role;
-    
+
     if (role === 'SISWA') {
       const siswa = await prisma.siswa.findUnique({
         where: { nis: identifier },
         include: { user: true },
       });
       user = siswa?.user;
+    } else if (role === 'GURU' && !identifier.includes('@')) {
+      // Login guru dengan NIP
+      const guru = await prisma.guru.findUnique({
+        where: { nip: identifier },
+        include: { user: true },
+      });
+      user = guru?.user ?? null;
     } else {
       user = await prisma.user.findUnique({ where: { email: identifier } });
     }
