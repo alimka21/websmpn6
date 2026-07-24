@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { CheckCircle, Home, User, Clock, GraduationCap, IdCard, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
+
+// USB HID RFID reader mengetik sangat cepat; threshold antar karakter < 50ms
+const RFID_SPEED_MS = 50;
+const RFID_MIN_LEN  = 4;
 
 interface Siswa {
   id: string;
@@ -65,7 +69,10 @@ export default function PresensiSiswaKiosk() {
   const [siswaBelumHadir, setSiswaBelumHadir] = useState<SiswaBelumHadir[]>([]);
   const [presensiTZ, setPresensiTZ] = useState('Asia/Jakarta');
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef       = useRef<HTMLInputElement>(null);
+  const lastKeyTimeRef = useRef<number>(0);
+  const rfidSpeedRef   = useRef<number>(0);
+  const isRfidModeRef  = useRef<boolean>(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -119,40 +126,15 @@ export default function PresensiSiswaKiosk() {
     }
   };
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!nis.trim()) {
-      toast.error('Masukkan NIS atau kode RFID terlebih dahulu');
-      return;
-    }
-
-    setLoading(true);
-    setSiswa(null);
-
-    try {
-      const data = await api.get(`/api/presensi/siswa/cari?q=${encodeURIComponent(nis.trim())}`);
-      setSiswa(data);
-    } catch (err: any) {
-      toast.error(err?.message || 'Siswa tidak ditemukan');
-      setSiswa(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!siswa) return;
-
+  const handleSubmit = useCallback(async (siswaData: Siswa) => {
     setSubmitting(true);
     try {
-      await api.post('/api/presensi/siswa', {
-        siswaId: siswa.id,
-      });
+      await api.post('/api/presensi/siswa', { siswaId: siswaData.id });
 
       const now = new Date();
       setSuccessData({
-        nama: siswa.nama,
-        kelas: siswa.kelas,
+        nama: siswaData.nama,
+        kelas: siswaData.kelas,
         time: now.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit' }),
       });
       setShowSuccess(true);
@@ -162,29 +144,79 @@ export default function PresensiSiswaKiosk() {
         setShowSuccess(false);
         setSiswa(null);
         setNis('');
+        rfidSpeedRef.current  = 0;
+        isRfidModeRef.current = false;
         loadRecentActivity();
         loadKelasData();
         loadSiswaBelumHadir();
         inputRef.current?.focus();
       }, 3000);
-
-      toast.success('Presensi berhasil dicatat!');
     } catch (err: any) {
       toast.error(err?.message || 'Gagal mencatat presensi');
     } finally {
       setSubmitting(false);
     }
+  }, [presensiTZ]);
+
+  const handleSearch = useCallback(async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = nis.trim();
+    if (!q) { toast.error('Masukkan NIS atau kode RFID terlebih dahulu'); return; }
+
+    setLoading(true);
+    setSiswa(null);
+    try {
+      const data: Siswa = await api.get(`/api/presensi/siswa/cari?q=${encodeURIComponent(q)}`);
+
+      // Jika mode RFID → langsung submit tanpa konfirmasi
+      if (isRfidModeRef.current) {
+        isRfidModeRef.current = false;
+        await handleSubmit(data);
+      } else {
+        setSiswa(data);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Siswa tidak ditemukan');
+      setSiswa(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [nis, handleSubmit]);
+
+  const handleNisChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNis(val);
+    setSiswa(null);
+
+    const now   = Date.now();
+    const delta = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
+
+    if (delta < RFID_SPEED_MS) {
+      rfidSpeedRef.current += 1;
+    } else {
+      rfidSpeedRef.current = 1;
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      if (!siswa) {
-        handleSearch();
-      } else {
-        handleSubmit();
-      }
-    }
+    if (e.key !== 'Enter') return;
+    if (!siswa) handleSearch();
+    else handleSubmit(siswa);
   };
+
+  // Auto-submit setelah 150ms berhenti ketik — khusus RFID (kecepatan tinggi)
+  useEffect(() => {
+    if (!nis || siswa || loading) return;
+    const timer = setTimeout(() => {
+      if (rfidSpeedRef.current >= RFID_MIN_LEN && nis.length >= RFID_MIN_LEN) {
+        isRfidModeRef.current = true;
+        handleSearch();
+      }
+      rfidSpeedRef.current = 0;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [nis, siswa, loading, handleSearch]);
 
   const filteredActivity = selectedKelasFilter === 'ALL'
     ? recentActivity
@@ -293,7 +325,7 @@ export default function PresensiSiswaKiosk() {
                   ref={inputRef}
                   type="text"
                   value={nis}
-                  onChange={(e) => setNis(e.target.value)}
+                  onChange={handleNisChange}
                   onKeyPress={handleKeyPress}
                   placeholder="NIS atau Kode RFID..."
                   className="w-full px-6 py-4 text-xl text-center border-2 border-[#e2e8f0] bg-white rounded-xl focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all placeholder:text-[#c4c5d5]"
@@ -326,7 +358,7 @@ export default function PresensiSiswaKiosk() {
                   </div>
                 </div>
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit(siswa)}
                   disabled={submitting}
                   className="w-full py-4 bg-[#1e40af] text-white rounded-xl hover:bg-[#1e3a8a] disabled:opacity-50 font-semibold text-lg transition-all shadow-md hover:shadow-lg"
                 >
