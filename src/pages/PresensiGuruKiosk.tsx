@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CheckCircle, Home, GraduationCap, Clock, Users, IdCard, LogIn, LogOut, ArrowRight, RefreshCw } from 'lucide-react';
+import { CheckCircle, Home, GraduationCap, Clock, Users, IdCard, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useSiteConfig } from '../hooks/useSiteConfig';
@@ -42,12 +42,11 @@ export default function PresensiGuruKiosk() {
     if (!sessionStorage.getItem('presensi_guru_ok')) navigate('/', { replace: true });
   }, [navigate]);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [presensiTZ, setPresensiTZ]   = useState('Asia/Jakarta');
+  const [currentTime, setCurrentTime]   = useState(new Date());
+  const [serverOffset, setServerOffset] = useState(0); // selisih ms antara server dan client
+  const [presensiTZ, setPresensiTZ]     = useState('Asia/Makassar');
   const [nip, setNip]                 = useState('');
-  const [guru, setGuru]               = useState<GuruInfo | null>(null);
   const [loading, setLoading]         = useState(false);
-  const [submitting, setSubmitting]   = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successData, setSuccessData] = useState<{ nama: string; type: 'datang' | 'pulang'; time: string }>({
     nama: '', type: 'datang', time: '',
@@ -58,17 +57,18 @@ export default function PresensiGuruKiosk() {
   const inputRef       = useRef<HTMLInputElement>(null);
   const lastKeyTimeRef = useRef<number>(0);
   const rfidSpeedRef   = useRef<number>(0);
-  const isRfidModeRef  = useRef<boolean>(false);
 
   useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    api.get('/api/presensi/pengaturan').then((d: any) => {
-      if (d?.timezone) setPresensiTZ(d.timezone);
+    // Sinkronisasi waktu dengan server supaya jam tampil sesuai internet, bukan jam komputer
+    api.get('/api/presensi/server-time').then((d: any) => {
+      if (d?.timestamp) setServerOffset(d.timestamp - Date.now());
+      if (d?.timezone)  setPresensiTZ(d.timezone);
     }).catch(() => {});
+    const t = setInterval(() => setCurrentTime(new Date(Date.now() + serverOffset)), 1000);
+    return () => clearInterval(t);
+  }, [serverOffset]);
+
+  useEffect(() => {
     loadGuruList();
     inputRef.current?.focus();
   }, []);
@@ -85,68 +85,55 @@ export default function PresensiGuruKiosk() {
   const hadirCount  = guruList.filter(g => g.statusHariIni.sudahDatang).length;
   const totalGuru   = guruList.length;
 
-  const doSubmit = useCallback(async (guruData: GuruInfo) => {
-    const mode: 'datang' | 'pulang' = guruData.statusHariIni.sudahDatang ? 'pulang' : 'datang';
-    setSubmitting(true);
-    try {
-      await api.post(`/api/presensi/guru/${mode}`, { guruId: guruData.id });
-      const now = new Date();
-      setSuccessData({
-        nama: guruData.nama,
-        type: mode,
-        time: now.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      });
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        setGuru(null);
-        setNip('');
-        rfidSpeedRef.current  = 0;
-        isRfidModeRef.current = false;
-        loadGuruList();
-        inputRef.current?.focus();
-      }, 3000);
-    } catch (err: any) {
-      toast.error(err?.message || err?.error || 'Gagal mencatat presensi');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [presensiTZ]);
-
   const doSearch = useCallback(async (query: string) => {
     const q = query.trim();
-    if (!q) { toast.error('Masukkan NIP atau kode RFID'); return; }
+    if (!q) return;
 
     setLoading(true);
-    setGuru(null);
     try {
       const data: GuruInfo = await api.get(`/api/presensi/guru/cari?q=${encodeURIComponent(q)}`);
+      const status = data.statusHariIni ?? { sudahDatang: false, sudahPulang: false };
 
-      if (data.statusHariIni.sudahDatang && data.statusHariIni.sudahPulang) {
+      if (status.sudahDatang && status.sudahPulang) {
         toast.info(`${data.nama} sudah melakukan presensi datang dan pulang hari ini`);
         setNip('');
-        isRfidModeRef.current = false;
+        rfidSpeedRef.current = 0;
         inputRef.current?.focus();
         return;
       }
 
-      if (isRfidModeRef.current) {
-        isRfidModeRef.current = false;
-        await doSubmit(data);
-      } else {
-        setGuru(data);
-      }
+      // Langsung submit tanpa konfirmasi
+      const mode: 'datang' | 'pulang' = status.sudahDatang ? 'pulang' : 'datang';
+      const result = await api.post(`/api/presensi/guru/${mode}`, { guruId: data.id });
+
+      // Gunakan waktu dari server (bukan jam komputer)
+      const serverTs: Date = mode === 'datang' ? new Date(result.waktuDatang) : new Date(result.waktuPulang);
+      setSuccessData({
+        nama: data.nama,
+        type: mode,
+        time: serverTs.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      });
+      setShowSuccess(true);
+      setNip('');
+      rfidSpeedRef.current = 0;
+      setTimeout(() => {
+        setShowSuccess(false);
+        loadGuruList();
+        inputRef.current?.focus();
+      }, 3000);
     } catch (err: any) {
-      toast.error(err?.message || 'Guru tidak ditemukan');
+      toast.error(err?.message || err?.error || 'Guru tidak ditemukan atau gagal mencatat presensi');
+      setNip('');
+      rfidSpeedRef.current = 0;
+      inputRef.current?.focus();
     } finally {
       setLoading(false);
     }
-  }, [doSubmit]);
+  }, [presensiTZ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setNip(val);
-    setGuru(null);
 
     const now   = Date.now();
     const delta = now - lastKeyTimeRef.current;
@@ -160,32 +147,20 @@ export default function PresensiGuruKiosk() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    if (guru) doSubmit(guru);
-    else doSearch(nip);
+    if (e.key === 'Enter') doSearch(nip);
   };
 
+  // Auto-trigger setelah 150ms berhenti ketik — khusus RFID
   useEffect(() => {
-    if (!nip || guru || loading) return;
+    if (!nip || loading) return;
     const timer = setTimeout(() => {
       if (rfidSpeedRef.current >= RFID_MIN_LEN && nip.length >= RFID_MIN_LEN) {
-        isRfidModeRef.current = true;
         doSearch(nip);
       }
       rfidSpeedRef.current = 0;
     }, 150);
     return () => clearTimeout(timer);
-  }, [nip, guru, loading, doSearch]);
-
-  const handleReset = () => {
-    setGuru(null);
-    setNip('');
-    rfidSpeedRef.current  = 0;
-    isRfidModeRef.current = false;
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  const mode: 'datang' | 'pulang' = guru?.statusHariIni.sudahDatang ? 'pulang' : 'datang';
+  }, [nip, loading, doSearch]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-[Inter]">
@@ -295,7 +270,7 @@ export default function PresensiGuruKiosk() {
             </div>
 
             {/* Input */}
-            <form onSubmit={e => { e.preventDefault(); guru ? doSubmit(guru) : doSearch(nip); }} className="mb-4">
+            <form onSubmit={e => { e.preventDefault(); doSearch(nip); }} className="mb-4">
               <div className="relative">
                 <input
                   ref={inputRef}
@@ -305,76 +280,23 @@ export default function PresensiGuruKiosk() {
                   onKeyDown={handleKeyDown}
                   placeholder="NIP atau Kode RFID..."
                   className="w-full px-5 py-3.5 text-lg text-center border-2 border-[#e2e8f0] bg-white rounded-xl focus:border-[#1e40af] focus:ring-4 focus:ring-[#1e40af]/10 outline-none transition-all placeholder:text-[#c4c5d5]"
-                  disabled={loading || submitting}
+                  disabled={loading}
                   autoFocus
                 />
-                {nip && !guru && (
-                  <button
-                    type="button"
-                    onClick={() => doSearch(nip)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1e40af] hover:text-[#1e3a8a]"
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                )}
               </div>
             </form>
 
-            {/* Guru Card + Absen Button */}
-            {guru ? (
-              <div className="space-y-3">
-                <div className={`border rounded-xl p-4 ${
-                  mode === 'datang' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'
-                }`}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-11 h-11 bg-[#1e40af] rounded-full flex items-center justify-center text-white flex-shrink-0">
-                      <GraduationCap className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[#0f172a] truncate">{guru.nama}</h3>
-                      <p className="text-sm text-[#64748b]">NIP: {guru.nip}</p>
-                    </div>
-                  </div>
-                  {guru.statusHariIni.sudahDatang && guru.statusHariIni.waktuDatang && (
-                    <p className="text-xs text-[#64748b]">
-                      Masuk: <span className="font-semibold text-green-700">{guru.statusHariIni.waktuDatang}</span>
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => doSubmit(guru)}
-                  disabled={submitting}
-                  className={`w-full py-3.5 text-white rounded-xl disabled:opacity-50 font-semibold text-base transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 ${
-                    mode === 'datang' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  {submitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      {mode === 'datang' ? <LogIn className="w-4 h-4" /> : <LogOut className="w-4 h-4" />}
-                      Presensi {mode === 'datang' ? 'Masuk' : 'Pulang'} Sekarang
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="w-full py-2 text-sm text-[#64748b] hover:text-red-600 transition-colors"
-                >
-                  Batal
-                </button>
+            {/* Loading state */}
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-3 text-[#64748b] text-sm">
+                <div className="w-4 h-4 border-2 border-[#1e40af]/30 border-t-[#1e40af] rounded-full animate-spin" />
+                Memproses presensi...
               </div>
             ) : (
-              <button
-                onClick={() => doSearch(nip)}
-                disabled={loading || !nip.trim()}
-                className="w-full py-3.5 bg-[#1e40af] text-white rounded-xl hover:bg-[#1e3a8a] disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base transition-all shadow-md"
-              >
-                {loading ? 'Mencari...' : 'Cari & Absen'}
-              </button>
+              <div className="flex items-center justify-center gap-2 py-3 text-xs text-[#94a3b8]">
+                <LogIn className="w-4 h-4" />
+                Tap kartu RFID atau ketik NIP lalu tekan Enter
+              </div>
             )}
           </div>
         </div>

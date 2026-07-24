@@ -67,7 +67,8 @@ export default function PresensiSiswaKiosk() {
   const [selectedKelasFilter, setSelectedKelasFilter] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<'hadir' | 'belum'>('hadir');
   const [siswaBelumHadir, setSiswaBelumHadir] = useState<SiswaBelumHadir[]>([]);
-  const [presensiTZ, setPresensiTZ] = useState('Asia/Jakarta');
+  const [presensiTZ, setPresensiTZ]     = useState('Asia/Makassar');
+  const [serverOffset, setServerOffset] = useState(0);
 
   const inputRef       = useRef<HTMLInputElement>(null);
   const lastKeyTimeRef = useRef<number>(0);
@@ -75,14 +76,16 @@ export default function PresensiSiswaKiosk() {
   const isRfidModeRef  = useRef<boolean>(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    // Sinkronisasi waktu dengan server supaya jam tampil sesuai internet, bukan jam komputer
+    api.get('/api/presensi/server-time').then((d: any) => {
+      if (d?.timestamp) setServerOffset(d.timestamp - Date.now());
+      if (d?.timezone)  setPresensiTZ(d.timezone);
+    }).catch(() => {});
+    const timer = setInterval(() => setCurrentTime(new Date(Date.now() + serverOffset)), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [serverOffset]);
 
   useEffect(() => {
-    api.get('/api/presensi/pengaturan').then((d: any) => {
-      if (d?.timezone) setPresensiTZ(d.timezone);
-    }).catch(() => {});
     loadRecentActivity();
     loadKelasData();
     loadSiswaBelumHadir();
@@ -129,13 +132,14 @@ export default function PresensiSiswaKiosk() {
   const handleSubmit = useCallback(async (siswaData: Siswa) => {
     setSubmitting(true);
     try {
-      await api.post('/api/presensi/siswa', { siswaId: siswaData.id });
+      const result = await api.post('/api/presensi/siswa', { siswaId: siswaData.id });
 
-      const now = new Date();
+      // Gunakan waktu dari server (bukan jam komputer)
+      const serverTs = new Date(result.waktuDatang);
       setSuccessData({
         nama: siswaData.nama,
         kelas: siswaData.kelas,
-        time: now.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit' }),
+        time: serverTs.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit' }),
       });
       setShowSuccess(true);
       setAttendedCount(prev => prev + 1);

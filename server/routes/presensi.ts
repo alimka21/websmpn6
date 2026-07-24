@@ -251,7 +251,7 @@ router.post('/upload/foto', uploadPresensi.single('foto'), async (req, res, next
 router.get('/guru-list', async (req, res, next) => {
   try {
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
     const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -307,7 +307,7 @@ router.get('/guru/cari', async (req, res, next) => {
     if (!q) return res.status(400).json({ error: 'NIP atau kode RFID wajib diisi' });
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
     const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -371,7 +371,7 @@ router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next)
     const guruId = guru.id;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
 
     // Geofencing opsional — hanya jika koordinat dikirim dan sekolah terkonfigurasi
     if (latitude != null && longitude != null && cfg && cfg.latitudeSekolah !== 0) {
@@ -421,7 +421,7 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
     const guruId = guru.id;
 
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
 
     // Geofencing opsional — hanya jika koordinat dikirim dan sekolah terkonfigurasi
     if (latitude != null && longitude != null && cfg && cfg.latitudeSekolah !== 0) {
@@ -466,7 +466,7 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
 router.get('/guru/recent', async (req, res, next) => {
   try {
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
     const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
@@ -529,7 +529,7 @@ router.get('/guru/recent', async (req, res, next) => {
 router.get('/siswa/recent', async (req, res, next) => {
   try {
     const cfg = await prisma.pengaturanPresensi.findFirst();
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
     const today = tanggalHariIni(tz);
     const tomorrow = new Date(today);
@@ -611,7 +611,7 @@ router.get('/guru/dashboard', async (req, res, next) => {
       where = { tanggal: { gte: start, lt: end } };
     } else {
       const cfgTmp = await prisma.pengaturanPresensi.findFirst();
-      where = { tanggal: tanggalHariIni(cfgTmp?.timezone || 'Asia/Jakarta') };
+      where = { tanggal: tanggalHariIni(cfgTmp?.timezone || 'Asia/Makassar') };
     }
 
     const [rows, total] = await Promise.all([
@@ -628,7 +628,7 @@ router.get('/guru/dashboard', async (req, res, next) => {
     // Ambil jam masuk default dan timezone untuk hitung keterlambatan
     const cfg = await prisma.pengaturanPresensi.findFirst();
     const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
-    const tz = cfg?.timezone || 'Asia/Jakarta';
+    const tz = cfg?.timezone || 'Asia/Makassar';
 
     const data = rows.map((p: any, i: number) => {
       let keterlambatan = 0;
@@ -731,7 +731,7 @@ router.post('/siswa', validate(PresensiSiswaRfidSchema), async (req, res, next) 
     }
 
     const cfgSiswa = await prisma.pengaturanPresensi.findFirst();
-    const today = tanggalHariIni(cfgSiswa?.timezone || 'Asia/Jakarta');
+    const today = tanggalHariIni(cfgSiswa?.timezone || 'Asia/Makassar');
     const existing = await prisma.presensiSiswa.findUnique({
       where: { siswaId_tanggal: { siswaId: siswa.id, tanggal: today } },
     });
@@ -773,7 +773,7 @@ router.get('/pengaturan', async (req, res, next) => {
       radiusMeter:      100,
       jamMasukDefault:  '07:00',
       jamPulangDefault: '15:30',
-      timezone:         'Asia/Jakarta',
+      timezone:         'Asia/Makassar',
     });
   } catch (err) { next(err); }
 });
@@ -825,7 +825,7 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
       radiusMeter: Number(radiusMeter) || 100,
       jamMasukDefault: String(jamMasukDefault || '07:00').trim(),
       jamPulangDefault: String(jamPulangDefault || '15:30').trim(),
-      timezone: validTimezones.includes(timezone) ? timezone : 'Asia/Jakarta',
+      timezone: validTimezones.includes(timezone) ? timezone : 'Asia/Makassar',
     };
 
     const existing = await prisma.pengaturanPresensi.findFirst();
@@ -862,7 +862,7 @@ router.get('/siswa/dashboard', requireAuth, requireRole(['SUPER_ADMIN']), async 
       tanggalWhere = { tanggal: { gte: start, lt: end } };
     } else {
       const cfgTmp2 = await prisma.pengaturanPresensi.findFirst();
-      tanggalWhere = { tanggal: tanggalHariIni(cfgTmp2?.timezone || 'Asia/Jakarta') };
+      tanggalWhere = { tanggal: tanggalHariIni(cfgTmp2?.timezone || 'Asia/Makassar') };
     }
 
     const siswaWhere = search
@@ -1049,6 +1049,21 @@ router.get('/siswa/belum-hadir', async (req, res, next) => {
     }));
 
     res.json(result);
+  } catch (err) { next(err); }
+});
+
+// GET /api/presensi/server-time — waktu server untuk sinkronisasi kiosk
+router.get('/server-time', async (_req, res, next) => {
+  try {
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const tz  = cfg?.timezone || 'Asia/Makassar';
+    const now = new Date();
+    res.json({
+      iso:       now.toISOString(),
+      timestamp: now.getTime(),
+      timezone:  tz,
+      formatted: now.toLocaleTimeString('id-ID', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    });
   } catch (err) { next(err); }
 });
 
