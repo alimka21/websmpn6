@@ -279,17 +279,23 @@ router.get('/guru-list', async (req, res, next) => {
     res.json(
       list.map((g: any) => {
         const presensi = g.presensiGuru[0];
+        let keterlambatan = 0;
+        if (presensi?.waktuDatang && cfg?.jamMasukDefault) {
+          const target = buildTargetTZ(new Date(presensi.waktuDatang), cfg.jamMasukDefault, tz);
+          keterlambatan = Math.max(0, Math.round((new Date(presensi.waktuDatang).getTime() - target.getTime()) / 60000));
+        }
         return {
           id: g.id,
           nama: g.nama,
           nip: g.nip,
           rfidKode: g.rfidKode,
           statusHariIni: presensi ? {
-            sudahDatang: !!presensi.waktuDatang,
-            sudahPulang: !!presensi.waktuPulang,
-            waktuDatang: presensi.waktuDatang ? fmtTZ(new Date(presensi.waktuDatang), tz) : undefined,
-            waktuPulang: presensi.waktuPulang ? fmtTZ(new Date(presensi.waktuPulang), tz) : undefined,
-          } : { sudahDatang: false, sudahPulang: false },
+            sudahDatang:    !!presensi.waktuDatang,
+            sudahPulang:    !!presensi.waktuPulang,
+            waktuDatang:    presensi.waktuDatang ? fmtTZ(new Date(presensi.waktuDatang), tz) : undefined,
+            waktuPulang:    presensi.waktuPulang ? fmtTZ(new Date(presensi.waktuPulang), tz) : undefined,
+            keterlambatan,
+          } : { sudahDatang: false, sudahPulang: false, keterlambatan: 0 },
         };
       })
     );
@@ -403,7 +409,14 @@ router.post('/guru/datang', validate(PresensiGuruSchema), async (req, res, next)
       update:  { waktuDatang: new Date(), fotoDatang: fotoUrl || null },
     });
 
-    res.json({ success: true, nama: guru.nama, waktuDatang: record.waktuDatang });
+    // Hitung keterlambatan (menit) dari jam masuk default
+    let keterlambatan = 0;
+    if (cfg?.jamMasukDefault && record.waktuDatang) {
+      const target = buildTargetTZ(record.waktuDatang, cfg.jamMasukDefault, tz);
+      keterlambatan = Math.max(0, Math.round((record.waktuDatang.getTime() - target.getTime()) / 60000));
+    }
+
+    res.json({ success: true, nama: guru.nama, waktuDatang: record.waktuDatang, keterlambatan });
   } catch (err) { next(err); }
 });
 
