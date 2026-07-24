@@ -486,7 +486,7 @@ router.post('/ujian', validate(CreateUjianSchema), async (req, res, next) => {
     const ujian = await prisma.ujian.create({
       data: {
         judul: toTitleCase(judul),
-        mataPelajaran: toTitleCase(mataPelajaran),
+        mataPelajaran: String(mataPelajaran).trim(),
         tipeUjian,
         durasi: Number(durasi),
         tanggalMulai: tMulai,
@@ -553,7 +553,7 @@ router.patch('/ujian/:id', validate(UpdateUjianSchema), async (req, res, next) =
       where: { id: req.params.id },
       data: {
         ...(judul && {judul: toTitleCase(judul)}),
-        ...(mataPelajaran && {mataPelajaran: toTitleCase(mataPelajaran)}),
+        ...(mataPelajaran && { mataPelajaran: String(mataPelajaran).trim() }),
         ...(tipeUjian && {tipeUjian}),
         ...(durasi && {durasi: Number(durasi)}),
         ...(tanggalMulai   && { tanggalMulai:   parseDTLocal(tanggalMulai, tzEdit) }),

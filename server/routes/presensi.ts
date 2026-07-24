@@ -612,19 +612,26 @@ router.get('/guru/dashboard', async (req, res, next) => {
     const limit = 15;
     const skip  = (page - 1) * limit;
 
-    let where: any = {};
+    // Ambil cfg lebih dulu agar timezone dipakai untuk membangun filter tanggal
+    const cfg = await prisma.pengaturanPresensi.findFirst();
+    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
+    const tz = cfg?.timezone || 'Asia/Makassar';
 
+    let where: any = {};
     if (req.query.tanggal) {
-      const d = new Date(String(req.query.tanggal));
-      d.setHours(0, 0, 0, 0);
-      where = { tanggal: d };
+      // Bangun tanggal dengan timezone sekolah agar cocok dengan data di DB
+      where = { tanggal: new Date(`${String(req.query.tanggal)}T00:00:00${tzOffset(tz)}`) };
     } else if (req.query.bulan && req.query.tahun) {
-      const start = new Date(Number(req.query.tahun), Number(req.query.bulan) - 1, 1);
-      const end   = new Date(Number(req.query.tahun), Number(req.query.bulan), 1);
-      where = { tanggal: { gte: start, lt: end } };
+      const y = Number(req.query.tahun);
+      const m = Number(req.query.bulan);
+      where = {
+        tanggal: {
+          gte: new Date(`${y}-${String(m).padStart(2,'0')}-01T00:00:00${tzOffset(tz)}`),
+          lt:  new Date(`${m === 12 ? y+1 : y}-${String(m === 12 ? 1 : m+1).padStart(2,'0')}-01T00:00:00${tzOffset(tz)}`),
+        },
+      };
     } else {
-      const cfgTmp = await prisma.pengaturanPresensi.findFirst();
-      where = { tanggal: tanggalHariIni(cfgTmp?.timezone || 'Asia/Makassar') };
+      where = { tanggal: tanggalHariIni(tz) };
     }
 
     const [rows, total] = await Promise.all([
@@ -637,11 +644,6 @@ router.get('/guru/dashboard', async (req, res, next) => {
       }),
       prisma.presensiGuru.count({ where }),
     ]);
-
-    // Ambil jam masuk default dan timezone untuk hitung keterlambatan
-    const cfg = await prisma.pengaturanPresensi.findFirst();
-    const jamMasukDefault = cfg?.jamMasukDefault || '07:00';
-    const tz = cfg?.timezone || 'Asia/Makassar';
 
     const data = rows.map((p: any, i: number) => {
       let keterlambatan = 0;
@@ -670,8 +672,8 @@ router.get('/guru/dashboard', async (req, res, next) => {
         fotoDatang:   p.fotoDatang,
         fotoPulang:   p.fotoPulang,
         durasi:       totalJam || null,
-        keterlambatan, // dalam menit
-        totalJam,      // dalam menit (sama dengan durasi)
+        keterlambatan,
+        totalJam,
       };
     });
 
@@ -864,18 +866,23 @@ router.get('/siswa/dashboard', requireAuth, requireRole(['SUPER_ADMIN']), async 
     const skip   = (page - 1) * limit;
     const search = String(req.query.search || '').trim();
 
+    const cfgSiswa2 = await prisma.pengaturanPresensi.findFirst();
+    const tzSiswa   = cfgSiswa2?.timezone || 'Asia/Makassar';
+
     let tanggalWhere: any = {};
     if (req.query.tanggal) {
-      const d = new Date(String(req.query.tanggal));
-      d.setHours(0, 0, 0, 0);
-      tanggalWhere = { tanggal: d };
+      tanggalWhere = { tanggal: new Date(`${String(req.query.tanggal)}T00:00:00${tzOffset(tzSiswa)}`) };
     } else if (req.query.bulan && req.query.tahun) {
-      const start = new Date(Number(req.query.tahun), Number(req.query.bulan) - 1, 1);
-      const end   = new Date(Number(req.query.tahun), Number(req.query.bulan), 1);
-      tanggalWhere = { tanggal: { gte: start, lt: end } };
+      const y = Number(req.query.tahun);
+      const m = Number(req.query.bulan);
+      tanggalWhere = {
+        tanggal: {
+          gte: new Date(`${y}-${String(m).padStart(2,'0')}-01T00:00:00${tzOffset(tzSiswa)}`),
+          lt:  new Date(`${m === 12 ? y+1 : y}-${String(m === 12 ? 1 : m+1).padStart(2,'0')}-01T00:00:00${tzOffset(tzSiswa)}`),
+        },
+      };
     } else {
-      const cfgTmp2 = await prisma.pengaturanPresensi.findFirst();
-      tanggalWhere = { tanggal: tanggalHariIni(cfgTmp2?.timezone || 'Asia/Makassar') };
+      tanggalWhere = { tanggal: tanggalHariIni(tzSiswa) };
     }
 
     const siswaWhere = search

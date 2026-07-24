@@ -243,6 +243,7 @@ router.get('/users', async (req, res, next) => {
             id: true,
             nama: true,
             nip: true,
+            rfidKode: true,
             mataPelajaran: true,
             fotoUrl: true,
             guruMataPelajaran: { select: { id: true, nama: true }, orderBy: { nama: 'asc' } },
@@ -292,8 +293,8 @@ router.post('/users', validate(CreateUserSchema), async (req, res, next) => {
 
     // Normalisasi daftar mapel — gabung mataPelajaran (legacy) + mataPelajaranList
     const mapelList: string[] = Array.isArray(mataPelajaranList)
-      ? mataPelajaranList.map((m: string) => toTitleCase(m))
-      : mataPelajaran ? [toTitleCase(mataPelajaran)] : [];
+      ? mataPelajaranList.map((m: string) => String(m).trim())
+      : mataPelajaran ? [String(mataPelajaran).trim()] : [];
     const mapelLegacy = mapelList[0] || mataPelajaran || '';
 
     const user = await prisma.user.create({
@@ -346,7 +347,7 @@ router.patch('/users/:id', validate(UpdateUserSchema), async (req, res, next) =>
       if (user.role === 'GURU') {
         // Sync GuruMataPelajaran jika dikirim
         if (Array.isArray(mataPelajaranList)) {
-          const mapelList = mataPelajaranList.map((m: string) => toTitleCase(m));
+          const mapelList = mataPelajaranList.map((m: string) => String(m).trim());
           const guru = await tx.guru.findUnique({ where: { userId: req.params.id }, select: { id: true } });
           if (guru) {
             await tx.guruMataPelajaran.deleteMany({ where: { guruId: guru.id } });
@@ -366,7 +367,7 @@ router.patch('/users/:id', validate(UpdateUserSchema), async (req, res, next) =>
           data: {
             ...(nama && { nama: toTitleCase(nama) }),
             ...(nip && { nip }),
-            ...(mapelLegacy && { mataPelajaran: toTitleCase(mapelLegacy) }),
+            ...(mapelLegacy && { mataPelajaran: String(mapelLegacy).trim() }),
             // rfidKode: '' menghapus, string mengisi, undefined tidak mengubah
             ...(rfidKode !== undefined && { rfidKode: rfidKode === '' ? null : rfidKode }),
           }

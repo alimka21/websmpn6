@@ -41,6 +41,7 @@ interface GuruUser {
     id: string;
     nama: string;
     nip: string;
+    rfidKode?: string | null;
     mataPelajaran: string;
     fotoUrl?: string | null;
     guruMataPelajaran?: { id: string; nama: string }[];
@@ -386,7 +387,7 @@ export default function ManageUsers() {
     if (u) {
       setEditingGuruId(u.id);
       setEditingGuruModelId(u.guru.id);
-      setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '', rfidKode: (u.guru as any).rfidKode || '' });
+      setGuruForm({ nip: u.guru.nip || '', nama: u.guru.nama, email: u.email, password: '', rfidKode: u.guru.rfidKode || '' });
       const existing = u.guru.guruMataPelajaran?.map(m => m.nama) ?? (u.guru.mataPelajaran ? [u.guru.mataPelajaran] : []);
       setGuruMapelList(existing);
       setGuruCurrentFoto(u.guru.fotoUrl ?? null);
@@ -792,6 +793,7 @@ export default function ManageUsers() {
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Siswa</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kelas</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Wali Kelas</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kode RFID</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                       </tr>
                     </thead>
@@ -815,6 +817,11 @@ export default function ManageUsers() {
                           <td className="px-4 py-3 font-medium text-on-surface">{u.siswa?.nama}</td>
                           <td className="px-4 py-3 text-on-surface-variant">{u.siswa?.kelas?.nama || '-'}</td>
                           <td className="px-4 py-3 text-on-surface-variant">{u.siswa?.kelas?.guru?.nama || '-'}</td>
+                          <td className="px-4 py-3">
+                            {u.siswa?.rfidKode
+                              ? <span className="font-mono text-xs bg-surface-container px-2 py-0.5 rounded border border-outline-variant">{u.siswa.rfidKode}</span>
+                              : <span className="text-on-surface-variant/40 text-xs">—</span>}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-center gap-1">
                               <Button variant="ghost" size="sm" onClick={() => openSiswaModal(u)} className="h-8 px-2 text-primary hover:bg-primary-container/15" aria-label={`Edit ${u.siswa?.nama}`}><Pencil className="w-4 h-4" /></Button>
@@ -884,6 +891,7 @@ export default function ManageUsers() {
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">NIP</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Guru</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Email</th>
+                        <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kode RFID</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mata Pelajaran</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Kelas</th>
                         <th className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
@@ -895,6 +903,11 @@ export default function ManageUsers() {
                           <td className="px-4 py-3 font-mono text-xs text-on-surface-variant">{u.guru?.nip || '-'}</td>
                           <td className="px-4 py-3 font-medium text-on-surface">{u.guru?.nama}</td>
                           <td className="px-4 py-3 text-on-surface-variant">{u.email}</td>
+                          <td className="px-4 py-3">
+                            {u.guru?.rfidKode
+                              ? <span className="font-mono text-xs bg-surface-container px-2 py-0.5 rounded border border-outline-variant">{u.guru.rfidKode}</span>
+                              : <span className="text-on-surface-variant/40 text-xs">—</span>}
+                          </td>
                           <td className="px-4 py-3 text-on-surface-variant">
                             {(u.guru?.guruMataPelajaran && u.guru.guruMataPelajaran.length > 0)
                               ? u.guru.guruMataPelajaran.map(m => m.nama).join(', ')
