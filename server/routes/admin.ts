@@ -257,7 +257,14 @@ router.get('/users', async (req, res, next) => {
       prisma.user.count({ where: whereCondition }),
     ]);
 
-    res.json(buildPaginatedResult(users, total, page, limit));
+    // Normalisasi nama (perbaiki gelar lama yang tersimpan dengan casing salah)
+    const normalizedUsers = users.map((u: any) => ({
+      ...u,
+      guru:  u.guru  ? { ...u.guru,  nama: toTitleCase(u.guru.nama)  } : u.guru,
+      siswa: u.siswa ? { ...u.siswa, nama: toTitleCase(u.siswa.nama) } : u.siswa,
+      admin: u.admin ? { ...u.admin, nama: toTitleCase(u.admin.nama) } : u.admin,
+    }));
+    res.json(buildPaginatedResult(normalizedUsers, total, page, limit));
   } catch (error) {
     next(error);
   }
@@ -334,6 +341,24 @@ router.patch('/users/:id', validate(UpdateUserSchema), async (req, res, next) =>
 
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+
+    // Pre-check: kode RFID tidak boleh duplikat dengan pengguna lain
+    if (rfidKode && rfidKode !== '') {
+      const conflictGuru = await prisma.guru.findFirst({
+        where: { rfidKode, user: { id: { not: req.params.id } } },
+        select: { nama: true },
+      });
+      if (conflictGuru) {
+        return res.status(400).json({ error: `Kode RFID sudah digunakan oleh guru: ${conflictGuru.nama}` });
+      }
+      const conflictSiswa = await prisma.siswa.findFirst({
+        where: { rfidKode, user: { id: { not: req.params.id } } },
+        select: { nama: true },
+      });
+      if (conflictSiswa) {
+        return res.status(400).json({ error: `Kode RFID sudah digunakan oleh siswa: ${conflictSiswa.nama}` });
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.user.update({

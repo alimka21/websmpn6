@@ -91,11 +91,17 @@ async function jalankanAutoCheckout(): Promise<void> {
     const cfg = await prisma.pengaturanPresensi.findFirst();
     if (!cfg) return;
 
-    const tz = cfg.timezone || 'Asia/Jakarta';
+    const tz = cfg.timezone || 'Asia/Makassar';
     const sekarang = new Date();
-    const batasWaktu = jamKeDate(cfg.jamPulangDefault, tz);
+    // Jam trigger: kapan auto-checkout berjalan (default 18:00)
+    const jamTrigger  = (cfg as any).jamAutoCheckoutTrigger || '18:00';
+    // Jam yang di-set sebagai waktu pulang (default 14:50)
+    const jamSetPulang = (cfg as any).jamAutoCheckoutWaktu  || '14:50';
 
-    if (sekarang < batasWaktu) return;
+    const triggerDate = jamKeDate(jamTrigger, tz);
+    if (sekarang < triggerDate) return;
+
+    const waktuPulangOtomatis = jamKeDate(jamSetPulang, tz);
 
     const { count } = await prisma.presensiGuru.updateMany({
       where: {
@@ -105,13 +111,13 @@ async function jalankanAutoCheckout(): Promise<void> {
         autoCheckout: false,
       },
       data: {
-        waktuPulang: batasWaktu,
+        waktuPulang: waktuPulangOtomatis,
         autoCheckout: true,
       },
     });
 
     if (count > 0) {
-      console.log(`[AutoCheckout] ${count} guru di-checkout otomatis (${cfg.jamPulangDefault})`);
+      console.log(`[AutoCheckout] ${count} guru di-checkout otomatis jam ${jamSetPulang} (trigger: ${jamTrigger})`);
     }
   } catch (err) {
     console.error('[AutoCheckout] Error:', err);
@@ -468,7 +474,12 @@ router.post('/guru/pulang', validate(PresensiGuruSchema), async (req, res, next)
       data: { waktuPulang: new Date(), fotoPulang: fotoUrl || null, autoCheckout: false },
     });
 
-    res.json({ success: true, nama: guru.nama, waktuPulang: record.waktuPulang });
+    // Hitung total jam kerja (menit)
+    const totalMenit = record.waktuDatang
+      ? Math.floor((record.waktuPulang!.getTime() - record.waktuDatang.getTime()) / 60_000)
+      : 0;
+
+    res.json({ success: true, nama: guru.nama, waktuDatang: record.waktuDatang, waktuPulang: record.waktuPulang, totalMenit });
   } catch (err) { next(err); }
 });
 
@@ -783,12 +794,14 @@ router.get('/pengaturan', async (req, res, next) => {
   try {
     const cfg = await prisma.pengaturanPresensi.findFirst();
     res.json(cfg ?? {
-      latitudeSekolah:  0,
-      longitudeSekolah: 0,
-      radiusMeter:      100,
-      jamMasukDefault:  '07:00',
-      jamPulangDefault: '15:30',
-      timezone:         'Asia/Makassar',
+      latitudeSekolah:        0,
+      longitudeSekolah:       0,
+      radiusMeter:            100,
+      jamMasukDefault:        '07:00',
+      jamPulangDefault:       '15:30',
+      jamAutoCheckoutTrigger: '18:00',
+      jamAutoCheckoutWaktu:   '14:50',
+      timezone:               'Asia/Makassar',
     });
   } catch (err) { next(err); }
 });
@@ -805,6 +818,8 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
       radiusMeter,
       jamMasukDefault,
       jamPulangDefault,
+      jamAutoCheckoutTrigger,
+      jamAutoCheckoutWaktu,
       timezone,
     } = req.body;
 
@@ -837,10 +852,12 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
     const payload = {
       latitudeSekolah,
       longitudeSekolah,
-      radiusMeter: Number(radiusMeter) || 100,
-      jamMasukDefault: String(jamMasukDefault || '07:00').trim(),
-      jamPulangDefault: String(jamPulangDefault || '15:30').trim(),
-      timezone: validTimezones.includes(timezone) ? timezone : 'Asia/Makassar',
+      radiusMeter:            Number(radiusMeter) || 100,
+      jamMasukDefault:        String(jamMasukDefault  || '07:00').trim(),
+      jamPulangDefault:       String(jamPulangDefault || '15:30').trim(),
+      jamAutoCheckoutTrigger: String(jamAutoCheckoutTrigger || '18:00').trim(),
+      jamAutoCheckoutWaktu:   String(jamAutoCheckoutWaktu   || '14:50').trim(),
+      timezone:               validTimezones.includes(timezone) ? timezone : 'Asia/Makassar',
     };
 
     const existing = await prisma.pengaturanPresensi.findFirst();

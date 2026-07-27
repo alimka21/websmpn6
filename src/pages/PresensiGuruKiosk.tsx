@@ -65,7 +65,7 @@ export default function PresensiGuruKiosk() {
   const [loading, setLoading]           = useState(false);
   const [showSuccess, setShowSuccess]   = useState(false);
   const [successData, setSuccessData]   = useState<{
-    nama: string; type: 'datang' | 'pulang'; time: string; keterlambatan: number;
+    nama: string; type: 'datang' | 'pulang'; time: string; keterlambatan: number; totalMenit?: number;
   }>({ nama: '', type: 'datang', time: '', keterlambatan: 0 });
   const [guruList, setGuruList]         = useState<GuruInfo[]>([]);
   const [loadingList, setLoadingList]   = useState(false);
@@ -172,10 +172,11 @@ export default function PresensiGuruKiosk() {
         : new Date(result.waktuPulang);
 
       setSuccessData({
-        nama:           data.nama,
-        type:           mode,
-        time:           serverTs.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        keterlambatan:  mode === 'datang' ? (result.keterlambatan ?? 0) : 0,
+        nama:          data.nama,
+        type:          mode,
+        time:          serverTs.toLocaleTimeString('id-ID', { timeZone: presensiTZ, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        keterlambatan: mode === 'datang' ? (result.keterlambatan ?? 0) : 0,
+        totalMenit:    mode === 'pulang'  ? (result.totalMenit ?? 0)   : undefined,
       });
       setShowSuccess(true);
       setNip('');
@@ -316,6 +317,12 @@ export default function PresensiGuruKiosk() {
                 {successData.keterlambatan > 0
                   ? labelKeterlambatan(successData.keterlambatan)
                   : 'Tepat Waktu'}
+              </div>
+            )}
+            {successData.type === 'pulang' && successData.totalMenit != null && successData.totalMenit > 0 && (
+              <div className="flex items-center justify-center gap-2 text-sm font-semibold mt-2 text-blue-700">
+                <Timer className="w-4 h-4" />
+                {`Total ${Math.floor(successData.totalMenit / 60)} jam ${successData.totalMenit % 60} menit`}
               </div>
             )}
           </div>

@@ -19,6 +19,8 @@ interface Pengaturan {
   radiusMeter: number;
   jamMasukDefault: string;
   jamPulangDefault: string;
+  jamAutoCheckoutTrigger: string;
+  jamAutoCheckoutWaktu: string;
   timezone: string;
 }
 
@@ -27,6 +29,8 @@ interface PengaturanForm {
   radiusMeter: number;
   jamMasukDefault: string;
   jamPulangDefault: string;
+  jamAutoCheckoutTrigger: string;
+  jamAutoCheckoutWaktu: string;
   timezone: string;
 }
 
@@ -115,13 +119,17 @@ export default function PresensiAdmin() {
   // ── Pengaturan state ─────────────────────────────────────────────────────
   const [cfg, setCfg] = useState<Pengaturan>({
     latitudeSekolah: 0, longitudeSekolah: 0, radiusMeter: 100,
-    jamMasukDefault: '07:00', jamPulangDefault: '15:30', timezone: 'Asia/Jakarta',
+    jamMasukDefault: '07:00', jamPulangDefault: '15:30',
+    jamAutoCheckoutTrigger: '18:00', jamAutoCheckoutWaktu: '14:50',
+    timezone: 'Asia/Jakarta',
   });
   const [cfgForm, setCfgForm] = useState<PengaturanForm>({
     koordinatSekolah: '',
     radiusMeter: 100,
     jamMasukDefault: '07:00',
     jamPulangDefault: '15:30',
+    jamAutoCheckoutTrigger: '18:00',
+    jamAutoCheckoutWaktu: '14:50',
     timezone: 'Asia/Jakarta',
   });
   const [savingCfg, setSavingCfg] = useState(false);
@@ -196,11 +204,13 @@ export default function PresensiAdmin() {
           ? `${d.latitudeSekolah}, ${d.longitudeSekolah}`
           : '';
         setCfgForm({
-          koordinatSekolah: koordinat,
-          radiusMeter: d.radiusMeter || 100,
-          jamMasukDefault: d.jamMasukDefault || '07:00',
-          jamPulangDefault: d.jamPulangDefault || '15:30',
-          timezone: d.timezone || 'Asia/Jakarta',
+          koordinatSekolah:       koordinat,
+          radiusMeter:            d.radiusMeter || 100,
+          jamMasukDefault:        d.jamMasukDefault        || '07:00',
+          jamPulangDefault:       d.jamPulangDefault       || '15:30',
+          jamAutoCheckoutTrigger: d.jamAutoCheckoutTrigger || '18:00',
+          jamAutoCheckoutWaktu:   d.jamAutoCheckoutWaktu   || '14:50',
+          timezone:               d.timezone || 'Asia/Jakarta',
         });
       })
       .catch(() => {});
@@ -695,7 +705,7 @@ export default function PresensiAdmin() {
                 <p className="text-xs text-on-surface-variant">Untuk hitung keterlambatan</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-on-surface-variant">Jam Pulang Default (Auto-checkout)</label>
+                <label className="text-sm font-medium text-on-surface-variant">Jam Pulang Default</label>
                 <input
                   type="time"
                   value={cfgForm.jamPulangDefault}
@@ -703,7 +713,36 @@ export default function PresensiAdmin() {
                   className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none"
                   required
                 />
-                <p className="text-xs text-on-surface-variant">Auto-checkout guru yang belum pulang</p>
+                <p className="text-xs text-on-surface-variant">Referensi jam kerja selesai</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-amber-800">Pengaturan Auto-Checkout Guru</p>
+              <p className="text-xs text-amber-700">Jika guru belum presensi pulang sampai jam trigger, sistem otomatis mencatat jam pulang sesuai jam yang dikonfigurasi.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-on-surface-variant">Jam Trigger Auto-Checkout</label>
+                  <input
+                    type="time"
+                    value={cfgForm.jamAutoCheckoutTrigger}
+                    onChange={e => setCfgForm(p => ({ ...p, jamAutoCheckoutTrigger: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
+                    required
+                  />
+                  <p className="text-xs text-on-surface-variant">Jam sistem mulai proses auto-checkout (default: 18:00)</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-on-surface-variant">Jam Pulang yang Dicatat</label>
+                  <input
+                    type="time"
+                    value={cfgForm.jamAutoCheckoutWaktu}
+                    onChange={e => setCfgForm(p => ({ ...p, jamAutoCheckoutWaktu: e.target.value }))}
+                    className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
+                    required
+                  />
+                  <p className="text-xs text-on-surface-variant">Jam yang di-set sebagai waktu pulang otomatis (default: 14:50)</p>
+                </div>
               </div>
             </div>
           </div>
@@ -896,16 +935,16 @@ export default function PresensiAdmin() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-outline-variant">
-                  {['No','Nama Guru','Tanggal','Status','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Foto','Aksi'].map(h => (
+                  {['No','Nama Guru','Tanggal','Status','Jam Datang','Jam Pulang','Keterlambatan','Total Jam','Aksi'].map(h => (
                     <th key={h} className="px-5 py-4 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/40">
                 {loadingGuru ? (
-                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Memuat data...</td></tr>
                 ) : guruRows.length === 0 ? (
-                  <tr><td colSpan={10} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-10 text-center text-on-surface-variant">Tidak ada data presensi untuk filter ini</td></tr>
                 ) : guruRows.map(row => {
                   const isAbsent = row.autoAbsent && !row.waktuDatang;
                   return (
@@ -940,12 +979,6 @@ export default function PresensiAdmin() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-on-surface-variant">{isAbsent ? '—' : fmtDurasi(row.totalJam)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1.5">
-                        <FotoThumb src={row.fotoDatang} label="Foto Datang" />
-                        <FotoThumb src={row.fotoPulang} label="Foto Pulang" />
-                      </div>
-                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <button onClick={() => openEdit(row)} className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit">
