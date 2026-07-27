@@ -128,8 +128,15 @@ export default function PresensiGuruKiosk() {
     finally { setLoadingList(false); }
   };
 
+  const [filterStatus, setFilterStatus] = useState<'semua' | 'hadir' | 'belum_hadir'>('semua');
+
   const hadirCount = guruList.filter(g => g.statusHariIni.sudahDatang).length;
   const totalGuru  = guruList.length;
+  const filteredGuruList = filterStatus === 'hadir'
+    ? guruList.filter(g => g.statusHariIni.sudahDatang)
+    : filterStatus === 'belum_hadir'
+    ? guruList.filter(g => !g.statusHariIni.sudahDatang)
+    : guruList;
 
   const doSearch = useCallback(async (query: string) => {
     const q = query.trim();
@@ -396,29 +403,64 @@ export default function PresensiGuruKiosk() {
 
         {/* ── Tabel Rekap ── */}
         <section className="bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-[#e2e8f0] overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-[#f1f5f9] flex items-center justify-between gap-4 flex-wrap">
             <h3 className="text-base font-bold text-[#0f172a]">Rekap Presensi Guru Hari Ini</h3>
-            <button
-              onClick={loadGuruList}
-              disabled={loadingList}
-              className="flex items-center gap-1.5 text-xs text-[#1e40af] hover:text-[#1e3a8a] disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loadingList ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Filter toggle */}
+              <div className="flex rounded-lg border border-[#e2e8f0] overflow-hidden text-xs font-semibold">
+                {([
+                  { key: 'semua',       label: `Semua (${totalGuru})` },
+                  { key: 'hadir',       label: `Hadir (${hadirCount})` },
+                  { key: 'belum_hadir', label: `Belum Hadir (${Math.max(0, totalGuru - hadirCount)})` },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setFilterStatus(opt.key)}
+                    className={`px-3 py-1.5 transition-colors ${
+                      filterStatus === opt.key
+                        ? opt.key === 'belum_hadir'
+                          ? 'bg-red-500 text-white'
+                          : opt.key === 'hadir'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-[#1e40af] text-white'
+                        : 'bg-white text-[#64748b] hover:bg-[#f8fafc]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={loadGuruList}
+                disabled={loadingList}
+                className="flex items-center gap-1.5 text-xs text-[#1e40af] hover:text-[#1e3a8a] disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingList ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-10" />
+                <col className="w-72" />
+                <col className="w-32" />
+                <col className="w-36" />
+                <col className="w-32" />
+                <col className="w-24" />
+                <col className="w-28" />
+              </colgroup>
               <thead>
                 <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-10">No</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">No</th>
                   <th className="px-4 py-3 text-left   text-xs font-semibold text-[#64748b] uppercase tracking-wide">Nama Guru</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-36">Jam Datang</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-28">Keterlambatan</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-32">Jam Pulang</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-24">Total Jam</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide w-28">Status</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">Jam Datang</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">Keterlambatan</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">Jam Pulang</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">Total Jam</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#64748b] uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f1f5f9]">
@@ -431,15 +473,21 @@ export default function PresensiGuruKiosk() {
                       </div>
                     </td>
                   </tr>
-                ) : guruList.length === 0 ? (
+                ) : filteredGuruList.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-[#64748b]">
                       <GraduationCap className="w-10 h-10 mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">Tidak ada data guru</p>
+                      <p className="text-sm">
+                        {guruList.length === 0
+                          ? 'Tidak ada data guru'
+                          : filterStatus === 'hadir'
+                          ? 'Belum ada guru yang hadir'
+                          : 'Semua guru sudah hadir'}
+                      </p>
                     </td>
                   </tr>
                 ) : (
-                  guruList.map((g, idx) => {
+                  filteredGuruList.map((g, idx) => {
                     const st = g.statusHariIni ?? { sudahDatang: false, sudahPulang: false, keterlambatan: 0 };
                     const { sudahDatang, sudahPulang, waktuDatang, waktuPulang } = st;
                     const keterlambatan = st.keterlambatan ?? 0;
