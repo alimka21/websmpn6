@@ -95,8 +95,14 @@ async function jalankanAutoCheckout(): Promise<void> {
     const sekarang = new Date();
     // Jam trigger: kapan auto-checkout berjalan (default 18:00)
     const jamTrigger  = (cfg as any).jamAutoCheckoutTrigger || '18:00';
-    // Jam yang di-set sebagai waktu pulang (default 14:50)
-    const jamSetPulang = (cfg as any).jamAutoCheckoutWaktu  || '14:50';
+    // Jam yang di-set sebagai waktu pulang saat auto-checkout.
+    // Jika kosong/undefined maka fitur auto-checkout dinonaktifkan.
+    const jamSetPulang = (cfg as any).jamAutoCheckoutWaktu;
+
+    // Non-aktifkan auto-checkout kalau jam pulang otomatis tidak dikonfigurasi
+    if (!jamSetPulang || String(jamSetPulang).trim() === '') {
+      return;
+    }
 
     const triggerDate = jamKeDate(jamTrigger, tz);
     if (sekarang < triggerDate) return;
