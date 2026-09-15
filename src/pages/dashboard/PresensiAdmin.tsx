@@ -128,8 +128,8 @@ export default function PresensiAdmin() {
     radiusMeter: 100,
     jamMasukDefault: '07:00',
     jamPulangDefault: '15:30',
-    jamAutoCheckoutTrigger: '18:00',
-    jamAutoCheckoutWaktu: '14:50',
+    jamAutoCheckoutTrigger: '',
+    jamAutoCheckoutWaktu: '',
     timezone: 'Asia/Jakarta',
   });
   const [savingCfg, setSavingCfg] = useState(false);
@@ -208,8 +208,8 @@ export default function PresensiAdmin() {
           radiusMeter:            d.radiusMeter || 100,
           jamMasukDefault:        d.jamMasukDefault        || '07:00',
           jamPulangDefault:       d.jamPulangDefault       || '15:30',
-          jamAutoCheckoutTrigger: d.jamAutoCheckoutTrigger || '18:00',
-          jamAutoCheckoutWaktu:   d.jamAutoCheckoutWaktu   || '14:50',
+          jamAutoCheckoutTrigger: d.jamAutoCheckoutTrigger ?? '',
+          jamAutoCheckoutWaktu:   d.jamAutoCheckoutWaktu   ?? '',
           timezone:               d.timezone || 'Asia/Jakarta',
         });
       })
@@ -718,8 +718,15 @@ export default function PresensiAdmin() {
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-amber-800">Pengaturan Auto-Checkout Guru</p>
-              <p className="text-xs text-amber-700">Jika guru belum presensi pulang sampai jam trigger, sistem otomatis mencatat jam pulang sesuai jam yang dikonfigurasi.</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-amber-800">Pengaturan Auto-Checkout Guru</p>
+                {cfgForm.jamAutoCheckoutTrigger.trim() && cfgForm.jamAutoCheckoutWaktu.trim() ? (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Aktif</span>
+                ) : (
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">Nonaktif</span>
+                )}
+              </div>
+              <p className="text-xs text-amber-700">Jika guru belum presensi pulang sampai jam trigger, sistem otomatis mencatat jam pulang sesuai jam yang dikonfigurasi. Opsional — kosongkan kedua field untuk menonaktifkan fitur ini.</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-on-surface-variant">Jam Trigger Auto-Checkout</label>
@@ -728,9 +735,8 @@ export default function PresensiAdmin() {
                     value={cfgForm.jamAutoCheckoutTrigger}
                     onChange={e => setCfgForm(p => ({ ...p, jamAutoCheckoutTrigger: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
-                    required
                   />
-                  <p className="text-xs text-on-surface-variant">Jam sistem mulai proses auto-checkout (default: 18:00)</p>
+                  <p className="text-xs text-on-surface-variant">Jam sistem mulai proses auto-checkout. Kosongkan untuk menonaktifkan.</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-on-surface-variant">Jam Pulang yang Dicatat</label>
@@ -739,9 +745,8 @@ export default function PresensiAdmin() {
                     value={cfgForm.jamAutoCheckoutWaktu}
                     onChange={e => setCfgForm(p => ({ ...p, jamAutoCheckoutWaktu: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none bg-white"
-                    required
                   />
-                  <p className="text-xs text-on-surface-variant">Jam yang di-set sebagai waktu pulang otomatis (default: 14:50)</p>
+                  <p className="text-xs text-on-surface-variant">Jam yang di-set sebagai waktu pulang otomatis. Kosongkan untuk menonaktifkan.</p>
                 </div>
               </div>
             </div>

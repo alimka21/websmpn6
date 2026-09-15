@@ -93,14 +93,11 @@ async function jalankanAutoCheckout(): Promise<void> {
 
     const tz = cfg.timezone || 'Asia/Makassar';
     const sekarang = new Date();
-    // Jam trigger: kapan auto-checkout berjalan (default 18:00)
-    const jamTrigger  = (cfg as any).jamAutoCheckoutTrigger || '18:00';
-    // Jam yang di-set sebagai waktu pulang saat auto-checkout.
-    // Jika kosong/undefined maka fitur auto-checkout dinonaktifkan.
+    const jamTrigger   = (cfg as any).jamAutoCheckoutTrigger;
     const jamSetPulang = (cfg as any).jamAutoCheckoutWaktu;
 
-    // Non-aktifkan auto-checkout kalau jam pulang otomatis tidak dikonfigurasi
-    if (!jamSetPulang || String(jamSetPulang).trim() === '') {
+    // Fitur opsional — nonaktif kalau salah satu jam belum dikonfigurasi admin
+    if (!jamTrigger || String(jamTrigger).trim() === '' || !jamSetPulang || String(jamSetPulang).trim() === '') {
       return;
     }
 
@@ -861,8 +858,9 @@ router.put('/pengaturan', requireAuth, requireRole(['SUPER_ADMIN']), async (req,
       radiusMeter:            Number(radiusMeter) || 100,
       jamMasukDefault:        String(jamMasukDefault  || '07:00').trim(),
       jamPulangDefault:       String(jamPulangDefault || '15:30').trim(),
-      jamAutoCheckoutTrigger: String(jamAutoCheckoutTrigger || '18:00').trim(),
-      jamAutoCheckoutWaktu:   String(jamAutoCheckoutWaktu   || '14:50').trim(),
+      // Opsional — kosongkan untuk menonaktifkan auto-checkout (lihat jalankanAutoCheckout)
+      jamAutoCheckoutTrigger: String(jamAutoCheckoutTrigger ?? '').trim(),
+      jamAutoCheckoutWaktu:   String(jamAutoCheckoutWaktu   ?? '').trim(),
       timezone:               validTimezones.includes(timezone) ? timezone : 'Asia/Makassar',
     };
 
