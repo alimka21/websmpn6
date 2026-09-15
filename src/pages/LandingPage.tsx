@@ -399,14 +399,6 @@ export default function LandingPage() {
                 >
                   Jelajahi Fitur
                 </button>
-                <a
-                  href="https://unibos.ac.id/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-red-600 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/25 text-sm inline-flex items-center"
-                >
-                  Go UNIBOS
-                </a>
               </div>
             </div>
 
