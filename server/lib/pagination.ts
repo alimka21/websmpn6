@@ -19,10 +19,12 @@ export interface PaginatedResult<T> {
   };
 }
 
-// Default limit = 20, max = 100 untuk cegah klien minta limit terlalu besar.
+// Default limit = 20, max = 1000 untuk cegah klien minta limit terlalu besar
+// (dinaikkan dari 100 — halaman Manajemen Pengguna butuh ambil semua siswa
+// sekaligus untuk filter/paginasi client-side, sekolah bisa punya >100 siswa).
 export function getPaginationParams(query: PaginationQuery) {
   const page  = Math.max(1, parseInt(query.page  || "1",  10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit || "20", 10) || 20));
+  const limit = Math.min(1000, Math.max(1, parseInt(query.limit || "20", 10) || 20));
   const skip  = (page - 1) * limit;
   return { page, limit, skip };
 }

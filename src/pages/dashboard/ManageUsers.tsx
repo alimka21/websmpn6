@@ -198,15 +198,16 @@ export default function ManageUsers() {
   // ── Fetch ──
   // TODO: GET /api/admin/users sekarang server-side paginated. Halaman ini
   // masih pakai client-side filter (search + filter kelas), jadi sementara
-  // ambil 100 per role. Kalau dataset > 100, refactor jadi server-side search.
+  // ambil 1000 per role (cap maksimum server, lihat server/lib/pagination.ts).
+  // Kalau dataset > 1000, refactor jadi server-side search.
   const fetchSiswa = async () => {
     try {
       setIsLoadingSiswa(true);
-      const res = await api.get('/api/admin/users?role=SISWA&limit=100');
+      const res = await api.get('/api/admin/users?role=SISWA&limit=1000');
       setSiswaList(res.data ?? []);
       setErrorMsg(null);
-      if (res.pagination?.total > 100) {
-        toast.info(`Total ${res.pagination.total} siswa — hanya 100 pertama yang ditampilkan. Refactor server-search akan datang.`);
+      if (res.pagination?.total > 1000) {
+        toast.info(`Total ${res.pagination.total} siswa — hanya 1000 pertama yang ditampilkan. Refactor server-search akan datang.`);
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Gagal memuat data siswa');
@@ -218,11 +219,11 @@ export default function ManageUsers() {
   const fetchGuru = async () => {
     try {
       setIsLoadingGuru(true);
-      const res = await api.get('/api/admin/users?role=GURU&limit=100');
+      const res = await api.get('/api/admin/users?role=GURU&limit=1000');
       setGuruList(res.data ?? []);
       setErrorMsg(null);
-      if (res.pagination?.total > 100) {
-        toast.info(`Total ${res.pagination.total} guru — hanya 100 pertama ditampilkan.`);
+      if (res.pagination?.total > 1000) {
+        toast.info(`Total ${res.pagination.total} guru — hanya 1000 pertama ditampilkan.`);
       }
     } catch (e: any) {
       setErrorMsg(e.message || 'Gagal memuat data guru');
@@ -658,6 +659,8 @@ export default function ManageUsers() {
 
       if (result.created > 0) {
         toast.success(`${result.created} ${type === 'siswa' ? 'siswa' : 'guru'} berhasil di-import`);
+      } else if (result.skipped > 0 && result.failed.length === 0) {
+        toast.info(`Semua ${result.skipped} data di file ini sudah pernah di-import sebelumnya — tidak ada data baru yang ditambahkan (bukan error).`);
       }
       // Refresh list
       if (type === 'siswa') fetchSiswa();
