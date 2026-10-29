@@ -20,15 +20,15 @@
   --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, sans-serif;
 
   /* — Colors — */
-  --color-primary: #00288e;
+  --color-primary: #0877bb;
   --color-on-primary: #ffffff;
-  --color-primary-container: #1e40af;
-  --color-on-primary-container: #a8b8ff;
-  --color-inverse-primary: #b8c4ff;
-  --color-primary-fixed: #dde1ff;
-  --color-primary-fixed-dim: #b8c4ff;
-  --color-on-primary-fixed: #001453;
-  --color-on-primary-fixed-variant: #173bab;
+  --color-primary-container: #06649f;
+  --color-on-primary-container: #cdeafa;
+  --color-inverse-primary: #8fd0f2;
+  --color-primary-fixed: #d6eefa;
+  --color-primary-fixed-dim: #a6daf4;
+  --color-on-primary-fixed: #002b45;
+  --color-on-primary-fixed-variant: #075c92;
 
   --color-secondary: #5a5f62;
   --color-on-secondary: #ffffff;
@@ -53,26 +53,26 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
-  --color-surface: #faf8ff;
-  --color-surface-dim: #d2d9f4;
-  --color-surface-bright: #faf8ff;
+  --color-surface: #f7fbfe;
+  --color-surface-dim: #cbe3f2;
+  --color-surface-bright: #f7fbfe;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f2f3ff;
-  --color-surface-container: #eaedff;
-  --color-surface-container-high: #e2e7ff;
-  --color-surface-container-highest: #dae2fd;
+  --color-surface-container-low: #eef7fc;
+  --color-surface-container: #e5f3fb;
+  --color-surface-container-high: #dceffa;
+  --color-surface-container-highest: #d3eaf8;
   --color-on-surface: #131b2e;
   --color-on-surface-variant: #444653;
-  --color-surface-variant: #dae2fd;
+  --color-surface-variant: #d3eaf8;
 
   --color-outline: #757684;
   --color-outline-variant: #c4c5d5;
 
   --color-inverse-surface: #283044;
   --color-inverse-on-surface: #eef0ff;
-  --color-surface-tint: #3755c3;
+  --color-surface-tint: #1a9ad6;
 
-  --color-background: #faf8ff;
+  --color-background: #f7fbfe;
   --color-on-background: #131b2e;
 
   /* — Border radius — */
@@ -142,15 +142,15 @@
   --color-popover-foreground: #131b2e;
   --color-primary-foreground: #ffffff;
   --color-secondary-foreground: #131b2e;
-  --color-muted: #eaedff;
+  --color-muted: #e5f3fb;
   --color-muted-foreground: #444653;
-  --color-accent: #e2e7ff;
+  --color-accent: #dceffa;
   --color-accent-foreground: #131b2e;
   --color-destructive: #ba1a1a;
   --color-destructive-foreground: #ffffff;
   --color-border: #c4c5d5;
-  --color-input: #eaedff;
-  --color-ring: #00288e;
+  --color-input: #e5f3fb;
+  --color-ring: #0877bb;
 }
 
 @layer base {
@@ -162,11 +162,11 @@
 /* ─── Landing page utilities ─── */
 
 .hero-gradient {
-  background: linear-gradient(135deg, #1e40af 0%, #00288e 100%);
+  background: linear-gradient(135deg, #1a9ad6 0%, #0877bb 100%);
 }
 
 .glass-header {
-  background: rgba(250, 248, 255, 0.85);
+  background: rgba(247, 251, 254, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -176,8 +176,43 @@
 }
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(30, 64, 175, 0.1),
-              0 8px 10px -6px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(8, 119, 187, 0.1),
+              0 8px 10px -6px rgba(8, 119, 187, 0.1);
+}
+
+/* Hero — biru langit lembut ala logo Tut Wuri Handayani + pola grid halus */
+.hero-modern {
+  background:
+    radial-gradient(ellipse 70% 60% at 90% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, rgba(125, 211, 252, 0.30) 0%, transparent 60%),
+    linear-gradient(160deg, #0a6fae 0%, #1590d0 50%, #3cb0e6 100%);
+}
+.bg-grid-white {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 30%, transparent 100%);
+}
+.bg-dots {
+  background-image: radial-gradient(rgba(8, 119, 187, 0.14) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Marquee logo mitra */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
 }
 
 /* ── Sonner Toast Overrides ───────────────────────── */

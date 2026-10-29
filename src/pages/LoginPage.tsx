@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthStore, Role } from '../store/authStore';
-import { ArrowRight, Eye, EyeOff, Shield, GraduationCap, User, Home, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Eye, EyeOff, Shield, GraduationCap, User, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useSiteConfig } from '../hooks/useSiteConfig';
 
 interface RoleOption {
@@ -91,37 +91,77 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-background text-on-background min-h-screen flex flex-col items-center justify-center p-4 md:p-20">
-      <main className="w-full max-w-[480px] flex flex-col items-center">
+    <div className="bg-background text-on-background min-h-screen grid lg:grid-cols-2">
 
-        {/* ── Branding header ── */}
-        <header className="text-center mb-8">
+      {/* ── Panel branding (desktop) ── */}
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden hero-modern text-white p-12 xl:p-16">
+        <div className="absolute inset-0 bg-grid-white pointer-events-none" />
+        {cfg.heroImageUrl && (
+          <img src={cfg.heroImageUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover opacity-15 mix-blend-luminosity" />
+        )}
+
+        <Link to="/" className="relative flex items-center gap-3 w-fit">
+          {cfg.logoUrl ? (
+            <img src={cfg.logoUrl} alt={schoolName} className="w-11 h-11 rounded-xl object-contain bg-white p-1" />
+          ) : (
+            <span className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6" />
+            </span>
+          )}
+          <span className="text-lg font-extrabold tracking-tight">{schoolName}</span>
+        </Link>
+
+        <div className="relative max-w-lg">
+          <h2 className="text-4xl xl:text-5xl font-extrabold leading-tight tracking-tight">
+            Selamat datang di
+            <span className="block bg-gradient-to-r from-sky-200 to-white bg-clip-text text-transparent">Portal Akademik</span>
+          </h2>
+          <p className="mt-5 text-white/85 text-lg leading-relaxed">
+            Satu akun untuk ujian online, nilai, presensi, dan informasi sekolah.
+          </p>
+          <ul className="mt-8 space-y-3">
+            {['Ujian online dengan pengawasan otomatis', 'Pantau nilai dan riwayat belajar', 'Presensi guru & siswa terintegrasi'].map(t => (
+              <li key={t} className="flex items-center gap-3 text-sky-50">
+                <CheckCircle2 className="w-5 h-5 text-sky-200 shrink-0" /> {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="relative text-sm text-white/70">&copy; {new Date().getFullYear()} {schoolName}</p>
+      </aside>
+
+      {/* ── Kolom form ── */}
+      <div className="flex flex-col items-center justify-center p-4 py-10 md:p-12">
+      <main className="w-full max-w-[440px] flex flex-col">
+
+        {/* ── Branding header (mobile) ── */}
+        <header className="text-center mb-8 lg:hidden">
           <div className="mb-4 flex justify-center">
             {cfg.logoUrl ? (
-              <img
-                src={cfg.logoUrl}
-                alt={schoolName}
-                className="w-24 h-24 object-contain"
-              />
+              <img src={cfg.logoUrl} alt={schoolName} className="w-20 h-20 object-contain" />
             ) : (
-              <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <GraduationCap className="w-12 h-12 text-primary" />
+              <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center">
+                <GraduationCap className="w-10 h-10 text-primary" />
               </div>
             )}
           </div>
-          <h1 className="text-2xl font-bold text-primary tracking-tight">{schoolName}</h1>
-          <p className="text-base text-on-surface-variant opacity-80 mt-1">Portal Akademik Digital</p>
+          <h1 className="text-2xl font-extrabold text-primary tracking-tight">{schoolName}</h1>
+          <p className="text-sm text-on-surface-variant mt-1">Portal Akademik Digital</p>
         </header>
 
-        {/* ── Login card ── */}
-        <section className="w-full bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,0,0,0.04)] border border-outline-variant/30 p-8 md:p-10">
+        <div className="mb-8 hidden lg:block">
+          <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">Masuk ke akun Anda</h1>
+          <p className="text-on-surface-variant mt-2">Pilih peran, lalu masukkan data login Anda.</p>
+        </div>
 
-          {/* Role selector */}
-          <div className="mb-8">
-            <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-[0.1em] mb-4 text-center">
-              Pilih Peran
-            </label>
-            <div className="grid grid-cols-3 gap-3">
+        {/* ── Login card ── */}
+        <section className="w-full bg-white rounded-2xl shadow-[0_12px_40px_-12px_rgba(8,119,187,0.15)] border border-outline-variant/30 p-6 md:p-8 lg:shadow-none lg:border-0 lg:p-0 lg:bg-transparent">
+
+          {/* Role selector — segmented control */}
+          <div className="mb-7">
+            <span className="block text-sm font-semibold text-on-surface mb-2.5">Masuk sebagai</span>
+            <div className="grid grid-cols-3 gap-1 p-1 bg-surface-container rounded-xl" role="group" aria-label="Pilih peran">
               {ROLES.map(({ value, label, Icon }) => {
                 const active = role === value;
                 return (
@@ -131,14 +171,14 @@ export default function LoginPage() {
                     onClick={() => { setRole(value); setIdentifier(''); setErrorMsg(''); }}
                     disabled={isLoading}
                     aria-pressed={active}
-                    className={`flex flex-col items-center justify-center py-4 px-2 rounded-lg border transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                       active
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:border-primary/50'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
-                    <Icon className="w-6 h-6 mb-2" />
-                    <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+                    <Icon className="w-4 h-4" />
+                    {label}
                   </button>
                 );
               })}
@@ -147,18 +187,18 @@ export default function LoginPage() {
 
           {/* Error banner */}
           {errorMsg && (
-            <div role="alert" className="mb-5 flex items-start gap-2 rounded-lg border border-error/20 bg-error-container px-3 py-2.5 text-sm text-error font-medium">
-              <span className="shrink-0 mt-0.5">⚠</span>
+            <div role="alert" className="mb-5 flex items-start gap-2.5 rounded-xl border border-error/20 bg-error-container/60 px-4 py-3 text-sm text-on-error-container font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5">
 
             {/* Identifier */}
             <div className="space-y-2">
-              <label htmlFor="identifier" className="text-sm font-medium text-on-surface-variant">
+              <label htmlFor="identifier" className="text-sm font-semibold text-on-surface">
                 {roleOpt.idLabel}
               </label>
               <input
@@ -170,14 +210,14 @@ export default function LoginPage() {
                 onChange={e => setIdentifier(e.target.value)}
                 disabled={isLoading}
                 autoComplete={role === 'SISWA' ? 'username' : role === 'GURU' ? 'username' : 'email'}
-                className="w-full px-4 py-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
+                className="w-full px-4 py-3 bg-white rounded-xl border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
               <div className="flex justify-between items-end">
-                <label htmlFor="password" className="text-sm font-medium text-on-surface-variant">
+                <label htmlFor="password" className="text-sm font-semibold text-on-surface">
                   Kata Sandi
                 </label>
                 <button
@@ -197,7 +237,7 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   disabled={isLoading}
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 pr-12 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
+                  className="w-full px-4 py-3 pr-12 bg-white rounded-xl border border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none text-base"
                 />
                 <button
                   type="button"
@@ -216,7 +256,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-primary text-white font-semibold py-4 rounded-lg shadow-sm hover:bg-primary-container active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full bg-primary text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-primary/25 hover:bg-primary-container active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -235,17 +275,18 @@ export default function LoginPage() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-8">
+        <footer className="mt-8 flex justify-center lg:justify-start">
           <Link
             to="/"
-            className="flex items-center gap-2 text-primary font-medium hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 text-sm text-on-surface-variant font-medium hover:text-primary transition-colors"
           >
-            <Home className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
             Kembali ke Beranda
           </Link>
         </footer>
 
       </main>
+      </div>
     </div>
   );
 }

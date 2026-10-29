@@ -6,6 +6,14 @@ import {
 } from 'lucide-react';
 import { useSiteConfig } from '../hooks/useSiteConfig';
 
+const QUICK_LINKS = [
+  { to: '/berita',                     label: 'Berita' },
+  { to: '/dokumen',                    label: 'Dokumen' },
+  { to: '/dashboard-publik/kehadiran', label: 'Kehadiran' },
+  { to: '/dashboard-publik/tugas',     label: 'Tugas & Nilai' },
+  { to: '/login',                      label: 'Login Portal' },
+];
+
 const DEFAULT_TAGLINE = 'Pusat pendidikan terdepan yang mendidik generasi berprestasi.';
 
 export default function SiteFooter() {
@@ -23,10 +31,10 @@ export default function SiteFooter() {
 
   return (
     <footer id="kontak" className="bg-inverse-surface text-inverse-on-surface">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 md:px-20 py-20 max-w-screen-2xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-10 px-4 md:px-8 lg:px-20 py-16 md:py-20 max-w-screen-2xl mx-auto">
 
         {/* Kolom 1: Brand */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:col-span-4">
           <div className="flex items-center gap-2.5">
             {cfg.logoUrl ? (
               <img src={cfg.logoUrl} alt={namaSekolah} className="w-9 h-9 rounded-lg object-contain bg-inverse-on-surface/10 p-1" />
@@ -59,7 +67,7 @@ export default function SiteFooter() {
                   rel="noopener noreferrer"
                   aria-label={label}
                   title={label}
-                  className="w-10 h-10 rounded-full bg-inverse-on-surface/10 border border-inverse-on-surface/10 flex items-center justify-center hover:bg-primary transition-colors"
+                  className="w-10 h-10 rounded-xl bg-inverse-on-surface/10 border border-inverse-on-surface/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
                 >
                   <Icon className="w-4 h-4" />
                 </a>
@@ -68,7 +76,7 @@ export default function SiteFooter() {
                 <a
                   href={`mailto:${cfg.email}`}
                   aria-label="Email"
-                  className="w-10 h-10 rounded-full bg-inverse-on-surface/10 border border-inverse-on-surface/10 flex items-center justify-center hover:bg-primary transition-colors"
+                  className="w-10 h-10 rounded-xl bg-inverse-on-surface/10 border border-inverse-on-surface/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                 </a>
@@ -77,9 +85,21 @@ export default function SiteFooter() {
           )}
         </div>
 
-        {/* Kolom 2: Hubungi Kami */}
-        <div className="space-y-6">
-          <h4 className="text-lg font-semibold text-white">Hubungi Kami</h4>
+        {/* Kolom 2: Tautan Cepat */}
+        <div className="space-y-6 lg:col-span-2">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white">Tautan Cepat</h4>
+          <ul className="space-y-3 text-sm text-inverse-on-surface/70">
+            {QUICK_LINKS.map(l => (
+              <li key={l.to}>
+                <Link to={l.to} className="hover:text-white transition-colors">{l.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Kolom 3: Hubungi Kami */}
+        <div className="space-y-6 lg:col-span-3">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white">Hubungi Kami</h4>
           <div className="space-y-5 text-sm text-inverse-on-surface/80">
             {cfg.alamat && (
               <div className="flex items-start gap-4">
@@ -122,9 +142,9 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        {/* Kolom 3: Lokasi */}
-        <div className="space-y-6">
-          <h4 className="text-lg font-semibold text-white">Lokasi</h4>
+        {/* Kolom 4: Lokasi */}
+        <div className="space-y-6 lg:col-span-3">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-white">Lokasi</h4>
           {cfg.mapsEmbedUrl ? (
             <div className="rounded-2xl overflow-hidden border border-inverse-on-surface/15 shadow-2xl h-48">
               <iframe
@@ -148,7 +168,7 @@ export default function SiteFooter() {
       </div>
 
       {/* Bottom bar */}
-      <div className="px-4 md:px-20 max-w-screen-2xl mx-auto py-8 border-t border-inverse-on-surface/10">
+      <div className="px-4 md:px-8 lg:px-20 max-w-screen-2xl mx-auto py-8 border-t border-inverse-on-surface/10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-inverse-on-surface/60">
             &copy; {new Date().getFullYear()} {namaSekolah}. Semua hak dilindungi.
